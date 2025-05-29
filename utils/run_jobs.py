@@ -1,24 +1,17 @@
 #!/usr/bin/python
 
-import sys
-import csv
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
 import subprocess
 import os
 import re
 from datetime import datetime
+from dotenv import load_dotenv
 
 import plot_util as pu
+from config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY
 
-matplotlib.use("Qt5Agg")
-
-AUTOPAS_DIR = "../../AutoPas/"
-BUILD_DIR = "../../AutoPas/build/"
-
-# where to store the result run data and plots
-DATA_DIR = "../../data/"
+matplotlib.use("Agg")
 
 
 class SimulationRun:
@@ -57,6 +50,17 @@ class SimulationRun:
             stdout=self.output_log_fd,
             stderr=self.output_log_fd,
         )
+        
+    def __clean_build_dir(self):
+        print("Cleaning build dir")
+        tuning_log_pattern = re.compile(r"tuningLog.*")
+        iteration_log_pattern = re.compile(r".*iterationPerformance.*")
+        config_log_pattern = re.compile(r".*\.yaml")
+        
+        for f in os.listdir(BUILD_DIR):
+            if tuning_log_pattern.match(f) or iteration_log_pattern.match(f) or config_log_pattern.match(f):
+                os.remove(os.path.join(BUILD_DIR, f))
+        
 
     def __run_autopas(self):
         print("Running simulation")
@@ -72,18 +76,29 @@ class SimulationRun:
         iteration_log_pattern = re.compile(r".*iterationPerformance.*")
         config_log_pattern = re.compile(r".*\.yaml")
 
-        self.tuning_log = [f for f in os.listdir(".") if tuning_log_pattern.match(f)][0]
-        self.iteration_log = [
-            f for f in os.listdir(".") if iteration_log_pattern.match(f)
-        ][0]
-        self.config_log = [f for f in os.listdir(".") if config_log_pattern.match(f)][0]
+        self.tuning_log = os.path.join(
+            BUILD_DIR,
+            [f for f in os.listdir(BUILD_DIR) if tuning_log_pattern.match(f)][0],
+        )
+        self.iteration_log = os.path.join(
+            BUILD_DIR,
+            [f for f in os.listdir(BUILD_DIR) if iteration_log_pattern.match(f)][0],
+        )
+        self.config_log = os.path.join(
+            BUILD_DIR,
+            [f for f in os.listdir(BUILD_DIR) if config_log_pattern.match(f)][0],
+        )
 
         print("Creating runtime vs. iteration plot")
-        pu.plot_runtime(self.iteration_log, "runtime" + self.output_plots_suffix)
+        pu.plot_runtime(
+            self.iteration_log, os.path.join(BUILD_DIR, "runtime" + self.output_plots_suffix), self.job_name
+        )
         self.plot_files.append("runtime" + self.output_plots_suffix)
 
         print("Creating configurations vs. iteration plot")
-        pu.plot_config_phases(self.iteration_log, "configs" + self.output_plots_suffix)
+        pu.plot_config_phases(
+            self.iteration_log, os.path.join(BUILD_DIR, "configs" + self.output_plots_suffix), self.job_name
+        )
         self.plot_files.append("configs" + self.output_plots_suffix)
 
     def __archive_data(self):
@@ -107,6 +122,7 @@ class SimulationRun:
         ] + self.plot_files:
             old_path = os.path.join(BUILD_DIR, f)
             new_path = os.path.join(dir_path, f)
+            print(f"moving {old_path} to {new_path}")
             os.rename(old_path, new_path)
 
         settings_file = os.path.join(dir_path, "settings.txt")
@@ -121,18 +137,33 @@ class SimulationRun:
     def run_job(self):
         self.output_log_fd = open(os.path.join(BUILD_DIR, self.output_log_name), "w")
         self.__run_cmake()
+        self.__clean_build_dir()
         self.__run_autopas()
         self.__create_plots()
         self.__archive_data()
+        self.__clean_build_dir()
         self.output_log_fd.close()
 
 
 def main():
-    testrun = SimulationRun(
-        "testrun",
+    equilibrium_100k_static = SimulationRun(
+        "equilibrium_100k_static",
         ["-DAUTOPAS_DYNAMIC_TUNING_INTERVALS=OFF", "-DAUTOPAS_LOG_ITERATIONS=ON"],
         "md-flexible",
-        "/home/niklas/Documents/ba/AutoPas/build/examples/md-flexible/md-flexible",
+        MD_FLEX_BINARY,
+        [
+            "--iterations",
+            "100000",
+            "--use-tuning-logger",
+            "true",
+        ],
+    )
+    
+    equilibrium_100k_dynamic_1_25 = SimulationRun(
+        "equilibrium_100k_dynamic_1_25",
+        ["-DAUTOPAS_DYNAMIC_TUNING_INTERVALS=ON", "-DAUTOPAS_LOG_ITERATIONS=ON"],
+        "md-flexible",
+        MD_FLEX_BINARY,
         [
             "--iterations",
             "100000",
@@ -142,7 +173,24 @@ def main():
             "true",
         ],
     )
-    testrun.run_job()
+
+    heating_sphere_100k_static = SimulationRun(
+        "heating_sphere_100k_static",
+        ["-DAUTOPAS_DYNAMIC_TUNING_INTERVALS=OFF", "-DAUTOPAS_LOG_ITERATIONS=ON"],
+        "md-flexible",
+        MD_FLEX_BINARY,
+        [
+            "--use-tuning-logger",
+            "true",
+            "--yaml-filename",
+            CONFIG_DIR + "heatingSphere/predTune/heatingSphere.yaml",
+        ],
+    )
+
+    #equilibrium_100k_static.run_job()
+    equilibrium_100k_dynamic_1_25.run_job()
+
+    # heating_sphere_100k_static.run_job()
 
 
 if __name__ == "__main__":

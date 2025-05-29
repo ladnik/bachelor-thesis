@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import random
 
-matplotlib.use("Qt5Agg")
+matplotlib.use("Agg")
+matplotlib.rcParams["text.usetex"] = True
+matplotlib.rcParams["font.family"] = "serif"
 random.seed(12345)
 
 availiable_colors = list(mcolors.TABLEAU_COLORS.values())
@@ -59,7 +61,7 @@ def map_cfg_to_col(config):
     return color
 
 
-def plot_config_phases(infile, outfile):
+def plot_config_phases(infile, outfile, job_name):
     """Plots the different optimal configurations found in different colors.
     Takes in a path to a .csv file containting iterationPerformance logs and
     a path to where the plout should be output to."""
@@ -114,14 +116,14 @@ def plot_config_phases(infile, outfile):
             )
 
         ax.set(
-            xlabel="Iteration", ylabel="Runtime (s)", title="Selected Configurations"
-        )
+            xlabel=r"iteration", ylabel=r"runtime (ns)")
         ax.grid()
+        ax.set_title(rf"""\centering \Large{{{job_name}}} \newline
+                     \centering \normalsize{{Selected Configurations}}""")
         fig.savefig(outfile, dpi=300, bbox_inches="tight")
-        fig.show()
 
 
-def plot_runtime(infile, outfile):
+def plot_runtime(infile, outfile, job_name):
     """Plots runtime over iterations.
     Takes in a path to a .csv file containting iterationPerformance logs and
     a path to where the plout should be output to."""
@@ -138,8 +140,10 @@ def plot_runtime(infile, outfile):
         ax.plot(iteration, runtime)
         ax.fill_between(iteration, max(runtime), where=tune, facecolor="red", alpha=0.5)
 
-        ax.set(xlabel="Iteration", ylabel="Runtime (ns)", title="Runtime vs Iteration")
+        ax.set(xlabel=r"iteration", ylabel=r"runtime (ns)")
         ax.grid()
+        ax.set_title(rf"""\centering \Large{{{job_name}}} \newline
+                     \centering \normalsize{{Runtime vs. Iteration}}""")
         fig.savefig(outfile, dpi=300, bbox_inches="tight")
 
 
@@ -148,8 +152,8 @@ def main():
         print("Please provide an input .csv file")
         exit(1)
 
-    plot_config_phases(sys.argv[1], "plot.png")
-    input()
+    #plot_config_phases(sys.argv[1], "plot.png", "this is a testtitle")
+    plot_runtime(sys.argv[1], "plot.png", "Job name")
 
 
 if __name__ == "__main__":
