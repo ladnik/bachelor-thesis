@@ -1,14 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name=AUTOPAS_RUNNER # specifies a user-defined job name
-#SBATCH --nodes=1 # number of compute nodes to be used
-#SBATCH --ntasks-per-node=1 # number of MPI processes per node
-#SBATCH --partition=small # partition (small_shared, small, medium, small_fat, small_gpu)
-# special partitions: large (for selected users only!)
-# job configuration testing partition: dev
-#SBATCH --cpus-per-task=36 # number of cores per process
-#SBATCH --time=00:20:00 # maximum wall clock limit for job execution
+#SBATCH --job-name=AP_RUN # specifies a user-defined job name
+#SBATCH --clusters=serial
+#SBATCH --partition=serial_std
+#SBATCH --cpus-per-task=12 # number of cores per process
+#SBATCH --time=01:00:00 # maximum wall clock limit for job execution
 #SBATCH --output=logOutput_%j.log # log file which will contain all output
+#SBATCH --mail-type=end
+#SBATCH --mail-user=ge92hed@mytum.de
 
 ### some additional information (you can delete those lines)
 echo "#==================================================#"
@@ -21,9 +20,10 @@ echo "#==================================================#"
 # commands to be executed
 # modify the following line to load a specific MPI implementation
 
+module load slurm_setup
 
-export OMP_NUM_THREADS=36
+export OMP_NUM_THREADS=12
 export OMP_PLACES=cores
 export OMP_PROC_BIND=true
 
-python run_joby.py
+python run_jobs.py

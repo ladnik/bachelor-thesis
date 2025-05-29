@@ -2,6 +2,8 @@
 
 import sys
 import csv
+import os
+import re
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -115,11 +117,12 @@ def plot_config_phases(infile, outfile, job_name):
                 alpha=0.5,
             )
 
-        ax.set(
-            xlabel=r"iteration", ylabel=r"runtime (ns)")
+        ax.set(xlabel=r"iteration", ylabel=r"runtime (ns)")
         ax.grid()
-        ax.set_title(rf"""\centering \Large{{{job_name}}} \newline
-                     \centering \normalsize{{Selected Configurations}}""")
+        ax.set_title(
+            rf"""\centering \Large{{{job_name}}} \newline
+                     \centering \normalsize{{Selected Configurations}}"""
+        )
         fig.savefig(outfile, dpi=300, bbox_inches="tight")
 
 
@@ -142,18 +145,46 @@ def plot_runtime(infile, outfile, job_name):
 
         ax.set(xlabel=r"iteration", ylabel=r"runtime (ns)")
         ax.grid()
-        ax.set_title(rf"""\centering \Large{{{job_name}}} \newline
-                     \centering \normalsize{{Runtime vs. Iteration}}""")
+        ax.set_title(
+            rf"""\centering \Large{{{job_name}}} \newline
+                     \centering \normalsize{{Runtime vs. Iteration}}"""
+        )
         fig.savefig(outfile, dpi=300, bbox_inches="tight")
+
+
+def plot_data_from_dirs(root_path):
+    iteration_log_pattern = re.compile(r".*iterationPerformance.*")
+
+    for data_dir in os.scandir(root_path):
+        if data_dir.is_dir():
+            print(f"Entering data from {data_dir.name}")
+            settings_file = os.path.join(data_dir, "settings.txt")
+            match = re.search(r"Job name:\s*(.*)", open(settings_file).readline())
+            job_name = "Job" if match is None else match.group(1)
+
+            iteration_log = [
+                f.path for f in os.scandir(data_dir) if iteration_log_pattern.match(f.name)
+            ][0]
+
+            print("Creating runtime vs. iteration plot")
+            plot_runtime(
+                iteration_log, os.path.join(data_dir, "runtime_plot.png"), job_name
+            )
+
+            print("Creating configurations vs. iteration plot")
+            plot_config_phases(
+                iteration_log, os.path.join(data_dir, "configs_plot.png"), job_name
+            )
 
 
 def main():
     if len(sys.argv) < 2:
-        print("Please provide an input .csv file")
+        print("Please provide a data root dir")
         exit(1)
 
-    #plot_config_phases(sys.argv[1], "plot.png", "this is a testtitle")
-    plot_runtime(sys.argv[1], "plot.png", "Job name")
+    plot_data_from_dirs(sys.argv[1])
+    # plot_config_phases(sys.argv[1], "config_plot.png", sys.argv[2])
+    # plot_runtime(sys.argv[1], "runtime_plot.png", sys.argv[2])
 
 
 if __name__ == "__main__":
