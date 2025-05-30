@@ -3,6 +3,7 @@
 #SBATCH --job-name=AP_RUN # specifies a user-defined job name
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=12 # number of cores per process
 #SBATCH --time=01:00:00 # maximum wall clock limit for job execution
 #SBATCH --output=logOutput_%j.log # log file which will contain all output
@@ -22,8 +23,8 @@ echo "#==================================================#"
 
 module load slurm_setup
 
-export OMP_NUM_THREADS=12
-export OMP_PLACES=cores
-export OMP_PROC_BIND=true
+#export OMP_NUM_THREADS=12
+#export OMP_PLACES=cores
+#export OMP_PROC_BIND=true
 
 python run_jobs.py

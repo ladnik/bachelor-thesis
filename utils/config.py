@@ -15,9 +15,6 @@ if importlib.util.find_spec("dotenv") is not None:
     # where the md-flexible executable is located
     MD_FLEX_BINARY = os.getenv("MD_FLEX_BINARY")
     
-    # wether to rebuild autopas on run or not
-    REBUILD_AUTOPAS = True
-    
 else:
     # CM-4 does not offer dotenv
     AUTOPAS_DIR = "/dss/dsshome1/09/ge92hed2/AutoPas/"
@@ -25,5 +22,4 @@ else:
     DATA_DIR = "/dss/dsshome1/09/ge92hed2/data/unplotted-data/"
     CONFIG_DIR = "/dss/dsshome1/09/ge92hed2/bachelor-thesis/experiments/"
     MD_FLEX_BINARY="/dss/dsshome1/09/ge92hed2/AutoPas/build/examples/md-flexible/md-flexible"
-    REBUILD_AUTOPAS = False
 

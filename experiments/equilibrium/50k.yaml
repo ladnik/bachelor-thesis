@@ -1,0 +1,45 @@
+# Running single-site MD simulation.
+
+container                        :  [LinkedCells, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
+verlet-rebuild-frequency         :  15
+verlet-skin-radius               :  0.2
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+tuning-strategies                :  []
+tuning-metric                    :  time
+tuning-interval                  :  5000
+tuning-samples                   :  3
+use-LOESS-smoothening            :  false
+dynamic-retune-time-factor       :  1.25
+cutoff                           :  2
+box-min                          :  [-0.56125, -0.56125, -0.56125]
+box-max                          :  [10.6638, 10.6638, 10.6638]
+cell-size                        :  [1]
+deltaT                           :  0.001
+pause-simulation-during-tuning   :  false
+sorting-threshold                :  8
+iterations                       :  50000
+boundary-type                    :  [periodic, periodic, periodic]
+Sites:                           
+  0:
+    epsilon                      :  1
+    sigma                        :  1
+    nu                           :  0.1
+    mass                         :  1
+Objects:                         
+  CubeGrid:
+    0:  
+      particles-per-dimension    :  [10, 10, 10]
+      particle-spacing           :  1.1225
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+use-tuning-logger                :  true
+output-suffix                    :  
+log-level                        :  info
+no-end-config                    :  false
+no-progress-bar                  :  false
+load-balancer                    :  InvertedPressure
+load-balancing-interval          :  100
+subdivide-dimension              :  [true, true, true]
+energy-sensor                    :  rapl
