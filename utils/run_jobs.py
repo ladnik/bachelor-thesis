@@ -5,7 +5,7 @@ import os
 import re
 from datetime import datetime
 
-from config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY
+from config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, REBUILD_AUTOPAS
 
 #        self.output_plots_suffix = "_plot.png"
 
@@ -130,7 +130,8 @@ class SimulationRun:
 
     def run_job(self):
         self.output_log_fd = open(os.path.join(BUILD_DIR, self.log_name), "w")
-        self.__run_cmake()
+        if(REBUILD_AUTOPAS):
+            self.__run_cmake()
         self.__clean_build_dir()
         self.__run_autopas()
         self.__find_files()
