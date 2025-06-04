@@ -63,7 +63,7 @@ def map_cfg_to_col(config):
     return color
 
 
-def plot_config_phases(infile, outfile, job_name):
+def plot_config_phases(infile, outfile, job_name, plot_tuning_runtime=False):
     """Plots the different optimal configurations found in different colors.
     Takes in a path to a .csv file containting iterationPerformance logs and
     a path to where the plout should be output to."""
@@ -88,6 +88,17 @@ def plot_config_phases(infile, outfile, job_name):
             )
             for row in rows
         ]
+
+        # throw out tuning iterations
+        if not plot_tuning_runtime:
+            runtime = [
+                el for i, el in enumerate(runtime) if not configs[i].was_tuning()
+            ]
+            iteration = [
+                el for i, el in enumerate(iteration) if not configs[i].was_tuning()
+            ]
+            configs = [c for c in configs if not c.was_tuning()]
+
         hashed_configs = [hash(str(cfg)) for cfg in configs]
 
         fig, ax = plt.subplots()
@@ -163,7 +174,9 @@ def plot_data_from_dirs(root_path):
             job_name = "Job" if match is None else match.group(1)
 
             iteration_log = [
-                f.path for f in os.scandir(data_dir) if iteration_log_pattern.match(f.name)
+                f.path
+                for f in os.scandir(data_dir)
+                if iteration_log_pattern.match(f.name)
             ][0]
 
             print("Creating runtime vs. iteration plot")
@@ -178,13 +191,24 @@ def plot_data_from_dirs(root_path):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Please provide a data root dir")
-        exit(1)
+    # if len(sys.argv) < 2:
+    # print("Please provide a data root dir")
+    # exit(1)
 
-    plot_data_from_dirs(sys.argv[1])
+    # plot_data_from_dirs(sys.argv[1])
     # plot_config_phases(sys.argv[1], "config_plot.png", sys.argv[2])
     # plot_runtime(sys.argv[1], "runtime_plot.png", sys.argv[2])
+    # plot_config_phases(
+    #     "/home/niklas/Documents/ba/data/unplotted-data/cm4/equilibrium_100k_static-2025-05-30-20:19:07/AutoPas_iterationPerformance_Rank0_null_2025-05-30_20-04-20.csv",
+    #     "testplot.png",
+    #     "equilibrium_100k_static",
+    # )
+
+    plot_config_phases(
+        "/home/niklas/Documents/ba/data/unplotted-data/cm4/unplotted-data/exploding_liquid_12k_static-2025-06-01-21:16:12/AutoPas_iterationPerformance_Rank0_2025-06-01_21-13-14.csv",
+        "testplot.png",
+        "exploding_liquid_12k_static",
+    )
 
 
 if __name__ == "__main__":

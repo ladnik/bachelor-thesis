@@ -1,38 +1,34 @@
-#!/usr/bin/python
-
 import subprocess
 import os
 import re
 from datetime import datetime
 import shutil
 
-from config import (
-    AUTOPAS_DIR,
-    BUILD_DIR,
-    DATA_DIR,
-    CONFIG_DIR,
-    MD_FLEX_BINARY
-)
+from Config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, IS_HPC
+
 
 def rebuild_autopas(use_dynamic_tuning=False, add_cmake_flags=[], target="md-flexible"):
     subprocess.run(
-            ["cmake"] + add_cmake_flags + [
+        ["cmake"]
+        + add_cmake_flags
+        + [
             f"-DAUTOPAS_DYNAMIC_TUNING_INTERVALS={'ON' if use_dynamic_tuning else 'OFF'}",
             "-DAUTOPAS_LOG_ITERATIONS=ON",
-        ] + [".."],
-            cwd=BUILD_DIR
+        ]
+        + [".."],
+        cwd=BUILD_DIR,
     )
     subprocess.run(
-            [
-                "cmake",
-                "--build",
-                ".",
-                "--target",
-                target,
-                "--parallel",
-                "12",
-            ],
-            cwd=BUILD_DIR
+        [
+            "cmake",
+            "--build",
+            ".",
+            "--target",
+            target,
+            "--parallel",
+            "12",
+        ],
+        cwd=BUILD_DIR,
     )
 
 
@@ -113,19 +109,18 @@ class SimulationRun:
         t = [f for f in os.listdir(BUILD_DIR) if tuning_log_pattern.match(f)]
         if len(t) > 0:
             self.tuning_log = os.path.join(BUILD_DIR, t[0])
+            print(f"Found tuning log at {self.tuning_log}")
 
         self.iteration_log = os.path.join(
             BUILD_DIR,
             [f for f in os.listdir(BUILD_DIR) if iteration_log_pattern.match(f)][0],
         )
+        print(f"Found iteration log at {self.iteration_log}")
 
         c = [f for f in os.listdir(BUILD_DIR) if config_log_pattern.match(f)]
         if len(c) > 0:
             self.config_log = os.path.join(BUILD_DIR, c[0])
-
-        print(f"Found tuning log at {self.tuning_log}")
-        print(f"Found iteration log at {self.iteration_log}")
-        print(f"Found config log at {self.config_log}")
+            print(f"Found config log at {self.config_log}")
 
     def __archive_data(self):
         dirname = f"{self.job_name}-{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}"
@@ -179,62 +174,30 @@ class SimulationRun:
         self.__clean_build_dir()
         self.output_log_fd.close()
         print("-" * shutil.get_terminal_size().columns)
+    
+    def generate_command(self):
+        return f"$MD_FLEX_BINARY {self.run_cli_options} > {self.log_name}"
 
+sim_names = [
+    #"equilibrium",
+    "heating_sphere",
+    #"spinodial_decomposition",
+    "exploding_liquid"
+]
+iterations = [50, 100, 150]
 
-def main():
-    equilibrium_50k_static = SimulationRun(
-        "equilibrium_50k_static", CONFIG_DIR + "equilibrium/50k.yaml", False
+static_jobs = {
+    f"{sim_name}_{its}k_static": SimulationRun(
+        f"{sim_name}_{its}k_static", CONFIG_DIR + f"{sim_name}/{its}k.yaml", False
     )
-    
-    equilibrium_100k_static = SimulationRun(
-        "equilibrium_100k_static", CONFIG_DIR + "equilibrium/100k.yaml", False
+    for sim_name in sim_names
+    for its in iterations
+}
+
+dynamic_jobs = {
+    f"{sim_name}_{its}k_dynamic": SimulationRun(
+        f"{sim_name}_{its}k_dynamic", CONFIG_DIR + f"{sim_name}/{its}k.yaml", False
     )
-    
-    equilibrium_150k_static = SimulationRun(
-        "equilibrium_150k_static", CONFIG_DIR + "equilibrium/150k.yaml", False
-    )
-    
-    heating_sphere_100k_static = SimulationRun(
-        "heating_sphere_100k_static", CONFIG_DIR + "heatingSphere/100k.yaml", False
-    )
-    
-    heating_sphere_200k_static = SimulationRun(
-        "heating_sphere_200k_static", CONFIG_DIR + "heatingSphere/200k.yaml", False
-    )
-    
-    spinodial_decomposition_30k_static = SimulationRun(
-        "spinodial_decomposition_30k_static", CONFIG_DIR + "spinodial-decomposition/30k.yaml", False
-    )
-    
-    exploding_liquid_12k_static = SimulationRun(
-        "exploding_liquid_12k_static", CONFIG_DIR + "exploding-liquid/12k.yaml", False
-    )
-
-    # equilibrium_100k_dynamic_1_25 = SimulationRun(
-    #     "equilibrium_100k_dynamic_1_25", CONFIG_DIR + "equilibrium/100k.yaml", True
-    # )
-
-
-    print("Rebuilding AutoPas")
-    rebuild_autopas()
-
-    # static jobs
-    print("Running jobs with static tuning intervals")
-    equilibrium_50k_static.run_job()
-    equilibrium_100k_static.run_job()
-    equilibrium_150k_static.run_job()
-    heating_sphere_100k_static.run_job()
-    heating_sphere_200k_static.run_job()
-    spinodial_decomposition_30k_static.run_job()
-    exploding_liquid_12k_static.run_job()
-    
-    
-    # dynamic jobs, rebuild autopas in first one
-    #equilibrium_100k_static.run_job()
-    #equilibrium_100k_dynamic_1_25.run_job()
-
-    # heating_sphere_100k_static.run_job()
-
-
-if __name__ == "__main__":
-    main()
+    for sim_name in sim_names
+    for its in iterations
+}
