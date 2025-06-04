@@ -176,7 +176,7 @@ class SimulationRun:
         print("-" * shutil.get_terminal_size().columns)
     
     def generate_command(self):
-        return f"$MD_FLEX_BINARY {self.run_cli_options} > {self.log_name}"
+        return f"$MD_FLEX_BINARY {' '.join(self.run_cli_options)} > {self.log_name}"
 
 sim_names = [
     #"equilibrium",
