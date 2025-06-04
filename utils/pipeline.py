@@ -39,12 +39,12 @@ echo "#==================================================#"'''
         f.write(f"MD_FLEX_BINARY={MD_FLEX_BINARY}\n")
         f.write("\n\n")
 
-        f.write("mkdir output\n")
+        f.write("mkdir -p output\n")
         f.write("cd output\n")
         f.write("\n\n")
 
         for n, j in static_jobs.items():
-            f.write(f"mkdir {n} && cd {n}\n")
+            f.write(f"mkdir -p {n} && cd {n}\n")
             f.write(f"{j.generate_command()}\n")
             f.write(f"cd ..\n")
             f.write("\n")

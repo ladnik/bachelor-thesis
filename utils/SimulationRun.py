@@ -180,9 +180,9 @@ class SimulationRun:
 
 sim_names = [
     #"equilibrium",
-    "heating_sphere",
-    #"spinodial_decomposition",
-    "exploding_liquid"
+    "heating-sphere",
+    #"spinodial-decomposition",
+    "exploding-liquid"
 ]
 iterations = [50, 100, 150]
 
