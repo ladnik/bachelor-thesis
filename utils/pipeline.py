@@ -14,20 +14,20 @@ def generate_slurm(mail):
 #SBATCH --partition=serial_std
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=12 # number of cores per process
-#SBATCH --time=45:00:00 # maximum wall clock limit for job execution
+#SBATCH --time=24:00:00 # maximum wall clock limit for job execution
 #SBATCH --output=logOutput_%j.log # log file which will contain all output
 #SBATCH --mail-type=end
-#SBATCH --mail-user={mail})"""
+#SBATCH --mail-user={mail}"""
         )
         f.write("\n\n")
         f.write(
-            """echo "#==================================================#"
+            '''echo "#==================================================#"
 echo " num nodes: " $SLURM_JOB_NUM_NODES
 echo " num tasks: " $SLURM_NTASKS
 echo " cpus per task: " $SLURM_CPUS_PER_TASK
 echo " nodes used: " $SLURM_JOB_NODELIST
 echo " job cpus used: " $SLURM_JOB_CPUS_PER_NODE
-echo "#==================================================#"""
+echo "#==================================================#"'''
         )
         f.write("\n\n")
         f.write("module load slurm_setup\n")
@@ -35,8 +35,12 @@ echo "#==================================================#"""
         f.write("export OMP_PLACES=cores\n")
         f.write("export OMP_PROC_BIND=true\n")
         f.write("\n\n")
-        
+
         f.write(f"MD_FLEX_BINARY={MD_FLEX_BINARY}\n")
+        f.write("\n\n")
+
+        f.write("mkdir output\n")
+        f.write("cd output\n")
         f.write("\n\n")
 
         for n, j in static_jobs.items():
