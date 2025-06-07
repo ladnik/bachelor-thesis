@@ -33,6 +33,7 @@ _minted*
 
 ### VisualStudioCode ###
 .vscode/*
+*/.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -45,3 +46,4 @@ _minted*
 ### Other Stuff ###
 *.log
 *.DS_Store
+*.slurm

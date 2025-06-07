@@ -1,35 +1,11 @@
-import subprocess
 import os
 import re
-from datetime import datetime
+import subprocess
 import shutil
+import tempfile
+from datetime import datetime
 
 from Config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, IS_HPC
-
-
-def rebuild_autopas(use_dynamic_tuning=False, add_cmake_flags=[], target="md-flexible"):
-    subprocess.run(
-        ["cmake"]
-        + add_cmake_flags
-        + [
-            f"-DAUTOPAS_DYNAMIC_TUNING_INTERVALS={'ON' if use_dynamic_tuning else 'OFF'}",
-            "-DAUTOPAS_LOG_ITERATIONS=ON",
-        ]
-        + [".."],
-        cwd=BUILD_DIR,
-    )
-    subprocess.run(
-        [
-            "cmake",
-            "--build",
-            ".",
-            "--target",
-            target,
-            "--parallel",
-            "12",
-        ],
-        cwd=BUILD_DIR,
-    )
 
 
 class SimulationRun:
@@ -37,167 +13,129 @@ class SimulationRun:
         self,
         job_name,
         config_file,
-        use_dynamic_tuning=False,
-        rebuild_autopas=False,
-        add_cmake_flags=[],
+        append_to_config="",
         add_run_options=[],
         log_name="job_log.txt",
         autopas_target="md-flexible",
     ):
         self.job_name = job_name
-        self.rebuild_autopas = rebuild_autopas
-        self.cmake_flags = add_cmake_flags + [
-            f"-DAUTOPAS_DYNAMIC_TUNING_INTERVALS={'ON' if use_dynamic_tuning else 'OFF'}",
-            "-DAUTOPAS_LOG_ITERATIONS=ON",
-        ]
-        self.run_cli_options = add_run_options + ["--yaml-filename", config_file]
+        self.config_file = config_file
+        self.append_to_config = append_to_config
+        self.add_run_options = add_run_options
+        self.run_cli_options = add_run_options + ["--yaml-filename"]
         self.log_name = log_name
         self.autopas_target = autopas_target
 
-    def __run_cmake(self):
-        print("Setting CMake options")
-        subprocess.run(
-            ["cmake"] + self.cmake_flags + [".."],
-            cwd=BUILD_DIR,
-            stdout=self.output_log_fd,
-            stderr=self.output_log_fd,
-        )
-        print("Building AutoPas")
-        subprocess.run(
-            [
-                "cmake",
-                "--build",
-                ".",
-                "--target",
-                self.autopas_target,
-                "--parallel",
-                "12",
-            ],
-            cwd=BUILD_DIR,
-            stdout=self.output_log_fd,
-            stderr=self.output_log_fd,
-        )
-
-    def __clean_build_dir(self):
-        print("Cleaning build dir")
-        tuning_log_pattern = re.compile(r"tuningLog.*")
-        iteration_log_pattern = re.compile(r".*iterationPerformance.*")
-        config_log_pattern = re.compile(r".*\.yaml")
-
-        for f in os.listdir(BUILD_DIR):
-            if (
-                tuning_log_pattern.match(f)
-                or iteration_log_pattern.match(f)
-                or config_log_pattern.match(f)
-            ):
-                os.remove(os.path.join(BUILD_DIR, f))
-
     def __run_autopas(self):
         print("Running simulation")
-        subprocess.run(
+        code = subprocess.run(
             [MD_FLEX_BINARY] + self.run_cli_options,
-            cwd=BUILD_DIR,
+            cwd=self.out_dir,
             stdout=self.output_log_fd,
             stderr=self.output_log_fd,
-        )
+        ).returncode
+        # print(f"Subprocess exited with code {code}")
 
-    def __find_files(self):
-        tuning_log_pattern = re.compile(r"tuningLog.*")
-        iteration_log_pattern = re.compile(r".*iterationPerformance.*")
-        config_log_pattern = re.compile(r".*\.yaml")
-
-        t = [f for f in os.listdir(BUILD_DIR) if tuning_log_pattern.match(f)]
-        if len(t) > 0:
-            self.tuning_log = os.path.join(BUILD_DIR, t[0])
-            print(f"Found tuning log at {self.tuning_log}")
-
-        self.iteration_log = os.path.join(
-            BUILD_DIR,
-            [f for f in os.listdir(BUILD_DIR) if iteration_log_pattern.match(f)][0],
-        )
-        print(f"Found iteration log at {self.iteration_log}")
-
-        c = [f for f in os.listdir(BUILD_DIR) if config_log_pattern.match(f)]
-        if len(c) > 0:
-            self.config_log = os.path.join(BUILD_DIR, c[0])
-            print(f"Found config log at {self.config_log}")
-
-    def __archive_data(self):
+    def __setup_output(self):
         dirname = f"{self.job_name}-{datetime.now().strftime('%Y-%m-%d-%H:%M:%S')}"
-        print(f"Archiving outputs to {dirname}")
-        dir_path = os.path.join(DATA_DIR, dirname)
+        self.out_dir = os.path.join(DATA_DIR, dirname)
         try:
             os.mkdir(
-                dir_path,
+                self.out_dir,
                 mode=0o755,
             )
         except Exception as e:
-            print(f"Could not create directory {dir_path}: {e}")
+            print(f"Could not create directory {self.out_dir}: {e}")
             return
 
-        for f in [
-            self.tuning_log,
-            self.iteration_log,
-            self.config_log,
-        ]:
-            new_path = os.path.join(dir_path, os.path.basename(f))
-            os.rename(f, new_path)
+    def __rename_outfiles(self):
+        # TODO: adapt this for multiple ranks
+        tuning_log_pattern = re.compile(r"tuningLog.*")
+        iteration_log_pattern = re.compile(r".*iterationPerformance.*")
+        liveinfo_log_pattern = re.compile(r".*liveInfoLogger.*")
 
-        os.rename(
-            os.path.join(BUILD_DIR, self.log_name),
-            os.path.join(dir_path, self.log_name),
-        )
-
-        settings_file = os.path.join(dir_path, "settings.txt")
-        with open(settings_file, "x") as f:
-            f.write(f"Job name: {self.job_name}\n")
-            f.write(f"CMake flags used: {self.cmake_flags}\n")
-            f.write(f"CMake target: {self.autopas_target}\n")
-            f.write(f"AutoPas binary run: {MD_FLEX_BINARY}\n")
-            f.write(f"AutoPas binary CLI options: {self.run_cli_options}\n")
-            f.write(f"Final output dir: {dir_path}\n")
-
-        subprocess.run(["chmod", "-R", "0755", "."], cwd=dir_path)
+        for f in os.listdir(self.out_dir):
+            if tuning_log_pattern.match(f):
+                os.rename(
+                    os.path.join(self.out_dir, f),
+                    os.path.join(self.out_dir, "tuningLog.txt"),
+                )
+            if iteration_log_pattern.match(f):
+                os.rename(
+                    os.path.join(self.out_dir, f),
+                    os.path.join(self.out_dir, "iterationLog.csv"),
+                )
+            if liveinfo_log_pattern.match(f):
+                os.rename(
+                    os.path.join(self.out_dir, f),
+                    os.path.join(self.out_dir, "liveinfoLog.csv"),
+                )
 
     def run_job(self):
         print("-" * shutil.get_terminal_size().columns)
         print(f"Running job {self.job_name}")
         print("-" * shutil.get_terminal_size().columns)
-        self.output_log_fd = open(os.path.join(BUILD_DIR, self.log_name), "w")
-        if self.rebuild_autopas:
-            self.__run_cmake()
-        self.__clean_build_dir()
-        self.__run_autopas()
-        self.__find_files()
-        # self.__create_plots()
-        self.__archive_data()
-        self.__clean_build_dir()
+
+        self.__setup_output()
+        self.output_log_fd = open(os.path.join(self.out_dir, self.log_name), "w")
+
+        with tempfile.NamedTemporaryFile(mode="w+") as tmp:
+            shutil.copyfile(self.config_file, tmp.name)
+            tmp.seek(0, 2)
+            tmp.write("\n" + self.append_to_config)
+            tmp.flush()
+            self.run_cli_options += [tmp.name]
+            self.__run_autopas()
+
         self.output_log_fd.close()
+        self.__rename_outfiles()
         print("-" * shutil.get_terminal_size().columns)
-    
+
     def generate_command(self):
-        return f"$MD_FLEX_BINARY {' '.join(self.run_cli_options)} > {self.log_name}"
+        # TODO: create temporary file for config
+        return f"""cp {self.config_file} tempconfig.yaml
+echo \"{self.append_to_config}\" >> tempconfig.yaml
+$MD_FLEX_BINARY {' '.join(self.add_run_options)} --yaml-filename tempconfig.yaml > {self.log_name}
+    """
+
 
 sim_names = [
-    #"equilibrium",
+    "equilibrium",
     "heating-sphere",
-    #"spinodial-decomposition",
-    "exploding-liquid"
+    # "spinodial-decomposition",
+    "exploding-liquid",
 ]
-iterations = [50, 100, 150]
+
+iterations = [150]
+trigger_types = [
+    "TimeBasedSimple",
+    "TimeBasedAverage",
+]
+factors = [100.0, 200.0]
 
 static_jobs = {
     f"{sim_name}_{its}k_static": SimulationRun(
-        f"{sim_name}_{its}k_static", CONFIG_DIR + f"{sim_name}/{its}k.yaml", False
+        f"{sim_name}_{its}k_static",
+        CONFIG_DIR + f"{sim_name}/default.yaml",
+        f"""iterations                       : {str(its*1000)}""",
     )
     for sim_name in sim_names
     for its in iterations
 }
 
 dynamic_jobs = {
-    f"{sim_name}_{its}k_dynamic": SimulationRun(
-        f"{sim_name}_{its}k_dynamic", CONFIG_DIR + f"{sim_name}/{its}k.yaml", False
+    f"{sim_name}_{its}k_dynamic_{trigger_type}_{factor}": SimulationRun(
+        f"{sim_name}_{its}k_dynamic_{trigger_type}_{factor}",
+        CONFIG_DIR + f"{sim_name}/default.yaml",
+        f"""
+iterations                       : {str(its*1000)}
+tuning-trigger:
+  trigger-type                   : {trigger_type}
+  trigger-factor                 : {str(factor)}
+  trigger-n-samples              : {str(10)}""",
     )
     for sim_name in sim_names
     for its in iterations
+    for trigger_type in trigger_types
+    for factor in factors
 }
