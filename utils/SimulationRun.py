@@ -94,16 +94,16 @@ class SimulationRun:
     def generate_command(self):
         # TODO: create temporary file for config
         return f"""cp {self.config_file} tempconfig.yaml
-echo \"{self.append_to_config}\" >> tempconfig.yaml
+echo \"\n{self.append_to_config}\" >> tempconfig.yaml
 $MD_FLEX_BINARY {' '.join(self.add_run_options)} --yaml-filename tempconfig.yaml > {self.log_name}
     """
 
 
 sim_names = [
     "equilibrium",
-    "heating-sphere",
-    # "spinodial-decomposition",
+    "spinodial-decomposition",
     "exploding-liquid",
+    #"heating-sphere"
 ]
 
 iterations = [150]
@@ -111,7 +111,11 @@ trigger_types = [
     "TimeBasedSimple",
     "TimeBasedAverage",
 ]
-factors = [100.0, 200.0]
+factors = [45.0]
+
+special_dict = {
+    "equilibrium_150k_short_interval" : "equilibrium/short_interval.yaml",
+}
 
 static_jobs = {
     f"{sim_name}_{its}k_static": SimulationRun(
@@ -138,4 +142,14 @@ tuning-trigger:
     for its in iterations
     for trigger_type in trigger_types
     for factor in factors
+}
+
+special_jobs = {
+    f"{special_name}_{its}": SimulationRun(
+        special_name,
+        CONFIG_DIR + special_config,
+        f"""iterations                       : {str(its*1000)}""",
+    )
+    for special_name, special_config in special_dict
+    for its in iterations
 }

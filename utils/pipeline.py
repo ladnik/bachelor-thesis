@@ -51,7 +51,7 @@ def generate_slurm(mail, dynamic):
     with open(filename, "w") as f:
         f.write(
             f"""#!/bin/bash
-#SBATCH --job-name=AP_RUN
+#SBATCH --job-name=AP_RUN{"D" if dynamic else "S"}
 #SBATCH --get-user-env
 #SBATCH --export=NONE
 #SBATCH --clusters=cm4
@@ -95,29 +95,37 @@ echo "#==================================================#"'''
             f.write(f"wait\n")
             f.write(f"cd ..\n")
             f.write("\n")
+        
+        if not dynamic:
+            for n, j in special_jobs.items():
+                f.write(f"mkdir -p {n} && cd {n}\n")
+                f.write(f"{j.generate_command()}\n")
+                f.write(f"wait\n")
+                f.write(f"cd ..\n")
+                f.write("\n")
 
 
 def main():
     if not IS_HPC:
         # run default pipeline
-        print("Rebuilding AutoPas to use static tuning")
-        rebuild_autopas()
+        # print("Rebuilding AutoPas to use static tuning")
+        # rebuild_autopas()
 
-        # static jobs
-        print("Running jobs with static tuning intervals")
-        for name, job in static_jobs.items():
-            job.run_job()
+        # # static jobs
+        # print("Running jobs with static tuning intervals")
+        # for name, job in static_jobs.items():
+        #     job.run_job()
 
-        for name, job in test_job.items():
-            job.run_job()
+        # for name, job in test_job.items():
+        #     job.run_job()
 
         print("Rebuilding AutoPas to use dynamic tuning")
         rebuild_autopas(True)
 
         # dynamic jobs
-        print("Running jobs with dynamic tuning intervals")
-        for name, job in dynamic_jobs.items():
-            job.run_job()
+        # print("Running jobs with dynamic tuning intervals")
+        # for name, job in dynamic_jobs.items():
+        #     job.run_job()
     else:
         # generate a slurm job
         if len(sys.argv) < 2:
