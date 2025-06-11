@@ -6,8 +6,11 @@ import re
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.lines import Line2D
+from matplotlib.ticker import ScalarFormatter
 import random
 import numpy as np
+
 
 from Config import PLOT_DATA
 
@@ -18,6 +21,11 @@ random.seed(12345)
 
 availiable_colors = list(mcolors.TABLEAU_COLORS.values())
 config_color_mapping = {}
+
+# format y axis in plots as 10^x
+exp_formatter = ScalarFormatter(useMathText=True)
+exp_formatter.set_scientific(True)
+exp_formatter.set_powerlimits((0, 0))
 
 
 class TuningConfig:
@@ -42,7 +50,8 @@ class TuningConfig:
         self.tuning = tuning
 
     def __str__(self):
-        return f"functor: {self.functor}, interaction type: {self.interaction_type}, container: {self.container}, cellsize factor: {self.cellsize_factor}, traversal: {self.traversal}, data layout: {self.data_layout}, newton 3: {self.newton3}"
+        #return f"functor: {self.functor}, interaction type: {self.interaction_type}, container: {self.container}, cellsize factor: {self.cellsize_factor}, traversal: {self.traversal}, data layout: {self.data_layout}, newton 3: {self.newton3}"
+        return f"{self.traversal}_{self.data_layout}"
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -69,15 +78,23 @@ def map_cfg_to_col(config):
     return color
 
 
-def plot_liveinfo_param(param_name, liveinfo_log, iteration_log, output_name, job_name):
-    """Generates a scatter plot of a specific parameter in the liveinfoLog.
+def plot_liveinfo_params(
+    param_names,
+    liveinfo_log,
+    iteration_log,
+    output_prefix,
+    job_name,
+    color_configs=True,
+):
+    """Generates a scatter plot for parameters in the liveinfoLog.
 
     Args:
-        param_name (str): Parameter in iteration log to plot.
+        param_names (list): List of parameters in iteration log to plot.
         liveinfo_log (path): Path to the .csv file containing the liveinfo log of the simulation.
         iteration_log (path): Path to the .csv file containing the iteration log of the simulation.
-        output_name (str): Name of the output png.
-        job_name (str): Job name to print as title of plot.
+        output_prefix (str): Prefix of the output png.
+        job_name (str): Job name to print as title of plots.
+        color_configs (bool, optional): Whether data points in different unique configs should be plotted in different colors. Defaults to True.
     """
 
     print("Plotting liveInfo")
@@ -91,34 +108,75 @@ def plot_liveinfo_param(param_name, liveinfo_log, iteration_log, output_name, jo
         iteration_rows = list(iteration_reader)
 
         iteration = [int(row["Iteration"]) for row in liveinfo_rows]
-        param = [float(row[param_name]) for row in liveinfo_rows]
         tune = [row["inTuningPhase"].lower() in ["true"] for row in iteration_rows]
         runtime = [int(row["computeInteractions[ns]"]) for row in iteration_rows]
 
+        configs = [
+            TuningConfig(
+                row["Functor"],
+                row["Interaction Type"],
+                row["Container"],
+                row["CellSizeFactor"],
+                row["Traversal"],
+                row["Data Layout"],
+                row["Newton 3"],
+                row["inTuningPhase"],
+            )
+            for row in iteration_rows
+        ]
+
         # throw out runtimes of tuning iterations
         iteration = remove_tuning_its(iteration, tune)
-        param = remove_tuning_its(param, tune)
         runtime = remove_tuning_its(runtime, tune)
-        
-        # remove extreme outliers
-        # TODO: notify if outlier has been found
-        q1, q3 = np.percentile(runtime, [25, 75])
-        iqr = q3 - q1
-        param = [param[i] for i, v in enumerate(runtime) if not (v < q1 - 10 * iqr or v > q3 + 10 * iqr)]
-        runtime = [v for i, v in enumerate(runtime) if not (v < q1 - 10 * iqr or v > q3 + 10 * iqr)]
-    
-        fig, ax = plt.subplots()
+        configs = remove_tuning_its(configs, tune)
+        hashed_configs = [hash(str(cfg)) for cfg in configs]
 
-        ax.scatter(param, runtime, marker="x", s=10)
+        for param_name in param_names:
+            param = [float(row[param_name]) for row in liveinfo_rows]
+            param = remove_tuning_its(param, tune)
 
-        ax.set(xlabel=rf"{param_name}", ylabel=r"runtime")
-        ax.grid()
-        ax.set_title(
-            rf"""\centering \Large{{{job_name}}} \newline
-                     \centering \normalsize{{ {param_name} vs. computeInteractions[ns]}}"""
-        )
-        fig.savefig(output_name, dpi=300, bbox_inches="tight")
-        plt.close(fig)
+            # remove extreme outliers
+            # TODO: notify if outlier has been found
+            q1, q3 = np.percentile(runtime, [25, 75])
+            iqr = q3 - q1
+            param = [
+                param[i]
+                for i, v in enumerate(runtime)
+                if not (v < q1 - 10 * iqr or v > q3 + 10 * iqr)
+            ]
+            runtime = [
+                v
+                for i, v in enumerate(runtime)
+                if not (v < q1 - 10 * iqr or v > q3 + 10 * iqr)
+            ]
+
+            fig, ax = plt.subplots()
+
+            if color_configs:
+                for unique_config in set(hashed_configs):
+                    mask = [cfg == unique_config for cfg in hashed_configs]
+                    param_masked = [v for i, v in enumerate(param) if mask[i]]
+                    runtime_masked = [v for i, v in enumerate(runtime) if mask[i]]
+                    ax.scatter(
+                        param_masked,
+                        runtime_masked,
+                        marker="x",
+                        s=10,
+                        color=map_cfg_to_col(unique_config),
+                    )
+            else:
+                ax.scatter(param, runtime, marker="x", s=10)
+
+            ax.set(xlabel=rf"{param_name}", ylabel=r"runtime")
+            ax.grid()
+            ax.set_title(
+                rf"""\centering \Large{{{job_name}}} \newline
+                        \centering \normalsize{{ {param_name} vs. computeInteractions[ns]}}"""
+            )
+            fig.savefig(
+                output_prefix + param_name + ".png", dpi=300, bbox_inches="tight"
+            )
+            plt.close(fig)
 
 
 def plot_iteration_param(
@@ -150,12 +208,15 @@ def plot_iteration_param(
         iteration = [int(row["Iteration"]) for row in rows]
         param = [int(row[param_name]) for row in rows]
         tune = [row["inTuningPhase"].lower() in ["true"] for row in rows]
+        
+        #print(f"total time spent on calculations: {sum(param)}ns, {sum(param)/1000000000}s")
 
         # throw out runtimes of tuning iterations
         iteration = remove_tuning_its(iteration, tune)
         param = remove_tuning_its(param, tune)
 
         fig, ax = plt.subplots()
+        ax.yaxis.set_major_formatter(exp_formatter)
 
         # remove extreme outliers
         # TODO: notify if outlier has been found
@@ -188,7 +249,9 @@ def plot_iteration_param(
                 for row in rows
             ]
             configs = remove_tuning_its(configs, tune)
-            hashed_configs = [hash(str(cfg)) for cfg in configs]
+            hashed_configs = [str(cfg) for cfg in configs]
+            custom_lines = []
+            custom_descriptors = []
             for unique_config in set(hashed_configs):
                 mask = [cfg == unique_config for cfg in hashed_configs]
                 ax.fill_between(
@@ -198,6 +261,10 @@ def plot_iteration_param(
                     facecolor=map_cfg_to_col(unique_config),
                     alpha=0.5,
                 )
+                custom_lines+=[Line2D([0], [0], marker='o', color="white", markerfacecolor=map_cfg_to_col(unique_config), markersize=10)]
+                custom_descriptors+=[unique_config]
+            ax.legend(custom_lines, custom_descriptors, loc='upper left', bbox_to_anchor=(0, -0.3, 1, 0.2),
+                mode="expand", ncols=3)
 
         # mark beginnings of tuning phases
         if mark_tuning_phases:
@@ -243,30 +310,39 @@ def main():
     tuning_log_pattern = re.compile(r"tuningLog.*")
     iteration_log_pattern = re.compile(r".*iterationPerformance.*")
     liveinfo_log_pattern = re.compile(r".*liveInfoLogger.*")
+    plot_pattern = re.compile(r".*png")
 
-    all_dirs = [
-        # "equilibrium_150k_static/",
-        # "equilibrium_100k_static_short_interval/",
-        # "exploding-liquid_100k_static/",
-        # "equilibrium_100k_dynamic_TimeBasedSimple_100.0/",
-        # "equilibrium_100k_dynamic_TimeBasedSimple_150.0/",
-        # "exploding-liquid_100k_dynamic_TimeBasedSimple_200.0/",
-        # "exploding-liquid_100k_dynamic_TimeBasedSimple_150.0/",
-        # "heating-sphere_50k_static/",
-        # "heating-sphere_50k_dynamic_TimeBasedSimple_100.0/",
-        # "equilibrium_100k_dynamic_TimeBasedAverage_100.0/",
-        # "equilibrium_100k_dynamic_TimeBasedAverage_100.0-2025-06-07-22:31:55/",
-        # "output/equilibrium_150k_static/",
-        # "output/exploding-liquid_150k_static/",
-        # "output/heating-sphere_100k_static/",
-        # "output/equilibrium_150k_dynamic_TimeBasedSimple_60.0/",
-        # "output/equilibrium_150k_dynamic_TimeBasedAverage_60.0/",
-        # "output/exploding-liquid_150k_dynamic_TimeBasedSimple_60.0/",
-        "output/exploding-liquid_150k_dynamic_TimeBasedAverage_60.0/"
-    ]
+    # all_dirs = [
+    #     # "equilibrium_150k_static/",
+    #     # "equilibrium_100k_static_short_interval/",
+    #     # "exploding-liquid_100k_static/",
+    #     # "equilibrium_100k_dynamic_TimeBasedSimple_100.0/",
+    #     # "equilibrium_100k_dynamic_TimeBasedSimple_150.0/",
+    #     # "exploding-liquid_100k_dynamic_TimeBasedSimple_200.0/",
+    #     # "exploding-liquid_100k_dynamic_TimeBasedSimple_150.0/",
+    #     # "heating-sphere_50k_static/",
+    #     # "heating-sphere_50k_dynamic_TimeBasedSimple_100.0/",
+    #     # "equilibrium_100k_dynamic_TimeBasedAverage_100.0/",
+    #     # "equilibrium_100k_dynamic_TimeBasedAverage_100.0-2025-06-07-22:31:55/",
+    #     # "output/equilibrium_150k_static/",
+    #     # "output/exploding-liquid_150k_static/",
+    #     # "output/heating-sphere_100k_static/",
+    #     "output/equilibrium_150k_dynamic_TimeBasedSimple_45.0/",
+    #     #"output/equilibrium_150k_dynamic_TimeBasedSimple_60.0/",
+    #     # "output/equilibrium_150k_dynamic_TimeBasedAverage_45.0/",
+    #     # "output/equilibrium_150k_dynamic_TimeBasedAverage_60.0/",
+    #     # "output/exploding-liquid_150k_dynamic_TimeBasedSimple_60.0/",
+    #     #"output/exploding-liquid_150k_dynamic_TimeBasedSimple_45.0/", TODO: redo this one
+    #     "output/exploding-liquid_150k_dynamic_TimeBasedAverage_60.0/",
+    #     "output/exploding-liquid_150k_dynamic_TimeBasedAverage_45.0/"
+    # ]
+
+    #all_dirs = ["equilibrium_150k_short_interval_150/"]
+    all_dirs = os.listdir(os.path.join(PLOT_DATA, "output"))
 
     for job_dir in all_dirs:
-        abs_path = os.path.join(PLOT_DATA, job_dir)
+        abs_path = os.path.join(os.path.join(PLOT_DATA, "output"), job_dir) + "/"
+        skip = False
         for f in os.listdir(abs_path):
             if tuning_log_pattern.match(f):
                 os.rename(
@@ -283,62 +359,51 @@ def main():
                     os.path.join(abs_path, f),
                     os.path.join(abs_path, "liveinfoLog.csv"),
                 )
+            if plot_pattern.match(f):
+                skip = True
+        # if skip:
+        #     continue
         print(f"Working on {job_dir}")
+
+        iteration_log = os.path.join(abs_path, "iterationLog.csv")
+        liveinfo_log = os.path.join(abs_path, "liveinfoLog.csv")
+
         plot_iteration_param(
             "computeInteractionsTotal[ns]",
-            PLOT_DATA + job_dir + "iterationLog.csv",
-            PLOT_DATA + job_dir + "runtime.png",
-            job_dir[:-1],
+            iteration_log,
+            abs_path + "runtime.png",
+            job_dir,
         )
         plot_iteration_param(
             "computeInteractionsTotal[ns]",
-            PLOT_DATA + job_dir + "iterationLog.csv",
-            PLOT_DATA + job_dir + "runtime_mark_tuning.png",
-            job_dir[:-1],
+            iteration_log,
+            abs_path + "runtime_mark_tuning.png",
+            job_dir,
             False,
             True,
         )
         plot_iteration_param(
             "computeInteractionsTotal[ns]",
-            PLOT_DATA + job_dir + "iterationLog.csv",
-            PLOT_DATA + job_dir + "runtime_smoothed.png",
-            job_dir[:-1],
-            False,
-            False,
-            [1, 10],
-        )
-        plot_iteration_param(
-            "computeInteractionsTotal[ns]",
-            PLOT_DATA + job_dir + "iterationLog.csv",
-            PLOT_DATA + job_dir + "configs.png",
-            job_dir[:-1],
+            iteration_log,
+            abs_path + "configs.png",
+            job_dir,
             True,
             True,
         )
-        plot_iteration_param(
-            "computeInteractionsTotal[ns]",
-            PLOT_DATA + job_dir + "iterationLog.csv",
-            PLOT_DATA + job_dir + "configs_smoothed.png",
-            job_dir[:-1],
-            True,
-            True,
-            [1, 10],
+        plot_liveinfo_params(
+            [
+                "avgParticlesPerCell",
+                "estimatedNumNeighborInteractions",
+                "maxDensity",
+                "particlesPerCellStdDev",
+                "numEmptyCells",
+            ],
+            liveinfo_log,
+            iteration_log,
+            abs_path + f"liveinfo_",
+            job_dir,
         )
-        for param in [
-            "avgParticlesPerCell",
-            "estimatedNumNeighborInteractions",
-            "maxDensity",
-            "particlesPerCellStdDev",
-            "numEmptyCells",
-        ]:
-            plot_liveinfo_param(
-                param,
-                PLOT_DATA + job_dir + "liveinfoLog.csv",
-                PLOT_DATA + job_dir + "iterationLog.csv",
-                PLOT_DATA + job_dir + f"liveinfo_{param}.png",
-                job_dir[:-1],
-            )
-        estimate_tuning_triggers("computeInteractionsTotal[ns]", PLOT_DATA + job_dir + "iterationLog.csv", 45.0)
+        # estimate_tuning_triggers("computeInteractionsTotal[ns]", abs_path+ "iterationLog.csv", 45.0)
 
 
 if __name__ == "__main__":

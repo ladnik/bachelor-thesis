@@ -150,6 +150,6 @@ special_jobs = {
         CONFIG_DIR + special_config,
         f"""iterations                       : {str(its*1000)}""",
     )
-    for special_name, special_config in special_dict
+    for special_name, special_config in special_dict.items()
     for its in iterations
 }

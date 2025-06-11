@@ -43,6 +43,10 @@ _minted*
 .history
 .ionide
 
+### Data ###
+*.txt
+*.csv
+
 ### Other Stuff ###
 *.log
 *.DS_Store
