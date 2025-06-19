@@ -101,7 +101,7 @@ $MD_FLEX_BINARY {' '.join(self.add_run_options)} --yaml-filename tempconfig.yaml
 
 sim_names = [
     "equilibrium",
-    "spinodial-decomposition",
+    #"spinodial-decomposition",
     "exploding-liquid",
     #"heating-sphere"
 ]
@@ -111,17 +111,19 @@ trigger_types = [
     "TimeBasedSimple",
     "TimeBasedAverage",
 ]
-factors = [45.0]
+factors = [1.25, 1.5, 2.0]
 
 special_dict = {
     "equilibrium_150k_short_interval" : "equilibrium/short_interval.yaml",
 }
 
 static_jobs = {
-    f"{sim_name}_{its}k_static": SimulationRun(
-        f"{sim_name}_{its}k_static",
+    f"{sim_name}_{its}k_static_optimum": SimulationRun(
+        f"{sim_name}_{its}k_static_optimum",
         CONFIG_DIR + f"{sim_name}/default.yaml",
-        f"""iterations                       : {str(its*1000)}""",
+        f"""iterations                       : {str(its*1000)}
+tuning-interval                   : 1000
+tuning-samples                    : 10""",
     )
     for sim_name in sim_names
     for its in iterations

@@ -10,7 +10,7 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
-tuning-strategies                :  [predictive-tuning]
+tuning-strategies                :  []
 tuning-interval                  :  6000
 tuning-samples                   :  10
 functor                          :  Lennard-Jones-AVX2

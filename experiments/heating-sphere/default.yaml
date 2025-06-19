@@ -9,7 +9,7 @@ selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
 traversal                            :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_c02]
 selector-strategy                : fastest-mean-value
-tuning-strategies                :  [slow-config-filter, predictive-tuning]
+tuning-strategies                :  []
 extrapolation-method             :  line-prediction
 tuning-interval                  :  10000
 tuning-samples                   :  10
