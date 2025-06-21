@@ -8,7 +8,7 @@ selector-strategy                :  Fastest-Absolute-Value
 tuning-strategies                :  []
 tuning-metric                    :  time
 tuning-interval                  :  5000
-tuning-samples                   :  3
+tuning-samples                   :  10
 use-LOESS-smoothening            :  false
 cutoff                           :  2
 box-min                          :  [-0.56125, -0.56125, -0.56125]
