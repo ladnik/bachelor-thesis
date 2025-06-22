@@ -101,32 +101,38 @@ $MD_FLEX_BINARY {' '.join(self.add_run_options)} --yaml-filename tempconfig.yaml
 
 sim_names = [
     "equilibrium",
-    #"spinodial-decomposition",
+    # "spinodial-decomposition",
     "exploding-liquid",
-    #"heating-sphere"
+    # "heating-sphere"
 ]
 
 iterations = [150]
 trigger_types = [
     "TimeBasedSimple",
     "TimeBasedAverage",
+    "TimeBasedSplit",
 ]
 factors = [1.25, 1.5, 2.0]
 
 special_dict = {
-    "equilibrium_150k_short_interval" : "equilibrium/short_interval.yaml",
+    "equilibrium_150k_short_interval": "equilibrium/short_interval.yaml",
 }
 
 static_jobs = {
-    f"{sim_name}_{its}k_static_optimum": SimulationRun(
-        f"{sim_name}_{its}k_static_optimum",
+    f"{sim_name}_{its}k_static": SimulationRun(
+        f"{sim_name}_{its}k_static",
         CONFIG_DIR + f"{sim_name}/default.yaml",
-        f"""iterations                       : {str(its*1000)}
-tuning-interval                   : 1000
-tuning-samples                    : 10""",
+        f"""iterations                       : {str(its*1000)}""",
     )
     for sim_name in sim_names
     for its in iterations
+}
+
+optimum_jobs = {
+    f"{sim_name}_static_optimum": SimulationRun(
+        f"{sim_name}_static_optimum", CONFIG_DIR + f"{sim_name}/optimum.yaml"
+    )
+    for sim_name in sim_names
 }
 
 dynamic_jobs = {
@@ -140,10 +146,10 @@ tuning-trigger:
   trigger-factor                 : {str(factor)}
   trigger-n-samples              : {str(10)}""",
     )
+    for factor in factors
     for sim_name in sim_names
     for its in iterations
     for trigger_type in trigger_types
-    for factor in factors
 }
 
 special_jobs = {
