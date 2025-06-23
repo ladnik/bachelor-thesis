@@ -51,3 +51,5 @@ _minted*
 *.log
 *.DS_Store
 *.slurm
+
+*/__pycache_/*
