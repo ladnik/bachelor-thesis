@@ -15,7 +15,7 @@ if importlib.util.find_spec("dotenv") is not None:
     # where the md-flexible executable is located
     MD_FLEX_BINARY = os.getenv("MD_FLEX_BINARY")
     PLOT_DATA= os.getenv("PLOT_DATA")
-    IS_HPC=False
+    IS_HPC=True
     
 else:
     # CM-4 does not offer dotenv

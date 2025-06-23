@@ -2,27 +2,9 @@
 
 import subprocess
 import sys
-from Config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, IS_HPC
+from classes.Config import BUILD_DIR, MD_FLEX_BINARY, IS_HPC
 from SimulationRun import *
-from enum import Enum
-
-
-class CollectionType(Enum):
-    STATIC = 0
-    DYNAMIC = 1
-    SPECIAL = 2
-    OPTIMUM = 3
-
-    def __str__(self):
-        if self.value == CollectionType.STATIC:
-            return "static"
-        elif self.value == CollectionType.DYNAMIC:
-            return "dynamic"
-        elif self.value == CollectionType.SPECIAL:
-            return "special"
-        elif self.value == CollectionType.OPTIMUM:
-            return "optimum"
-        return str(self.value)
+from classes.TuningConfig import JobCollectionType
 
 
 def rebuild_autopas(use_dynamic_tuning=False, add_cmake_flags=[], target="md-flexible"):
@@ -107,13 +89,13 @@ echo "#==================================================#"'''
         f.write("\n\n")
 
         jobs = {}
-        if collection_type == CollectionType.STATIC:
+        if collection_type == JobCollectionType.STATIC:
             jobs = static_jobs.items()
-        elif collection_type == CollectionType.DYNAMIC:
+        elif collection_type == JobCollectionType.DYNAMIC:
             jobs = dynamic_jobs.items()
-        elif collection_type == CollectionType.SPECIAL:
+        elif collection_type == JobCollectionType.SPECIAL:
             jobs = special_jobs.items()
-        elif collection_type == CollectionType.OPTIMUM:
+        elif collection_type == JobCollectionType.OPTIMUM:
             jobs = optimum_jobs.items()
 
         for n, j in jobs:
@@ -150,10 +132,10 @@ def main():
         if len(sys.argv) < 2:
             print("Please provide an e-mail that should receive notifications")
             exit(1)
-        generate_slurm(sys.argv[1], CollectionType.STATIC)
-        generate_slurm(sys.argv[1], CollectionType.DYNAMIC)
-        generate_slurm(sys.argv[1], CollectionType.SPECIAL)
-        generate_slurm(sys.argv[1], CollectionType.OPTIMUM)
+        generate_slurm(sys.argv[1], JobCollectionType.STATIC)
+        generate_slurm(sys.argv[1], JobCollectionType.DYNAMIC)
+        generate_slurm(sys.argv[1], JobCollectionType.SPECIAL)
+        generate_slurm(sys.argv[1], JobCollectionType.OPTIMUM)
 
 
 if __name__ == "__main__":

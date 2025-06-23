@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from datetime import datetime
 
-from Config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, IS_HPC
+from classes.Config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, IS_HPC
 
 
 class SimulationRun:
