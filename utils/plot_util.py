@@ -4,7 +4,7 @@ import csv
 import os
 import re
 
-from classes.Config import PLOT_DATA
+from classes.Config import PLOT_DATA_DIR
 from classes.PlotData import PlotData
 
 
@@ -84,10 +84,10 @@ def collect_runtimes(parent_path, output_name):
 
 def main():
 
-    all_dirs = os.listdir(os.path.join(PLOT_DATA, "output"))
+    all_dirs = os.listdir(os.path.join(PLOT_DATA_DIR, "output"))
 
     for job_dir in all_dirs:
-        abs_path = os.path.join(os.path.join(PLOT_DATA, "output"), job_dir) + "/"
+        abs_path = os.path.join(os.path.join(PLOT_DATA_DIR, "output"), job_dir) + "/"
         skip = clean_up_files(abs_path)
         # if skip:
         #     continue

@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from datetime import datetime
 
-from classes.Config import AUTOPAS_DIR, BUILD_DIR, DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY, IS_HPC
+from classes.Config import DATA_DIR, CONFIG_DIR, MD_FLEX_BINARY
 
 
 class SimulationRun:
@@ -103,29 +103,28 @@ sim_names = [
     "equilibrium",
     # "spinodial-decomposition",
     "exploding-liquid",
-    # "heating-sphere"
+    "heating-sphere",
 ]
 
-iterations = [150]
 trigger_types = [
-    "TimeBasedSimple",
-    "TimeBasedAverage",
+    # "TimeBasedSimple",
+    # "TimeBasedAverage",
     "TimeBasedSplit",
 ]
 factors = [1.25, 1.5, 2.0]
+n_samples = [20, 30, 50]
 
 special_dict = {
     "equilibrium_150k_short_interval": "equilibrium/short_interval.yaml",
 }
 
 static_jobs = {
-    f"{sim_name}_{its}k_static": SimulationRun(
-        f"{sim_name}_{its}k_static",
+    f"{sim_name}_static": SimulationRun(
+        f"{sim_name}_static",
         CONFIG_DIR + f"{sim_name}/default.yaml",
-        f"""iterations                       : {str(its*1000)}""",
+        "",
     )
     for sim_name in sim_names
-    for its in iterations
 }
 
 optimum_jobs = {
@@ -136,28 +135,26 @@ optimum_jobs = {
 }
 
 dynamic_jobs = {
-    f"{sim_name}_{its}k_dynamic_{trigger_type}_{factor}": SimulationRun(
-        f"{sim_name}_{its}k_dynamic_{trigger_type}_{factor}",
+    f"{sim_name}_dynamic_{trigger_type}_{factor}_{n_sample}": SimulationRun(
+        f"{sim_name}_dynamic_{trigger_type}_{factor}",
         CONFIG_DIR + f"{sim_name}/default.yaml",
         f"""
-iterations                       : {str(its*1000)}
 tuning-trigger:
   trigger-type                   : {trigger_type}
   trigger-factor                 : {str(factor)}
-  trigger-n-samples              : {str(10)}""",
+  trigger-n-samples              : {str(n_sample)}""",
     )
     for factor in factors
+    for n_sample in n_samples
     for sim_name in sim_names
-    for its in iterations
     for trigger_type in trigger_types
 }
 
 special_jobs = {
-    f"{special_name}_{its}": SimulationRun(
+    f"{special_name}": SimulationRun(
         special_name,
         CONFIG_DIR + special_config,
-        f"""iterations                       : {str(its*1000)}""",
+        "",
     )
     for special_name, special_config in special_dict.items()
-    for its in iterations
 }

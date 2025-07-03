@@ -14,7 +14,7 @@ if importlib.util.find_spec("dotenv") is not None:
     CONFIG_DIR = os.getenv("CONFIG_DIR")
     # where the md-flexible executable is located
     MD_FLEX_BINARY = os.getenv("MD_FLEX_BINARY")
-    PLOT_DATA= os.getenv("PLOT_DATA")
+    PLOT_DATA_DIR= os.getenv("PLOT_DATA")
     IS_HPC=True
     
 else:
@@ -24,6 +24,6 @@ else:
     DATA_DIR = "/dss/dsshome1/09/ge92hed2/data/unplotted-data/"
     CONFIG_DIR = "/dss/dsshome1/09/ge92hed2/bachelor-thesis/experiments/"
     MD_FLEX_BINARY="/dss/dsshome1/09/ge92hed2/AutoPas/build/examples/md-flexible/md-flexible"
-    PLOT_DATA=""
+    PLOT_DATA_DIR=""
     IS_HPC=True
 

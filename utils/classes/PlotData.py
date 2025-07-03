@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 from matplotlib.lines import Line2D
 from matplotlib.ticker import ScalarFormatter
 
-from classes.Config import PLOT_DATA
+from classes.Config import PLOT_DATA_DIR
 from classes.TuningConfig import TuningConfig
 
 matplotlib.use("Agg")
