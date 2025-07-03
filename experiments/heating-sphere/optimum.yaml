@@ -56,4 +56,4 @@ no-progress-bar                  :  false
 log-level                        :  info
 tuning-interval                  :  1000
 tuning-samples                   :  10
-iterations                       :  100000
+iterations                       :  60000

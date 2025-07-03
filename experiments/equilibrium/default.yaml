@@ -41,3 +41,4 @@ load-balancer                    :  InvertedPressure
 load-balancing-interval          :  100
 subdivide-dimension              :  [true, true, true]
 energy-sensor                    :  rapl
+iterations                       : 150000

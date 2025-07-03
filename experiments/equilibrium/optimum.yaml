@@ -41,4 +41,4 @@ subdivide-dimension              :  [true, true, true]
 energy-sensor                    :  rapl
 tuning-interval                  :  1000
 tuning-samples                   :  10
-iterations                       :  150000
+iterations                       : 150000
