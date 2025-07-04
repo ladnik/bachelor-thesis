@@ -11,6 +11,8 @@ verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategies                :  []
+tuning-interval                  :  6000
+tuning-samples                   :  10
 functor                          :  Lennard-Jones-AVX2
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
@@ -44,6 +46,4 @@ no-progress-bar                  :  false
 use-tuning-logger                :  true
 no-progress-bar                  :  false
 log-level                        :  info
-tuning-interval                  :  1000
-tuning-samples                   :  10
-iterations                       :  150000
+iterations                       : 150000

@@ -7,6 +7,8 @@ verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 tuning-strategies                :  []
 tuning-metric                    :  time
+tuning-interval                  :  5000
+tuning-samples                   :  10
 use-LOESS-smoothening            :  false
 cutoff                           :  2
 box-min                          :  [-0.56125, -0.56125, -0.56125]
@@ -39,6 +41,4 @@ load-balancer                    :  InvertedPressure
 load-balancing-interval          :  100
 subdivide-dimension              :  [true, true, true]
 energy-sensor                    :  rapl
-tuning-interval                  :  1000
-tuning-samples                   :  10
-iterations                       : 150000
+iterations                       :  150000

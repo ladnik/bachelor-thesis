@@ -11,6 +11,8 @@ traversal                            :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c0
 selector-strategy                : fastest-mean-value
 tuning-strategies                :  []
 extrapolation-method             :  line-prediction
+tuning-interval                  :  10000
+tuning-samples                   :  10
 relative-optimum-range           :  2
 max-tuning-phases-without-test   :  4
 relative-blacklist-range         :  10
@@ -54,6 +56,4 @@ no-progress-bar                  :  false
 use-tuning-logger                :  true
 no-progress-bar                  :  false
 log-level                        :  info
-tuning-interval                  :  1000
-tuning-samples                   :  10
 iterations                       :  60000
