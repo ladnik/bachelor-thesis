@@ -91,19 +91,18 @@ class SimulationRun:
         self.__rename_outfiles()
         print("-" * shutil.get_terminal_size().columns)
 
-    def generate_command(self):
-        # TODO: create temporary file for config
+    def generate_command(self, use_mpi):
         return f"""cp {self.config_file} tempconfig.yaml
 echo \"\n{self.append_to_config}\" >> tempconfig.yaml
-$MD_FLEX_BINARY {' '.join(self.add_run_options)} --yaml-filename tempconfig.yaml > {self.log_name}
+{"mpirun -np $SLURM_NTASKS " if use_mpi else ""}$MD_FLEX_BINARY {' '.join(self.add_run_options)} --yaml-filename tempconfig.yaml > {self.log_name}
     """
 
 
 sim_names = [
-    "equilibrium",
+    #"equilibrium",
     # "spinodial-decomposition",
     "exploding-liquid",
-    "heating-sphere",
+    #"heating-sphere",
 ]
 
 trigger_types = [
@@ -122,6 +121,15 @@ static_jobs = {
     f"{sim_name}_static": SimulationRun(
         f"{sim_name}_static",
         CONFIG_DIR + f"{sim_name}/default.yaml",
+        "",
+    )
+    for sim_name in sim_names
+}
+
+static_mpi_jobs = {
+    f"{sim_name}_static_multisite": SimulationRun(
+        f"{sim_name}_static_mpi",
+        CONFIG_DIR + f"{sim_name}/multisite.yaml",
         "",
     )
     for sim_name in sim_names

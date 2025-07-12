@@ -7,11 +7,12 @@ from SimulationRun import *
 from classes.TuningConfig import JobCollectionType
 
 
-def rebuild_autopas(use_dynamic_tuning=False, add_cmake_flags=[], target="md-flexible"):
+def rebuild_autopas(use_dynamic_tuning=False, multisite=False, add_cmake_flags=[], target="md-flexible"):
     """Rebuild the target binary using AutoPas.
 
     Args:
         use_dynamic_tuning (bool, optional): Whether or not to enable the DYNAMIC_TUNING_INTERVALS option. Defaults to False.
+        multisite (bool, optional): Whether or not to compile for runs with MPI (MD_FLEXIBLE_MODE=MULTISITE). Defaults to False.
         add_cmake_flags (list, optional): Additional CMake flags for the build process. Defaults to [].
         target (str, optional): Target to build. Defaults to "md-flexible".
     """
@@ -20,6 +21,7 @@ def rebuild_autopas(use_dynamic_tuning=False, add_cmake_flags=[], target="md-fle
         + add_cmake_flags
         + [
             f"-DAUTOPAS_DYNAMIC_TUNING_INTERVALS={'ON' if use_dynamic_tuning else 'OFF'}",
+            f"-DMD_FLEXIBLE_MODE={'MULTISITE' if multisite else 'SINGLESITE'}",
             "-DAUTOPAS_LOG_ITERATIONS=ON",
             "-DAUTOPAS_LOG_LIVEINFO=ON",
             "-DAUTOPAS_FORMATTING_TARGETS=ON",
@@ -41,7 +43,7 @@ def rebuild_autopas(use_dynamic_tuning=False, add_cmake_flags=[], target="md-fle
     )
 
 
-def generate_slurm(mail, collection_type):
+def generate_slurm(mail, collection_type, use_mpi=False):
     """Generates a slurm job file to be run on CoolMUC4.
 
     Args:
@@ -56,8 +58,8 @@ def generate_slurm(mail, collection_type):
 #SBATCH --get-user-env
 #SBATCH --export=NONE
 #SBATCH --clusters=cm4
-#SBATCH --partition=cm4_tiny
-#SBATCH --ntasks=1
+#SBATCH --partition={"cm4_tiny" if not use_mpi else "cm4_std"}
+#SBATCH --ntasks={"1" if not use_mpi else "4"}
 #SBATCH --cpus-per-task=28
 #SBATCH --time=10:00:00
 #SBATCH --output=logOutput_%j.log
@@ -76,11 +78,19 @@ echo "#==================================================#"'''
         )
         f.write("\n\n")
         f.write("module load slurm_setup\n")
+        
+        if use_mpi:
+            f.write("module load intel-oneapi-mpi\n")
+        
         f.write("export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK\n")
         f.write("export OMP_PLACES=cores\n")
         f.write("export OMP_PROC_BIND=true\n")
         f.write("\n\n")
-
+        
+        f.write("unset I_MPI_PMI_LIBRARY\n")
+        f.write("export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0\n")
+        f.write("\n\n")
+        
         f.write(f"MD_FLEX_BINARY={MD_FLEX_BINARY}\n")
         f.write("\n\n")
 
@@ -89,18 +99,21 @@ echo "#==================================================#"'''
         f.write("\n\n")
 
         jobs = {}
-        if collection_type == JobCollectionType.STATIC:
-            jobs = static_jobs.items()
-        elif collection_type == JobCollectionType.DYNAMIC:
-            jobs = dynamic_jobs.items()
-        elif collection_type == JobCollectionType.SPECIAL:
-            jobs = special_jobs.items()
-        elif collection_type == JobCollectionType.OPTIMUM:
-            jobs = optimum_jobs.items()
+        match collection_type:
+            case JobCollectionType.STATIC:
+                jobs = static_jobs.items()
+            case JobCollectionType.DYNAMIC:
+                jobs = dynamic_jobs.items()
+            case JobCollectionType.SPECIAL:
+                jobs = special_jobs.items()
+            case JobCollectionType.OPTIMUM:
+                jobs = optimum_jobs.items()
+            case JobCollectionType.STATIC_MPI:
+                jobs = static_mpi_jobs.items()
 
         for n, j in jobs:
             f.write(f"mkdir -p {n} && cd {n}\n")
-            f.write(f"{j.generate_command()}\n")
+            f.write(f"{j.generate_command(use_mpi)}\n")
             f.write(f"wait\n")
             f.write(f"cd ..\n")
             f.write("\n")
@@ -136,6 +149,8 @@ def main():
         generate_slurm(sys.argv[1], JobCollectionType.DYNAMIC)
         generate_slurm(sys.argv[1], JobCollectionType.SPECIAL)
         generate_slurm(sys.argv[1], JobCollectionType.OPTIMUM)
+        
+        generate_slurm(sys.argv[1], JobCollectionType.STATIC_MPI, True)
 
 
 if __name__ == "__main__":

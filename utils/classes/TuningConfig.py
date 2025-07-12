@@ -9,6 +9,7 @@ class JobCollectionType(Enum):
     DYNAMIC = 1
     SPECIAL = 2
     OPTIMUM = 3
+    STATIC_MPI = 4
 
     @staticmethod
     def from_str(label):
@@ -21,6 +22,8 @@ class JobCollectionType(Enum):
                 return JobCollectionType.SPECIAL
             case "optimum":
                 return JobCollectionType.OPTIMUM
+            case "static_mpi":
+                return JobCollectionType.STATIC_MPI
             case _:
                 raise NotImplementedError
 
@@ -88,7 +91,7 @@ class DataLayoutType(Enum):
                 return DataLayoutType.SOA
             case _:
                 raise NotImplementedError
-    
+
     def __str__(self):
         match self:
             case DataLayoutType.AOS:
@@ -113,9 +116,7 @@ class TuningConfig:
     tuning: bool
 
     @staticmethod
-    def from_strs(
-        functor, interaction, container, csf, traversal, layout, n3, tuning
-    ):
+    def from_strs(functor, interaction, container, csf, traversal, layout, n3, tuning):
         return TuningConfig(
             FunctorType.from_str(functor),
             interaction,
@@ -134,7 +135,7 @@ class TuningConfig:
         trav = self.traversal.upper()
         # remove prefix to avoid duplication
         if trav.startswith(str(self.container)):
-            trav = trav[len(str(self.container)) + 1:]
+            trav = trav[len(str(self.container)) + 1 :]
         return f"{self.container}-{trav.upper()}-{'NoN3L' if not self.newton3 else 'N3L'}-{self.data_layout}-CSF{int(self.cellsize_factor) if self.cellsize_factor.is_integer() else self.cellsize_factor}"
 
     def __eq__(self, other):
