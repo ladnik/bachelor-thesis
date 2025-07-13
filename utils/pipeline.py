@@ -7,7 +7,7 @@ from SimulationRun import *
 from classes.TuningConfig import JobCollectionType
 
 
-def rebuild_autopas(use_dynamic_tuning=False, multisite=False, add_cmake_flags=[], target="md-flexible"):
+def rebuild_autopas(use_dynamic_tuning=False, use_mpi=False, add_cmake_flags=[], target="md-flexible"):
     """Rebuild the target binary using AutoPas.
 
     Args:
@@ -21,7 +21,7 @@ def rebuild_autopas(use_dynamic_tuning=False, multisite=False, add_cmake_flags=[
         + add_cmake_flags
         + [
             f"-DAUTOPAS_DYNAMIC_TUNING_INTERVALS={'ON' if use_dynamic_tuning else 'OFF'}",
-            f"-DMD_FLEXIBLE_MODE={'MULTISITE' if multisite else 'SINGLESITE'}",
+            f"-DMD_FLEXIBLE_USE_MPI={'ON' if use_mpi else 'OFF'}",
             "-DAUTOPAS_LOG_ITERATIONS=ON",
             "-DAUTOPAS_LOG_LIVEINFO=ON",
             "-DAUTOPAS_FORMATTING_TARGETS=ON",
@@ -59,8 +59,10 @@ def generate_slurm(mail, collection_type, use_mpi=False):
 #SBATCH --export=NONE
 #SBATCH --clusters=cm4
 #SBATCH --partition={"cm4_tiny" if not use_mpi else "cm4_std"}
-#SBATCH --ntasks={"1" if not use_mpi else "4"}
-#SBATCH --cpus-per-task=28
+#SBATCH --qos={"cm4_tiny" if not use_mpi else "cm4_std"}
+#SBATCH --nodes={"1" if not use_mpi else "2"}
+#SBATCH --ntasks={"1" if not use_mpi else "3"}
+#SBATCH --cpus-per-task=38
 #SBATCH --time=10:00:00
 #SBATCH --output=logOutput_%j.log
 #SBATCH --mail-type=end

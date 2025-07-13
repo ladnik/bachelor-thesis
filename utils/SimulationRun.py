@@ -127,9 +127,9 @@ static_jobs = {
 }
 
 static_mpi_jobs = {
-    f"{sim_name}_static_multisite": SimulationRun(
+    f"{sim_name}_static_mpi": SimulationRun(
         f"{sim_name}_static_mpi",
-        CONFIG_DIR + f"{sim_name}/multisite.yaml",
+        CONFIG_DIR + f"{sim_name}/default.yaml",
         "",
     )
     for sim_name in sim_names
