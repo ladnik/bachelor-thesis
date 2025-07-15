@@ -43,7 +43,7 @@ def rebuild_autopas(use_dynamic_tuning=False, use_mpi=False, add_cmake_flags=[],
     )
 
 
-def generate_slurm(mail, collection_type, use_mpi=False):
+def generate_slurm(mail, collection_type, collection, use_mpi=False):
     """Generates a slurm job file to be run on CoolMUC4.
 
     Args:
@@ -89,9 +89,10 @@ echo "#==================================================#"'''
         f.write("export OMP_PROC_BIND=true\n")
         f.write("\n\n")
         
-        f.write("unset I_MPI_PMI_LIBRARY\n")
-        f.write("export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0\n")
-        f.write("\n\n")
+        if use_mpi:
+            f.write("unset I_MPI_PMI_LIBRARY\n")
+            f.write("export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0\n")
+            f.write("\n\n")
         
         f.write(f"MD_FLEX_BINARY={MD_FLEX_BINARY}\n")
         f.write("\n\n")
@@ -100,18 +101,7 @@ echo "#==================================================#"'''
         f.write("cd output\n")
         f.write("\n\n")
 
-        jobs = {}
-        match collection_type:
-            case JobCollectionType.STATIC:
-                jobs = static_jobs.items()
-            case JobCollectionType.DYNAMIC:
-                jobs = dynamic_jobs.items()
-            case JobCollectionType.SPECIAL:
-                jobs = special_jobs.items()
-            case JobCollectionType.OPTIMUM:
-                jobs = optimum_jobs.items()
-            case JobCollectionType.STATIC_MPI:
-                jobs = static_mpi_jobs.items()
+        jobs = collection.items()
 
         for n, j in jobs:
             f.write(f"mkdir -p {n} && cd {n}\n")
@@ -132,9 +122,6 @@ def main():
         # for name, job in static_jobs.items():
         #     job.run_job()
 
-        # for name, job in test_job.items():
-        #     job.run_job()
-
         print("Rebuilding AutoPas to use dynamic tuning")
         rebuild_autopas(True)
 
@@ -147,12 +134,12 @@ def main():
         if len(sys.argv) < 2:
             print("Please provide an e-mail that should receive notifications")
             exit(1)
-        generate_slurm(sys.argv[1], JobCollectionType.STATIC)
-        generate_slurm(sys.argv[1], JobCollectionType.DYNAMIC)
-        generate_slurm(sys.argv[1], JobCollectionType.SPECIAL)
-        generate_slurm(sys.argv[1], JobCollectionType.OPTIMUM)
-        
-        generate_slurm(sys.argv[1], JobCollectionType.STATIC_MPI, True)
+            
+        generate_slurm(sys.argv[1], JobCollectionType.STATIC, static_jobs)
+        generate_slurm(sys.argv[1], JobCollectionType.DYNAMIC, dynamic_jobs)
+        # generate_slurm(sys.argv[1], JobCollectionType.SPECIAL, special_jobs)
+        generate_slurm(sys.argv[1], JobCollectionType.OPTIMUM, optimum_jobs)
+        generate_slurm(sys.argv[1], JobCollectionType.SPECIAL, single_config_jobs)
 
 
 if __name__ == "__main__":

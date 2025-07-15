@@ -110,6 +110,12 @@ trigger_types = [
     # "TimeBasedAverage",
     "TimeBasedSplit",
 ]
+
+single_configs = [
+    "lc_c04_n3l-aos-csf1",
+    "vl_list_iter-non3l-aos",
+]
+
 factors = [1.25, 1.5, 2.0]
 n_samples = [20, 30, 50]
 
@@ -165,4 +171,12 @@ special_jobs = {
         "",
     )
     for special_name, special_config in special_dict.items()
+}
+
+
+single_config_jobs = {
+    f"hs_{config}": SimulationRun(
+        f"hs_{config}", CONFIG_DIR + f"heating-sphere/{config}.yaml"
+    )
+    for config in single_configs
 }
