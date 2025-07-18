@@ -109,6 +109,7 @@ trigger_types = [
     # "TimeBasedSimple",
     # "TimeBasedAverage",
     "TimeBasedSplit",
+    "TimeBasedRegression",
 ]
 
 single_configs = [
@@ -116,8 +117,8 @@ single_configs = [
     "vl_list_iter-non3l-aos",
 ]
 
-factors = [1.25, 1.5, 2.0]
-n_samples = [20, 30, 50]
+factors = [1.25, 1.5, 2.75]
+n_samples = [1000, 1500, 2000]
 
 special_dict = {
     "equilibrium_150k_short_interval": "equilibrium/short_interval.yaml",
