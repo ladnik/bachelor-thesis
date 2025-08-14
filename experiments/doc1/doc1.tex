@@ -1,0 +1,421 @@
+% !TeX spellcheck = en_US
+\documentclass[]{article}
+
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{csquotes}[autostyle]
+\usepackage[parfill]{parskip}
+\usepackage{graphicx}
+\usepackage[justification=centering]{caption}
+\usepackage[justification=centering]{subcaption}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+
+
+\graphicspath{{./plot_data/output/}, {./plot_data/}}
+
+%opening
+\newcommand{\msubtitle}{Overview of preliminary AutoPas Experiments}
+\newcommand{\mauthor}{Niklas Ladurner}
+
+\begin{document}
+%\maketitle
+\begin{center}\LARGE\msubtitle\end{center}
+\begin{center}\normalsize\mauthor\end{center}
+
+\section{Static tuning intervals}
+The blue bars in the graph represent the runtime of that particular iteration.
+In the configuration plots, the colored background identifies the used configuration: same color means same configuration. Keep in mind, that the mapping configuration $\mapsto$ color may change between plots. The gaps in the plot are where tuning iterations have been logged -- as their runtime is not relevant for the scenario change and would distort the actual runtime plot, I left them out. The red vertical lines indicate the start of a tuning phase.
+
+\subsection{Equilibrium}
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_static/runtime.png}
+			\subcaption{Runtime}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_static/runtime_mark_tuning.png}
+			\subcaption{Beginning of tuning intervals marked in red}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Runtime vs. iteration for the equilibrium scenario}
+	\label{fig_equil_runtime}
+\end{figure}
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_static/configs.png}
+			\subcaption{\texttt{tuning-interval} set to 5000 iterations}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_short_interval_150/configs.png}
+			\subcaption{\texttt{tuning-interval} set to 1000 iterations}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario}
+	\label{fig_equil_configs}
+\end{figure}
+
+Running the equilibrium scenario on CoolMUC4, the runtime stays fairly consistent, except for two intervals in which we change to a different config, which leads to better runtimes (see \ref{fig_equil_runtime}). Apart from that, some spikes in runtime still happen, although they are not as visible on this scale. These anomalies are quite bad for a naive dynamic tuning triggers, where we would simply compare the current iteration runtime to the last one -- as we would trigger tuning phases that may not be necessary. I will go into how we could prevent this with different smoothing approaches later. %TODO: ref
+
+Using static tuning intervals we see that, as expected, one singular configuration seems to be optimal for most of the simulation. The retuning in the cases where no change in configuration happens isn't necessary, therefore we can make improvements by just not triggering new tuning phases. When running with a much shorter \texttt{tuning-interval} (in the plotted case 1000 instead of 5000 iterations), we see that in some cases a new optimal configuration is selected (see \ref{fig_equil_configs}). I suspect however, that these changes only have a negligible performance impact, as they are only optimal for a few iterations.
+% TODO: update figure
+
+%\begin{figure}[htpb]
+%	\begin{center}
+%		\begin{subfigure}[b]{0.45\textwidth}
+%			\includegraphics[width=\textwidth]{plot_data/equilibrium_150k_static/configs_smoothed.png}
+%			\subcaption{\texttt{tuning-interval} set to 5000 iterations}
+%		\end{subfigure}
+%		\begin{subfigure}[b]{0.45\textwidth}
+%			\includegraphics[width=\textwidth]{plot_data/equilibrium_100k_static_short_interval/configs_smoothed.png}
+%			\subcaption{\texttt{tuning-interval} set to 1000 iterations}
+%		\end{subfigure}
+%	\end{center}
+%	\caption[]{Selected configurations for the equilibrium scenario with smoothed runtime}
+%	\label{fig_equil_configs_smooth}
+%\end{figure}
+
+%
+%Applying a filter smoothens this out, in the plotted case (see \ref{fig_equil_configs_smooth}) the orange line represents a moving average over the last $n=10$ samples.
+
+\subsection{Heating Sphere}
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_150k_static/runtime.png}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_150k_static/configs.png}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Runtime and selected configurations for the heating sphere scenario}
+	\label{fig_hs_overview}
+\end{figure}
+
+In this scenario, there seems to be small relative variance in iteration runtime (\ref{fig_hs_overview}). Changes in runtime aren't followed by configuration changes. This may be because the configuration file uses predictive-tuning and slow-config-filter, so in my understanding it might happen that we don't select the optimal configuration. On the other hand, it could also just mean that runtime alone isn't a good predictor for change in this scenario.
+
+\subsection{Exploding Liquid}
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/runtime.png}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/configs.png}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Runtime and selected configurations for the exploding liquid scenario. One extreme outlier has been removed.}
+	\label{fig_expl_overview}
+\end{figure}
+In the exploding liquid scenario, we see many spikes in iteration runtime, and different configurations show significant differences in runtime (\ref{fig_expl_overview}). We see that one configurations remains optimal after multiple tuning phases, so dynamic tuning should be effective here. Again, it seems as if we do not always select the optimal strategy, which could again be because of predictive tuning. This is especially visible in the transition from \texttt{lc\_c08\_AoS} to \texttt{lc\_c04\_combinded\_SoA\_SoA}.
+
+Runtime alone again doesn't seem to be a perfect predictor for scenario change, as there are intervals with increased runtime that are not followed by a configuration change after the next retune. However, especially in the beginning where we change to a different optimum for multiple tuning phases, it might still be a good approximation.
+
+\section{Dynamic tuning intervals}
+\subsection{Time-based dynamic tuning intervals}
+Here are some time-based retuning trigger strategies I've already implemented or think could be worth investigating:
+\begin{enumerate}
+	\item \texttt{TimeBasedSimple} (implemented):
+	      This strategy compares the current iteration runtime to the previous one and triggers a tuning phase, if $t_i \ge \lambda\cdot t_{i-1}$, where $\lambda$ is a retune factor set by the user.
+	\item \texttt{TimeBasedAverageN} (implemented):
+	      This strategy is similar to \texttt{TimeBasedSimple}, but instead of comparing to the last iteration, we compare to the moving average of the last $n$ runtime samples. I.e. a tuning phase is triggered, if \[t_i \ge \frac{\lambda}{n}\cdot \sum_{k=i-n-1}^{i-1}t_{k}\]
+	      This strategy would not prevent tuning phases to be triggered by spikes in runtime, but would prevent it from triggering in the next iteration after a dip in runtime.
+	\item \texttt{TimeBasedLinearRegression}:
+	      Although this strategy is probably too compute intensive, fitting a simple linear regression over the last $n$ samples would give us an estimate on wether the runtime is increasing significantly. The estimate for the slope would then be (I hope my maths is correct):
+	      \[
+		      \hat{\beta} =
+		      \frac{\sum_{k=i-n-1}^{i-1}(x_k-\bar x)(t_k-\bar t)}{\sum_{k=i-n-1}^{i-1}(x_k-\bar x)^2}
+	      \]
+	      Which can be transformed to
+	      \[
+		      \hat\beta'  = \frac{\sum_{k=0}^{n}\left(k-\frac{n^2 +n}{2}\right)(t_{i-n+k-1}-\bar t)}{\sum_{k=0}^{n}\left(k-\frac{n^2 +n}{2}\right)^2}
+	      \]
+	      Then, we could compare $\hat\beta'$ to a positive threshold value, after which we assume a significant increase in runtime and start a tuning phase. The terms involving $k$ and $n$ should be constant, so these could be precomputed.
+	\item \texttt{TimeBasedSplit}:
+	      Another trigger strategy would be to split the measurements of the last $n$ iterations and current iteration into two intervals $A = [t_{i-n}, t_{i-j}], B=[t_{i-j+1},t_i]$ (with $j=\lfloor\frac{n}{2}\rfloor$) and then compare whether $\text{avg}(B)\ge \lambda\cdot \text{avg}(A)$.
+\end{enumerate}
+As all these strategies only try to estimate whether a parameter, in this case runtime, increases, they could also be used together with \texttt{liveinfo} measurements in parameter based tuning.
+
+
+
+%\subsubsection{Results -- Heating Sphere}
+%\begin{enumerate}
+%	\item \texttt{TimeBasedSimple}
+%
+%	      \begin{figure}[htpb]
+%		      \begin{center}
+%			      \begin{subfigure}[b]{0.45\textwidth}
+%				      \includegraphics[width=\textwidth]{plot_data/heating-sphere_50k_dynamic_TimeBasedSimple_100.0/configs.png}
+%				      \subcaption{Retune factor $\lambda=100$}
+%			      \end{subfigure}
+%			      \begin{subfigure}[b]{0.45\textwidth}
+%				      \includegraphics[width=\textwidth]{plot_data/heating-sphere_50k_dynamic_TimeBasedSimple_100.0/configs.png}
+%				      \subcaption{Retune factor $\lambda=200$}
+%			      \end{subfigure}
+%		      \end{center}
+%		      \caption[]{Selected configurations for the heating sphere scenario with a \texttt{TimeBasedSimple} trigger}
+%		      \label{fig_hs_configs_dyn}
+%	      \end{figure}
+%
+%	      As mentioned before, the variance in iteration runtime in this scenario is way smaller, a big retune factor like $\lambda=100$ in the equilibrium scenario (\ref{fig_hs_configs_dyn}) leads to a singular suboptimal config running for the whole simulation. These differences in runtime variance (which may also be affected by the system on which the simulation is run) make it hard to find a sensible value for $\lambda$, maybe this factor itself could be estimated from the first few iterations.
+%	      %TODO: factor 100 Number of towers per interaction length differs in X vs Y direction
+%
+%
+%	      %TODO
+%
+%	\item \texttt{TimeBasedAverageN}
+%\end{enumerate}
+
+\subsubsection{Results -- \texttt{TimeBasedSimple}}
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_dynamic_TimeBasedSimple_5.0/configs.png}
+			\subcaption{Retune factor $\lambda=5$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_dynamic_TimeBasedSimple_7.5/configs.png}
+			\subcaption{Retune factor $\lambda=7.5$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_dynamic_TimeBasedSimple_15.0/configs.png}
+			\subcaption{Retune factor $\lambda=15$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario with \texttt{TimeBasedSimple} trigger}
+	\label{fig_equil_configs_dyn}
+\end{figure}
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedSimple_2.5/configs.png}
+			\subcaption{Retune factor $\lambda=2.5$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedSimple_5.0/configs.png}
+			\subcaption{Retune factor $\lambda=5$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedSimple_7.5/configs.png}
+			\subcaption{Retune factor $\lambda=7.5$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the exploding liquid scenario with \texttt{TimeBasedSimple} trigger}
+	\label{fig_expl_configs_dyn}
+\end{figure}
+
+
+\subsubsection{Results -- \texttt{TimeBasedAverage}}
+
+\begin{figure}[H]
+	\begin{center}
+				\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_dynamic_TimeBasedAverage_2.5/configs.png}
+			\subcaption{Retune factor $\lambda=2.5$, samples $n=10$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_dynamic_TimeBasedAverage_5.0/configs.png}
+			\subcaption{Retune factor $\lambda=5$, samples $n=10$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_dynamic_TimeBasedAverage_7.5/configs.png}
+			\subcaption{Retune factor $\lambda=7.5$, samples $n=10$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario with \texttt{TimeBasedAverage} trigger}
+	\label{fig_equil_configs_dyn_avg}
+\end{figure}
+
+\begin{figure}[H]
+	\begin{center}
+				\begin{subfigure}[b]{0.3\textwidth}
+					\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedAverage_1.5/configs.png}
+					\subcaption{Retune factor $\lambda=1.5$, samples $n=10$}
+				\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedAverage_2.5/configs.png}
+			\subcaption{Retune factor $\lambda=2.5$, samples $n=10$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedAverage_7.5/configs.png}
+			\subcaption{Retune factor $\lambda=7.5$, samples $n=10$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the exploding liquid scenario with \texttt{TimeBasedAverage} trigger}
+	\label{fig_expl_configs_dyn_avg}
+\end{figure}
+
+
+As can be seen by these results, the \texttt{TimeBasedSimple} strategy seems suboptimal. Setting the retune factor to low leads to very aggressive triggering, as dips followed by spikes in runtime happen across all investigated scenarios. Setting it too high, we may run suboptimal configurations for too long. If the overhead of the \texttt{TimeBasedAverage} strategy to it is negligible, it would be preferable.
+
+In the \texttt{TimeBasedAverage} strategy also seems to work better for lower $\lambda$, overall triggering less tuning phases than the simple strategy. However, in theory, it should also be susceptible to runtime spikes. That could be prevented by strategy that also smooths out the first operand of the comparison.
+
+The optimal $\lambda$ is probably scenario dependent, maybe it should be set dynamically based on the first few iterations or a specific parameter of the simulation. I have not yet found a way to make an educated guess about which $\lambda$ would be best. I will go more into comparing the actual runtime of the whole simulation once I've figured that out.
+
+
+
+
+% TODO: compare runtimes static/dynamic
+%TODO: factor 100 Number of towers per interaction length differs in X vs Y direction
+
+
+%TODO
+
+
+
+
+
+% TODO: runtime comparison to static cases + % of tuning iterations + number of optimal configs#
+%\begin{figure}[H]
+%	\centering
+%	\resizebox{0.9\textwidth}{!}{
+%		\begin{minipage}{0.48\textwidth}
+%			\centering
+%			\begin{tikzpicture}
+%				\begin{axis}[
+%						width = \linewidth,
+%						ybar,
+%						bar width=0.35cm,
+%						xlabel={Scenario},
+%						ylabel={Runtime in s},
+%						ylabel near ticks,
+%						ymin=0,
+%						ymax=2000,
+%						xtick=data,
+%						xtick distance=0.5,
+%						axis x line*=bottom,
+%						axis y line*=left,
+%						enlarge x limits=0.25,
+%						symbolic x coords={Equilibrium, Exploding Liquid},
+%						nodes near coords,
+%						nodes near coords align={vertical},
+%						nodes near coords style={anchor=west,
+%								rotate=90,
+%								font=\scriptsize},
+%						legend style={at={(0.10,0.95)}, anchor=north west, legend columns=1}
+%					]
+%					\addplot[blue, fill=blue!30, bar shift=-0.2cm] coordinates {(Equilibrium, 1183) (Exploding Liquid, 1819)};
+%					% (H.S.,0.6258092) (Expl., 2.8404528)};
+%					\addplot[red, fill=red!30, bar shift=0.2cm] coordinates {(Equilibrium, 1174) (Exploding Liquid, 1869)};
+%					\addplot[green, fill=green!30, bar shift=0.6cm] coordinates {(Equilibrium, 1147) (Exploding Liquid, 1864)};
+%					%(H.S.,0.6258092) (Expl., 2.8404528)};
+%					\legend{Static, TimeBasedSimple, TimeBasedAverage}
+%				\end{axis}
+%			\end{tikzpicture}
+%		\end{minipage}
+%		\hfill
+%		\begin{minipage}{0.48\textwidth}
+%			\centering
+%			\begin{tikzpicture}
+%				\begin{axis}[
+%						width = \linewidth,
+%						ybar,
+%						bar width=0.35cm,
+%						xlabel={Scenario},
+%						ylabel={Percentage of tuning iterations},
+%						ylabel near ticks,
+%						ymin=0,
+%						ymax=60,
+%						xtick=data,
+%						axis x line*=bottom,
+%						axis y line*=left,
+%						enlarge x limits=0.25,
+%						symbolic x coords={A, B, C, D},
+%						nodes near coords,
+%						nodes near coords style={anchor=west,
+%								rotate=90,
+%								font=\scriptsize},
+%						legend style={at={(0.10,0.95)}, anchor=north west, legend columns=1}
+%					]
+%					\addplot[blue, fill=blue!30, bar shift=-0.2cm] coordinates {(A, 2.642834) (B, 2.752958) (C, 14.547428) (D, 50.2003944)};
+%					\addplot[red, fill=red!30, bar shift=0.2cm] coordinates {(A,0.47817839) (B, 1.47700479) (C, 5.5617) (D, 23.5551124)};
+%					\legend{Version 1, Version 2}
+%				\end{axis}
+%			\end{tikzpicture}
+%		\end{minipage}}
+%	\caption{Comparison of static and dynamic tuning}
+%	\label{fig:runtime_comp}
+%\end{figure}
+
+
+\subsection{Parameter-based dynamic tuning intervals}
+To get an idea on which \texttt{liveInfo} parameters correlate to iteration runtime, I've plotted some of them in different scenarios using static tuning. Data points of same color belong to the same configuration.
+
+The most promising parameter seems to be \texttt{estimatedNumNeighborInteractions}, however there is still high variance within the same configuration, and between different configurations it is even worse.
+
+Of all parameters I plotted, none seem to have a very strong correlation to runtime. Is there another approach on evaluating how optimal a configuration is? Otherwise think it might be better to use a hybrid approach, using runtime and \texttt{liveInfo} parameters together. That's why I haven't implemented any parameter-based triggers yet.
+
+% TODO: correlation to new optimal config
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_static/liveinfo_particlesPerCellStdDev.png}
+			\subcaption{particlesPerCellStdDev}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_static/liveinfo_estimatedNumNeighborInteractions.png}
+			\subcaption{estimatedNumNeighborInteractions}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_150k_static/liveinfo_maxDensity.png}
+			\subcaption{maxDensity}
+		\end{subfigure}
+	\end{center}
+	\label{fig_equil_liveinfo}
+	\caption{Selected \texttt{liveInfo} parameters for the equilibrium scenario}
+\end{figure}
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_100k_static/liveinfo_particlesPerCellStdDev.png}
+			\subcaption{particlesPerCellStdDev}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_100k_static/liveinfo_estimatedNumNeighborInteractions.png}
+			\subcaption{estimatedNumNeighborInteractions}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_100k_static/liveinfo_maxDensity.png}
+			\subcaption{maxDensity}
+		\end{subfigure}
+	\end{center}
+	\label{fig_hs_liveinfo}
+	\caption{Selected \texttt{liveInfo} parameters for the heating sphere scenario}
+\end{figure}
+
+
+\begin{figure}[htpb]
+	\begin{center}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/liveinfo_particlesPerCellStdDev.png}
+			\subcaption{particlesPerCellStdDev}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/liveinfo_estimatedNumNeighborInteractions.png}
+			\subcaption{estimatedNumNeighborInteractions}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/liveinfo_maxDensity.png}
+			\subcaption{maxDensity}
+		\end{subfigure}
+	\end{center}
+	\label{fig_expl_liveinfo}
+	\caption{Selected \texttt{liveInfo} parameters for the exploding liquid scenario}
+\end{figure}
+
+
+%TODO
+
+\end{document}

@@ -1,0 +1,66 @@
+\chapter[Implementation]{Implementation}
+\label{cp:implementation}
+
+{
+\parindent0pt
+To dynamically initiate new tuning phases, a strategy must be found such that they can be triggered at runtime on live simulation data. Depending on the scenario and available statistics provided by the simulation, different strategies of finding these trigger points may be optimal. In this chapter therefore, the strategies investigated are presented.
+}
+
+\section{Considerations}
+\subsection{Computational intensity}
+\subsection{Available simulation statistics}
+
+\section{Time-based Triggers}
+
+The simplest approach in detecting whether the current configuration might become suboptimal is to observe changes in iteration runtime. As a specific configuration becomes less suitable as the simulation state changes, one would expect the runtime to increase, as e.g. suboptimal containers lead to unfavorable access patterns. Therefore, the primary focus of this thesis lies on runtime-based strategies in finding trigger points.
+
+\subsection{Simple Trigger}
+
+\subsection{Single-iteration averaging Trigger}
+
+\subsection{Interval averaging Trigger}
+
+\subsection{Linear Regression Trigger}
+This approach is conceptually similar to the interval averaging trigger, with one major difference: Instead of comparing the current interval of runtimes to a previous one, it tries to estimate the runtime in the next interval based on data of the current interval and compares it that way \textellipsis
+
+
+
+The general idea is to fit a simple linear regression, adapted to our use case, on the last $n$ runtime samples. Using the linear regression we obtain a slope estimator $\hat{\beta}_1$, by which we can predict the runtime in the next interval. In the following, $t_k$ is the runtime at iteration $k$, $i$ the current iteration and $\bar t$, $\bar k$ the average runtime and iteration respectively. Then the slope estimator $\hat{\beta}_1$ in the standard simple linear regression model is presented in \eqref{eq:lin_reg}.
+ 
+
+\begin{equation}
+	\hat{\beta}_1=\frac{\sum_{k=i-n-1}^{i}(k-\bar k)(t_k-\bar t)}{\sum_{k=i-n-1}^{i}(k-\bar k)^2},\quad\bar t=\frac{1}{n}\sum_{k=i-n-1}^it_k, \quad \bar k = \frac{1}{n}\sum_{k=i-n-1}^ik\label{eq:lin_reg}
+\end{equation}
+
+The value of the estimator $\hat\beta_0$, i.e. the intersection at $y=0$, is not of interest. Similarly, as the samples are taken in constant steps of one iteration, the values of $k$ can be shifted to the interval $[0, n]$. Considering these two points, the model can be transformed to \eqref{eq:lin_reg_simpl}, where $A, B$ are constants that can be precomputed at initialization, as given in \eqref{eq:lin_reg_consts}.
+
+\begin{equation}
+\hat{\beta}_1' =\frac{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)(t_{i-n-1+k}-\bar t)}{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)^2}= \frac{1}{B}\sum_{k=0}^{n-1}\left(k-A\right)(t_{i-n-1+k}-\bar t)\label{eq:lin_reg_simpl}
+\end{equation}
+\begin{equation}
+	A = \frac{n-1}{2}, \quad B=\sum_{k=0}^{n-1}\left(k-A\right)^2\label{eq:lin_reg_consts}
+\end{equation}
+
+%TODO: finish this
+
+$\hat\beta_1'$ can thus be interpreted as \enquote{in each iteration, the runtime is projected to increase $\hat\beta_1'$ nanoseconds}. This however, is not a sensible metric to compare to a user-set triggerFactor, as it heavily depends on the scenario and would require to know rough iteration runtime estimates beforehand. Therefore, we use a normalization function, such that a factor of $1.0$ is roughly equal to \enquote{no runtime increase}. The resulting value is also consistent to other triggers. The normalization implemented is presented in \eqref{eq:lin_reg_norm}.
+
+
+\begin{equation}
+	\hat\beta_{\text{norm}} = \frac{n\cdot\hat\beta_1'}{\bar t}\label{eq:lin_reg_norm}
+\end{equation}
+
+In particular, we have:
+\vspace{-\topsep}
+\begin{itemize}
+	\item $\hat\beta_{\text{norm}} = 1$ if there is no projected change in iteration runtime
+	\item $\hat\beta_{\text{norm}} > 1$ if there is a projected increase in iteration runtime
+	\item $\hat\beta_{\text{norm}} < 1$ if there is a projected decrease in iteration runtime
+	\item $\hat\beta_{\text{norm}} = 2$ if there the runtime of the next interval is projected to be double the current interval's runtime.
+\end{itemize}
+
+\section{Hybrid Triggers}
+%TODO: add ref to results
+%TODO: cite liveinfo paper
+As will be discussed later, time-based approaches are not suitable for all scenarios. In these scenarios, iteration runtimes alone might not be a good enough indicator for scenario change. As AutoPas provides additional live simulation statistics through its \texttt{liveinfo} interface, these can be used in combination with iteration runtimes to find better strategies in detecting scenario change.
+

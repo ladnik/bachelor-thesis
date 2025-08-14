@@ -133,6 +133,9 @@ class TuningConfig:
 
     def __str__(self):
         trav = self.traversal.upper()
+        # TODO
+        if trav == "VL_LIST_ITERATION":
+            trav = "VL_L_ITER"
         # remove prefix to avoid duplication
         if trav.startswith(str(self.container)):
             trav = trav[len(str(self.container)) + 1 :]

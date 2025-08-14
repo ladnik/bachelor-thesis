@@ -50,6 +50,10 @@ LIVEINFO_PARAMS = [
 
 
 def remove_tuning_its(elems, tune):
+    if len(elems) != len(tune):
+        print(
+            "Found length difference in remove_tuning_its. Data seems to be corrupted."
+        )
     return [el for i, el in enumerate(elems) if not tune[i]]
 
 
@@ -175,19 +179,19 @@ class PlotData:
                         if c == unique_config
                     ]
                     ax.scatter(
+                        [self.iteration[i] for i in mask],
                         [self.liveinfo[param_name][i] for i in mask],
-                        [self.runtime[i] for i in mask],
                         marker="x",
                         s=10,
                         color=map_cfg_to_col(unique_config),
                     )
             else:
-                ax.scatter(self.liveinfo[param_name], self.runtime, marker="x", s=10)
+                ax.scatter(self.iteration, self.liveinfo[param_name], marker="x", s=10)
 
-            ax.set(xlabel=rf"{param_name}", ylabel=r"runtime")
+            ax.set(xlabel=r"iteration", ylabel=rf"{param_name}")
             ax.grid()
             ax.set_title(
-                f"{self.job_name}\n{param_name} vs. computeInteractions[ns]",
+                f"{self.job_name}\niteration vs. {param_name}",
                 loc="center",
                 fontsize=10,
             )
@@ -201,6 +205,7 @@ class PlotData:
         output_prefix,
         mark_configs=True,
         mark_tuning_phases=True,
+        use_low_pass=False,
         average_n=[1],
     ):
         """Generates a bar plot of a the iteration runtimes as recored in the iterationLog.
@@ -223,14 +228,23 @@ class PlotData:
         # param = [iqr if (v < q1 - 10 * iqr or v > q3 + 10 * iqr) else v for v in param]
         # plot moving average of param for all n's
 
-        average_n.sort()
-        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-        for idx, n in enumerate(average_n):
-            smoothed = self.runtime[: n - 1] + [
-                sum(self.runtime[i - n + 1 : i + 1]) / n
-                for i in range(n - 1, len(self.runtime))
+        if not use_low_pass:
+            average_n.sort()
+            colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+            for idx, n in enumerate(average_n):
+                smoothed = self.runtime[: n - 1] + [
+                    sum(self.runtime[i - n + 1 : i + 1]) / n
+                    for i in range(n - 1, len(self.runtime))
+                ]
+                ax.vlines(self.iteration, 0, smoothed, linewidth=1, color=colors[idx])
+        else:
+            beta = 0.5
+            # not entirely correct, should be y[i] = beta*y[i-1] + (1-beta)*(x[i] - y[i-1])
+            smoothed = [self.runtime[0]] + [
+                beta * self.runtime[i - 1] + (1 - beta) * self.runtime[i]
+                for i in range(1, len(self.runtime))
             ]
-            ax.vlines(self.iteration, 0, smoothed, linewidth=1, color=colors[idx])
+            ax.vlines(self.iteration, 0, smoothed, linewidth=1)
 
         if mark_configs:
             # mark distinct configurations

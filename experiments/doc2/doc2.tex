@@ -1,0 +1,460 @@
+% !TeX spellcheck = en_US
+\documentclass[]{article}
+
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{csquotes}[autostyle]
+\usepackage[parfill]{parskip}
+\usepackage{graphicx}
+\usepackage[justification=centering]{caption}
+\usepackage[justification=centering]{subcaption}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+
+
+\graphicspath{{./plot_data/output/}, {./plot_data/}}
+
+%opening
+\newcommand{\msubtitle}{Overview of AutoPas Experiments II}
+\newcommand{\mauthor}{Niklas Ladurner}
+
+\begin{document}
+%\maketitle
+\begin{center}\LARGE\msubtitle\end{center}
+\begin{center}\normalsize\mauthor\end{center}
+
+
+\section{Dynamic tuning intervals II}
+\subsection{Time-based dynamic tuning intervals}
+
+As discussed before, the \texttt{TimeBasedSimple} and \texttt{TimeBasedAverage} triggers are suboptimal, which is why I want to focus on the new triggers I've implemented and evaluated. I might however come back to these simple triggers if we can find a suitable scenario in which they would perform well.
+
+
+As a reminder on how the new dynamic tuning strategies work, a short description:
+\begin{enumerate}
+	\item \texttt{TimeBasedSplit}:
+	      This strategy splits the measurements of the last $n$ iterations and current iteration into two intervals $A = [t_{i-n}, t_{i-j}], B=[t_{i-j+1},t_i]$ (with $j=\lfloor\frac{n}{2}\rfloor$) and then compares whether $\text{avg}(B)\ge \lambda\cdot \text{avg}(A)$.
+
+	\item \texttt{TimeBasedRegression}:
+	      We fit a simple linear regression, adapted to our use case. In the following, $n$ is the number of samples, $t_k$ the runtime at iteration $k$, $i$ the current iteration and $\bar t$, $\bar x$ the average runtime and iteration respectively.
+	      \[
+		      \hat{\beta}_1 =
+		      \frac{\sum_{k=i-n-1}^{i}(k-\bar x)(t_k-\bar t)}{\sum_{k=i-n-1}^{i}(k-\bar x)^2}
+	      \]
+	      \[
+		      \bar t = \frac{1}{n}\sum_{k=i-n-1}^it_k, \quad \bar x = \frac{1}{n}\sum_{k=i-n-1}^ik
+	      \]
+
+	      Since we do not care about the offset ($\hat\beta_0$), nor the values along $x$ (iterations), but only about the factor itself, we can transform this to:
+
+	      \[
+		      \hat{\beta}_1' =
+		      \frac{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)(t_{i-n-1+k}-\bar t)}{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)^2}
+		      = \frac{1}{B}\sum_{k=0}^{n-1}\left(k-A\right)(t_{i-n-1+k}-\bar t)
+	      \]
+
+	      Where
+	      \[ A = \frac{n-1}{2}, \quad B=\sum_{k=0}^{n-1}\left(k-A\right)^2\]
+	      can be precomputed at initialization.
+
+	      Then, we compare $\hat\beta_1'$ to a positive threshold value, after which we assume a significant increase in runtime and start a tuning phase. $\hat\beta_1'$ can be interpreted as \enquote{in each iteration, the runtime is projected to increase $\hat\beta_1'$ nanoseconds}. This however, is not a good metric to compare to a user-set triggerFactor, as this heavily depends on the scenario and would require to know rough iteration runtime estimates beforehand. Therefore, I suggest some form of normalization, such that a factor of $1.0$ is roughly equal to \enquote{no runtime increase}, as to make it somewhat consistent to the other triggers. The normalization currently implemented is as follows:
+	      \[
+		      \hat\beta_{\text{norm}} = \frac{n\cdot\hat\beta_1'}{\bar t}
+	      \]
+	      By this, $\hat\beta_{\text{norm}}$ can be used with triggerFactors comparable to the other trigger strategies.
+	      We have
+	      \begin{itemize}
+		      \item $\hat\beta_{\text{norm}} = 1$ if there is no projected change in iteration runtime
+		      \item $\hat\beta_{\text{norm}} > 1$ if there is a projected increase in iteration runtime
+		      \item $\hat\beta_{\text{norm}} < 1$ if there is a projected decrease in iteration runtime
+		      \item $\hat\beta_{\text{norm}} = 2$ if there the runtime of the next interval is projected to be double the current interval's runtime.
+	      \end{itemize}
+
+\end{enumerate}
+Again, as all these strategies only try to estimate whether a parameter, in this case runtime, increases, they could also be used together with \texttt{liveinfo} measurements in parameter based tuning. I will revisit that topic in future.
+
+
+\subsubsection{Results -- \texttt{TimeBasedSplit}}
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_1.25_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_1.5_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_2.0_20/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=20$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario with \texttt{TimeBasedSplit} trigger. In these runs, rebuild times were not tracked.}
+	\label{fig_equil_configs_dyn_split_no_rebuild}
+\end{figure}
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_withRebuild_1.25_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_withRebuild_1.5_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_withRebuild_2.0_20/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=20$}
+		\end{subfigure}
+	\end{center}
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_withRebuild_1.25_50/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=50$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_withRebuild_1.25_30/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=30$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_withRebuild_1.5_30/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=30$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario with \texttt{TimeBasedSplit} trigger.}
+	\label{fig_equil_configs_dyn_split_with_rebuild}
+\end{figure}
+
+As can be seen by the difference in Figure \ref{fig_equil_configs_dyn_split_no_rebuild} and Figure \ref{fig_equil_configs_dyn_split_with_rebuild}, the retuning strategy is unstable if rebuild times are tracked and the number of samples is to low. In that case, the rebuild iterations have too big of an impact, which results in too many triggers being fired. Considering too many samples however, changes in runtime may get smoothed out too much, depending on the frequency at which the change happens. Also, if the number of samples is set such that one interval contains more rebuild iterations than the other, this too leads to wrong behaviour.
+
+Because of that, I have decided to not include rebuild iteration times for now, however I will revisit this problem in future. A possible idea to reduce the effect of such rebuild iterations would be to track them separately or to filter out high frequencies, i.e. fast changes in runtime, by using low-pass filters. As we do not expect a scenario change to happen from one iteration to the other, we might not need these high frequencies anyways.
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_1.25_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_1.5_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_2.0_20/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=20$}
+		\end{subfigure}
+	\end{center}
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_1.25_30/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=30$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_1.5_30/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=30$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_2.0_50/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=50$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the exploding liquid scenario with \texttt{TimeBasedSplit} trigger. In these runs, rebuild times were not tracked.}
+	\label{expl_liquid_configs_dyn_split_no_rebuild}
+\end{figure}
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.25_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.5_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_2.0_20/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=20$}
+		\end{subfigure}
+	\end{center}
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.25_50/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=50$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.25_30/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=30$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.5_30/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=30$}
+		\end{subfigure}
+	\end{center}
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.25_50/runtime.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=50$ (runtime)}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.25_30/runtime.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=30$ (runtime)}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_dynamic_TimeBasedSplit_withRebuild_1.5_30/runtime.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=30$ (runtime)}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario with \texttt{TimeBasedSplit} trigger.}
+	\label{expl_liquid_configs_dyn_split_with_rebuild}
+\end{figure}
+
+In Figures \ref{expl_liquid_configs_dyn_split_no_rebuild} and \ref{expl_liquid_configs_dyn_split_with_rebuild} we can see a similar behaviour as in the equilibrium case, where rebuild iterations lead to unstable behavior. However, even if we do not track the rebuild times, we can observe too many triggers being fired.
+
+
+\subsubsection{Results -- \texttt{TimeBasedRegression}}
+Even tough we exclude rebuild times for now, we still have quite some variance in iteration runtimes. The simple linear regression is very susceptible to outliers, skewing our $\beta_{\text{norm}}$ estimates to values $\ge 2.0$. The effect of these outliers can be somewhat mitigated by choosing a higher sampling interval ($n$), but that incurs a higher performance impact.
+
+It seems there exists a more robust algorithm called the \enquote{Theil–Sen estimator}, which might be worth investigating.
+Alternatively, we could filter/average out subintervals (e.g. averaging every sample with its predecessor) and fit a regression line on these.
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_1.25_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_1.5_20/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=20$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedSplit_2.0_20/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=20$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the equilibrium scenario with \texttt{TimeBasedRegression} trigger. In these runs, rebuild times were not tracked.}
+	\label{fig_equil_configs_dyn_reg_no_rebuild}
+\end{figure}
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedRegression_1.25_2000/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=2000$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedRegression_1.5_1000/configs.png}
+			\subcaption{Retune factor $\lambda=1.5$, samples $n=1000$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_dynamic_TimeBasedRegression_1.5_1500/configs.png}
+			\subcaption{Retune factor $\lambda=2.0$, samples $n=1500$}
+		\end{subfigure}
+	\end{center}
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_dynamic_TimeBasedRegression_1.25_1000/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=1000$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_dynamic_TimeBasedRegression_1.25_1500/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=1500$}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_dynamic_TimeBasedRegression_1.25_2000/configs.png}
+			\subcaption{Retune factor $\lambda=1.25$, samples $n=2000$}
+		\end{subfigure}
+	\end{center}
+	\caption[]{Selected configurations for the heating sphere scenario with \texttt{TimeBasedRegression} trigger. In these runs, rebuild times were not tracked.}
+	\label{heat_sphere_configs_dyn_reg_no_rebuild}
+\end{figure}
+
+%\subsection{Dynamic retune factor estimation}
+%Finding a good retune factor seems challenging, as it can differ strongly between scenarios. In the following I propose a basic algorithm to dynamically adjust this value, as to reduce user input. Of course, we might provide an option that overrides these dynamic adjustments, such that a user with expert knowledge can enforce a static retune factor.
+%
+%\begin{enumerate}
+%	\item Every time a trigger is triggered, compare the current configuration $C_\text{current}$, i.e. the configuration that was selected after the last tuning phase, and compare it to $C_\text{old}$, the configuration that was used before that.
+%	      \begin{enumerate}
+%		      \item Depending on the intervals between the last three triggers firing, we can check if we retune too frequently.
+%		      \item  Depending on the configurations chosen, we can check if a retuning was unnecessary.
+%	      \end{enumerate}
+%	\item If both these checks turn out positive, we can adjust the triggerFactor. I would propose an exponential backoff, e.g. multiplying the dynamic retune factor by 2. Considering we should have a low number of retunes, this shouldn't grow too much.
+%	\item We might also check if we can decrease the retune factor again, if no trigger was triggered in some time.
+%\end{enumerate}
+
+\section{Evaluation of dynamic tuning intervals}
+
+
+\subsection{Increased number of tuning samples and predictive Tuning}
+With an increased number of tuning samples we expect better configuration choices by the autotuner. Therefore, I ran the equilibrium scenario with \texttt{tuning-samples} set to 10. Nothing changed compared to a lower number of \texttt{tuning-samples}. \texttt{vlc\_c08\_AoS} is optimal for most intervals, for some intervals we chose \texttt{vlc\_c01\_AoS}.
+
+For the exploding liquid and heating sphere scenarios,  \texttt{tuning-samples} was already set to 10, but I switched the tuning strategy from predictive tuning to full search. At least in the heating sphere scenario, as discussed in our last meeting, predictive tuning blacklists the optimal configuration for later iterations early on, so by using full search we prevent that.
+
+For the exploding liquid scenario, instead of the many different configurations chosen with a lower number of samples, (see my first overview, 1.3.), there is now only one optimal configuration: \texttt{vlc\_c08\_AoS}, which was also the dominant configuration (~80\%) in the run with fewer samples. However, this seems to lead to some big spikes in runtime for some iterations.
+
+Interestingly, in the heating sphere scenario, we do not switch to \texttt{LC-C04-N3L-AoS-CSF1} even with full search.
+
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium_static_optimum/configs_nomark.png}
+			\subcaption{Equilibrium}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid_static_optimum/configs_nomark.png}
+			\subcaption{Exploding liquid}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{heating-sphere_static_optimum/configs_nomark.png}
+			\subcaption{Heating sphere}
+		\end{subfigure}
+	\end{center}
+	%	\caption[]{}
+	\label{fig_opt}
+\end{figure}
+
+%\begin{figure}[H]
+%	\begin{center}
+%		\begin{subfigure}[b]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{equilibrium_static_optimumV1/configs_nomark.png}
+%			\subcaption{Equilibrium}
+%		\end{subfigure}
+%		\begin{subfigure}[b]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{exploding-liquid_static_optimumV1/configs_nomark.png}
+%			\subcaption{Exploding liquid}
+%		\end{subfigure}
+%		%		\begin{subfigure}[b]{0.3\textwidth}
+%		%			\includegraphics[width=\textwidth]{exploding-liquid_150k_dynamic_TimeBasedSimple_2.0/configs.png}
+%		%			\subcaption{Retune factor $\lambda=2$}
+%		%		\end{subfigure}
+%	\end{center}
+%	\caption[]{Optimal configurations as determined by full search with \texttt{tuning-samples} set to 10 and \texttt{tuning-interval} set to 1000}
+%	\label{fig_opt_short_interval}
+%\end{figure}
+
+\subsection{Single configuration runs}
+
+I've run some single configurations for the heating sphere scenario to better investigate wether some liveinfo parameters might indication scenario change. We know that for this scenario, we should start with \texttt{VL-List\_Iter-NoN3L-AoS} and later on switch to \texttt{LC-C04-N3L-AoS-CSF1}. Note that I forgot to specify the CSF as 1, which is why it changes between 0.5 and 1 in the LC case. It seems that neither runtime-wise nor in changes of liveinfo, we can see any point that indicates that we should change configuration. Maybe this will get better once I redo the run with CSF 1 only.
+
+
+\begin{figure}[H]
+	\begin{center}
+		\begin{subfigure}[t]{0.4\textwidth}
+			\includegraphics[width=\textwidth]{hs_vl_list_iter-non3l-aos/configs_nomark.png}
+			\subcaption{Optimal configuration for the first part of the simulation.}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.4\textwidth}
+			\includegraphics[width=\textwidth]{hs_vl_list_iter-non3l-aos/liveinfo_maxDensity.png}
+		\end{subfigure}
+	\end{center}
+	\begin{center}
+		\begin{subfigure}[t]{0.4\textwidth}
+			\includegraphics[width=\textwidth]{hs_lc_c04_n3l-aos-csf1/configs_nomark.png}
+			\subcaption{Optimal configuration for the second half of the simulation.}
+		\end{subfigure}
+		\begin{subfigure}[t]{0.4\textwidth}
+			\includegraphics[width=\textwidth]{hs_lc_c04_n3l-aos-csf1/liveinfo_maxDensity.png}
+		\end{subfigure}
+	\end{center}
+	%	\caption[]{}
+	\label{single_config}
+\end{figure}
+
+%\subsection{Optimality}
+%
+%We can evaluate our dynamic tuning intervals in terms of optimality by checking for what percentage of iterations we run in the optimal configuration. This optimal configuration can be deduced by running static tuning with a short tuning interval and a full search of the configuration space.
+% check for % of iterations for which the optimal configuration has been chosen
+
+%\subsection{Runtime comparison}
+
+% TODO: compare runtimes static/dynamic
+%TODO: factor 100 Number of towers per interaction length differs in X vs Y direction
+
+
+%\subsection{Generating scenarios}
+%So far, my experiments have been closely aligned to the examples presented in the \href{https://arxiv.org/pdf/2505.03438}{paper}  we discussed. However, these are not sufficient to completely evaluate the performance of dynamic tuning interval estimation. Therefore, I generated some different scenarios.
+%%TODO
+
+%TODO
+
+
+
+
+%\subsection{Parameter-based dynamic tuning intervals}
+%To get an idea on which \texttt{liveInfo} parameters correlate to iteration runtime, I've plotted some of them in different scenarios using static tuning. Data points of same color belong to the same configuration.
+%
+%The most promising parameter seems to be \texttt{estimatedNumNeighborInteractions}, however there is still high variance within the same configuration, and between different configurations it is even worse.
+%
+%Of all parameters I plotted, none seem to have a very strong correlation to runtime. Is there another approach on evaluating how optimal a configuration is? Otherwise think it might be better to use a hybrid approach, using runtime and \texttt{liveInfo} parameters together. That's why I haven't implemented any parameter-based triggers yet.
+%
+%% TODO: correlation to new optimal config
+%
+%\begin{figure}[htpb]
+%	\begin{center}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{equilibrium_150k_static/liveinfo_particlesPerCellStdDev.png}
+%			\subcaption{particlesPerCellStdDev}
+%		\end{subfigure}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{equilibrium_150k_static/liveinfo_estimatedNumNeighborInteractions.png}
+%			\subcaption{estimatedNumNeighborInteractions}
+%		\end{subfigure}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{equilibrium_150k_static/liveinfo_maxDensity.png}
+%			\subcaption{maxDensity}
+%		\end{subfigure}
+%	\end{center}
+%	\label{fig_equil_liveinfo}
+%	\caption{Selected \texttt{liveInfo} parameters for the equilibrium scenario}
+%\end{figure}
+%
+%\begin{figure}[htpb]
+%	\begin{center}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{heating-sphere_100k_static/liveinfo_particlesPerCellStdDev.png}
+%			\subcaption{particlesPerCellStdDev}
+%		\end{subfigure}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{heating-sphere_100k_static/liveinfo_estimatedNumNeighborInteractions.png}
+%			\subcaption{estimatedNumNeighborInteractions}
+%		\end{subfigure}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{heating-sphere_100k_static/liveinfo_maxDensity.png}
+%			\subcaption{maxDensity}
+%		\end{subfigure}
+%	\end{center}
+%	\label{fig_hs_liveinfo}
+%	\caption{Selected \texttt{liveInfo} parameters for the heating sphere scenario}
+%\end{figure}
+%
+%
+%\begin{figure}[htpb]
+%	\begin{center}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/liveinfo_particlesPerCellStdDev.png}
+%			\subcaption{particlesPerCellStdDev}
+%		\end{subfigure}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/liveinfo_estimatedNumNeighborInteractions.png}
+%			\subcaption{estimatedNumNeighborInteractions}
+%		\end{subfigure}
+%		\begin{subfigure}[t]{0.3\textwidth}
+%			\includegraphics[width=\textwidth]{exploding-liquid_150k_static/liveinfo_maxDensity.png}
+%			\subcaption{maxDensity}
+%		\end{subfigure}
+%	\end{center}
+%	\label{fig_expl_liveinfo}
+%	\caption{Selected \texttt{liveInfo} parameters for the exploding liquid scenario}
+%\end{figure}
+
+
+%TODO
+
+\end{document}
