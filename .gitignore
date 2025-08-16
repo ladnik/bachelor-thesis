@@ -32,10 +32,8 @@ _minted*
 *.blg
 
 ### VisualStudioCode ###
-.vscode/*
-.vscode/
-*/.vscode/*
-*/.vscode/
+**/.vscode/*
+**/.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -54,5 +52,10 @@ _minted*
 *.DS_Store
 *.slurm
 
-*/__pycache_/
-*/__pycache_/*
+**/__pycache__/
+**/__pycache__/*
+
+**/gen/*.yaml
+
+**/plot_data/
+**/plot_data/*

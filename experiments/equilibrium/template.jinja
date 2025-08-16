@@ -1,0 +1,54 @@
+# Running single-site MD simulation.
+container                        :  [LinkedCells, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
+verlet-rebuild-frequency         :  15
+verlet-skin-radius               :  0.2
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+tuning-strategies                :  {{tuning_strategies}}
+tuning-metric                    :  time
+tuning-interval                  :  {{tuning_interval}}
+tuning-samples                   :  {{tuning_samples}}
+cell-size                        :  {{cell_size}}
+iterations                       :  {{iterations}}
+use-LOESS-smoothening            :  false
+cutoff                           :  2
+box-min                          :  [-0.56125, -0.56125, -0.56125]
+box-max                          :  [10.6638, 10.6638, 10.6638]
+deltaT                           :  0.001
+pause-simulation-during-tuning   :  false
+sorting-threshold                :  8
+boundary-type                    :  [periodic, periodic, periodic]
+Sites:                           
+  0:
+    epsilon                      :  1
+    sigma                        :  1
+    nu                           :  0.1
+    mass                         :  1
+Objects:                         
+  CubeGrid:
+    0:  
+      particles-per-dimension    :  [10, 10, 10]
+      particle-spacing           :  1.1225
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+use-tuning-logger                :  true
+output-suffix                    :  
+log-level                        :  info
+no-end-config                    :  true
+no-progress-bar                  :  false
+load-balancer                    :  InvertedPressure
+load-balancing-interval          :  100
+subdivide-dimension              :  [true, true, true]
+energy-sensor                    :  rapl
+{% if use_dynamic_tuning %}
+tuning-trigger:
+  trigger-type                   : {{trigger_type}}
+  trigger-factor                 : {{trigger_factor}}
+  trigger-n-samples              : {{trigger_n_samples}}
+{% endif %}
+{% if use_vtk %}
+vtk-filename                     :  {{vtk_filename}}
+vtk-output-folder                :  {{vtk_output_folder}}
+vtk-write-frequency              :  {{vtk_write_frequency}}
+{% endif %}

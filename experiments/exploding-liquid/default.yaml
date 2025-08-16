@@ -47,3 +47,6 @@ use-tuning-logger                :  true
 no-progress-bar                  :  false
 log-level                        :  info
 iterations                       : 150000
+vtk-filename                         :  vtk_file
+vtk-output-folder                    :  vtk_output
+vtk-write-frequency                  :  1000

@@ -1,18 +1,15 @@
-# Taken from https://github.com/SamNewcome/Algorithm-Selection-in-Short-Range-Molecular-Dynamics-Simulations
-
-# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
-## md-flexible compiled for multi-site molecules.
 verlet-rebuild-frequency         :  10
-#verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                            :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_c02]
-selector-strategy                : fastest-mean-value
-tuning-strategies                :  []
+traversal                        :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_c02]
+selector-strategy                :  fastest-mean-value
+tuning-strategies                :  {{tuning_strategies}}
+tuning-interval                  :  {{tuning_interval}}
+tuning-samples                   :  {{tuning_samples}}
+cell-size                        :  {{cell_size}}
+iterations                       :  {{iterations}}
 extrapolation-method             :  line-prediction
-tuning-interval                  :  10000
-tuning-samples                   :  10
 relative-optimum-range           :  2
 max-tuning-phases-without-test   :  4
 relative-blacklist-range         :  10
@@ -21,7 +18,6 @@ newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [200, 200, 200]
-cell-size                        :  [0.5, 1]
 deltaT                           :  0.0001
 boundary-type                    :  [reflective, reflective ,reflective]
 globalForce                      :  [0,0,0]
@@ -30,12 +26,6 @@ Sites:
     epsilon                      :  1.
     sigma                        :  1.
     mass                         :  1.
-# Uncomment below to run a multi-site simulation.
-#Molecules:
-#  0:
-#    site-types                   :  [ 0 ]
-#    relative-site-positions      :  [ [0, 0, 0 ] ]
-#    moment-of-inertia            :  [ 1., 1., 1. ]
 Objects:
   Sphere:
     0:
@@ -56,7 +46,14 @@ no-progress-bar                  :  false
 use-tuning-logger                :  true
 no-progress-bar                  :  false
 log-level                        :  info
-iterations                       :  60000
-vtk-filename                         :  vtk_file
-vtk-output-folder                    :  vtk_output
-vtk-write-frequency                  :  1000
+{% if use_dynamic_tuning %}
+tuning-trigger:
+  trigger-type                   : {{trigger_type}}
+  trigger-factor                 : {{trigger_factor}}
+  trigger-n-samples              : {{trigger_n_samples}}
+{% endif %}
+{% if use_vtk %}
+vtk-filename                     :  {{vtk_filename}}
+vtk-output-folder                :  {{vtk_output_folder}}
+vtk-write-frequency              :  {{vtk_write_frequency}}
+{% endif %}
