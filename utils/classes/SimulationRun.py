@@ -79,10 +79,24 @@ class SimulationRun:
 
 scenarios = [
     "equilibrium",
-    #"spinodial-decomposition",
-    #"exploding-liquid",
+    # "spinodial-decomposition",
+    # "exploding-liquid",
     "heating-sphere",
 ]
+
+iterations = {
+    "equilibrium": 150000,
+    "spinodial-decomposition": 150000,
+    "exploding-liquid": 150000,
+    "heating-sphere": 60000,
+}
+
+tuning_interval = {
+    "equilibrium": 5000,
+    "spinodial-decomposition": 150000,
+    "exploding-liquid": 6000,
+    "heating-sphere": 5000,
+}
 
 trigger_factors = {
     "equilibrium": [1.25, 1.5, 2.75],
@@ -150,7 +164,9 @@ static_jobs = [
         CONFIG_DIR + scenario,
         "template.jinja",
         ConfigEnvironment(
-            use_dynamic_tuning=False
+            iterations=iterations[scenario],
+            tuning_interval=tuning_interval[scenario],
+            use_dynamic_tuning=False,
         ),
     )
     for scenario in scenarios
@@ -162,6 +178,8 @@ dynamic_jobs = [
         CONFIG_DIR + scenario,
         "template.jinja",
         ConfigEnvironment(
+            iterations=iterations[scenario],
+            tuning_interval=tuning_interval[scenario],
             trigger_type=trigger_type,
             trigger_factor=trigger_factor,
             trigger_n_samples=trigger_n,

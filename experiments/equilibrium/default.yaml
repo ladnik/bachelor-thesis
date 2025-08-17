@@ -1,5 +1,3 @@
-# Running single-site MD simulation.
-
 container                        :  [LinkedCells, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 verlet-rebuild-frequency         :  15
 verlet-skin-radius               :  0.2
@@ -42,3 +40,6 @@ load-balancing-interval          :  100
 subdivide-dimension              :  [true, true, true]
 energy-sensor                    :  rapl
 iterations                       :  150000
+# vtk-filename                         :  vtk_file
+# vtk-output-folder                    :  vtk_output
+# vtk-write-frequency                  :  1000

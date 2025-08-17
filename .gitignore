@@ -59,3 +59,8 @@ _minted*
 
 **/plot_data/
 **/plot_data/*
+
+**/*.vtu
+
+**/tex-gyre-pagella/
+**/tex-gyre-pagella/*

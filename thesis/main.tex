@@ -14,11 +14,21 @@
     aiack=false
 ]{IPLeiriaThesis} % Refer to the Wiki for a list of available options.
 
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\usepackage{adjustbox}
+\usepackage{subcaption}
+
+\usetikzlibrary{external}
+\tikzexternalize[] 
+
 %%% Document Version %%%
 \DocumentVersion{1.0.0} % Required only if the 'docstage' is set to 'working'.
 
 %%% Document Metadata %%%
 \input{Metadata/Metadata}
+ 
+\graphicspath{ {./Figures} {./Figures/scenarios}}
 
 %%% Loading of Glossary and Acronyms %%%
 \makeglossaries
