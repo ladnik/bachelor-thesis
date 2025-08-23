@@ -1,0 +1,34 @@
+\chapter[Results]{Results}
+\label{cp:results}
+
+{
+	\parindent0pt
+\textellipsis
+}
+
+% How do results differ based on tuning strategy? Full-search vs. others
+%TODO: make capitalization in titles consistent?
+
+\section{Trigger Parameters}
+% TODO: compare trigger factors and intervals
+All presented trigger strategies are based on a trigger factor $\lambda$. The averaging and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, sensible default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
+
+Therefore, we first inspect the relation between these parameters and the total simulation runtime for a range of combinations to find parameter defaults for further evaluation.
+
+\section{Trigger Behavior}
+The blue bars in the graphs represent the runtime of that particular iteration.
+In the configuration plots, the colored background identifies the used configuration: same configurations map to the same color. The gaps in the plot are where tuning iterations have been logged -- as their runtime is not relevant for the scenario change and would distort the actual runtime plot, they are not reported here. The red vertical lines indicate the start of a tuning phase.
+
+\subsection{Simple Trigger}
+\subsection{Single-iteration averaging Trigger}
+\subsection{Interval averaging Trigger}
+\subsection{Linear Regression Trigger}
+
+% maybe also which parameters are sensible default values
+
+\section{Optimality}
+\section{Runtime}
+\section{Share of tuning iterations}
+\section{Trigger Parameters}
+% sensible default values
+

@@ -18,9 +18,12 @@
 \usepgfplotslibrary{groupplots}
 \usepackage{adjustbox}
 \usepackage{subcaption}
+\usepackage{siunitx}
+\usepackage{physics}
+\usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc}
 
-\usetikzlibrary{external}
-\tikzexternalize[] 
+%\usetikzlibrary{external}
+%\tikzexternalize[] 
 
 %%% Document Version %%%
 \DocumentVersion{1.0.0} % Required only if the 'docstage' is set to 'working'.
@@ -29,6 +32,13 @@
 \input{Metadata/Metadata}
  
 \graphicspath{ {./Figures} {./Figures/scenarios}}
+
+\newif\ifdropfigures
+\dropfigurestrue
+%\dropfiguresfalse
+\ifdropfigures
+\renewcommand{\includegraphics}[2][]{}
+\fi
 
 %%% Loading of Glossary and Acronyms %%%
 \makeglossaries
@@ -77,21 +87,22 @@
 \include{Chapters/02-Background}
 \include{Chapters/03-Implementation}
 \include{Chapters/04-Evaluation}
-\include{Chapters/05-Conclusion}
+\include{Chapters/05-Results}
+\include{Chapters/06-Conclusion}
 
 %%% Bibliography %%%
 \renewcommand{\refname}{Bibliography}
 \printbibliography[title={\refname},heading=bibintoc]
 
 %%% Appendices: Work that *YOU* Developed %%%
-\appendix
-\input{Matter/08-Appendices}
-\input{Chapters/Appendices/00-AppendixA}
-\input{Chapters/Appendices/01-AppendixB}
+%\appendix
+%\input{Matter/08-Appendices}
+%\input{Chapters/Appendices/00-AppendixA}
+%\input{Chapters/Appendices/01-AppendixB}
 
 %%% Annexes: Work that *YOU DID NOT* Develop %%%
-\input{Matter/09-Annexes}
-\input{Chapters/Annexes/00-AnnexA}
+%\input{Matter/09-Annexes}
+%\input{Chapters/Annexes/00-AnnexA}
 
 %%% Back Page %%%
 \input{Matter/10-Back-Page}

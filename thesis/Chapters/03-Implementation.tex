@@ -3,25 +3,168 @@
 
 {
 \parindent0pt
-To dynamically initiate new tuning phases, a strategy must be found such that they can be triggered at runtime on live simulation data. Depending on the scenario and available statistics provided by the simulation, different strategies of finding these trigger points may be optimal. In this chapter therefore, the strategies investigated are presented.
+To dynamically initiate new tuning phases, a strategy must be found such that they can be triggered at runtime on live simulation data. Depending on the scenario and available statistics provided by the simulation, different methods of finding these trigger points may be optimal. In this chapter therefore, the strategies investigated are presented.
 }
 
 \section{Considerations}
 \subsection{Computational overhead}
+Our trigger strategies introduce additional computations, as we have to make decisions based on data we can only collect at runtime. Therefore, we must keep this overhead as small as possible, otherwise gains made by retuning less often might easily be dwarfed by expensive computations.
+Some optimizations that were used in our implementation are as follows: \textellipsis
+%TODO
 \subsection{Available simulation statistics}
+\subsection{Interaction with tuning strategies}
 
 \section{Time-based Triggers}
 
 The simplest approach in detecting whether the current configuration might become suboptimal is to observe changes in iteration runtime. As a specific configuration becomes less suitable as the simulation state changes, one would expect the runtime to increase, as e.g. suboptimal containers lead to unfavorable access patterns. Therefore, the primary focus of this thesis lies on runtime-based strategies in finding trigger points.
 
 \subsection{Simple Trigger}
+\label{subsec:simple_trigger}
+Regarding the iteration runtime analysis mentioned, the naive strategy compares the runtime of only two iterations: The current one and the previous one. The ratio at which a new tuning phase is triggered, is set by the user via the \texttt{triggerFactor} configuration variable, henceforth denoted as $\lambda$. In other words, if $t_i \ge \lambda\cdot t_{i-1}$, a new tuning phase is triggered. This is implemented as the \texttt{TimeBasedSimpleTrigger}.
+
 
 \subsection{Single-iteration averaging Trigger}
+The simple strategy descriped in \autoref{subsec:simple_trigger} is quite unstable. Because of hardware heterogeneity, the iteration runtimes may have …\textellipsis % TODO: filters?
+
+The \texttt{TimeBasedAverage} method is different from the \texttt{TimeBasedSimple} trigger in that the first compares to the  moving average of the last $n$ runtime samples. The formula is provided in \eqref{eq:time_based_average_formula}. 
+\begin{equation}
+	t_i \ge \frac{\lambda}{n}\cdot \sum_{k=i-n-1}^{i-1}t_{k}\label{eq:time_based_average_formula}
+\end{equation}
+
+%\begin{figure}[htpb]
+%	\centering
+%	\begin{tikzpicture}
+%		\def\barwidth{15}
+%		\begin{axis}[
+%			height=0.4\textwidth, width=0.6\textwidth,
+%			xmin = 0,
+%			xmax = 8,
+%			ymin = 0,
+%			ymax = 2,
+%			xlabel={Iteration},
+%			ylabel={Iteration runtime},
+%			ylabel near ticks,
+%			enlarge x limits=0.15,
+%			xtick={0, ..., 8},
+%			xticklabels={,,,,$t_{i-1}$,$t_i$,,},
+%			ytick=\empty,
+%			bar width=\barwidth,
+%			clip=false,
+%			]
+%			\pgfmathsetmacro{\k}{1.2}
+%			\pgfmathsetmacro{\xzero}{4}
+%			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue] coordinates{
+%			(0,0.85)
+%			(1,1.17)
+%			(2,0.95)
+%			(3,1.1)
+%			(6,1.13)
+%			(7,1.33)
+%			(8,0.55)
+%			};
+%			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue] coordinates {(4,0.9)};
+%			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue] coordinates {(5,1.5)};
+%			\addplot[ybar, fill=none, draw=black, thick] coordinates {(5,1.35)};
+%			
+%			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:8,2) node[midway, yshift=2.5ex]{Future};
+%		\end{axis}
+%	\end{tikzpicture}
+%	\caption{asdf}
+%	\label{fig:simple_vs_averaging}
+%\end{figure}
+
 
 \subsection{Interval averaging Trigger}
+If we have scenario changes that happen gradually, the runtime might not increase drastically in a single iteration, but rather across a series of iterations. As the previous two triggers only compare to the current iteration's runtime, they might be suboptimal in such experiments. Therefore, triggers that take this effect into account are needed.
+One such approach is the \texttt{TimeBasedSplitTrigger}.
+This strategy splits the measurements of the last $n$ iterations and the current iteration into two intervals $A, B$ as in \eqref{eq:split_intervals}, and compares whether $\text{avg}(B)\ge \lambda\cdot \text{avg}(A)$.
+
+\begin{equation}
+	A = \left[t_{i-n}, t_{i-j}\right],\quad B=\left[t_{i-j+1},t_i\right],\quad j=\left\lfloor\frac{n}{2}\right\rfloor\label{eq:split_intervals}
+\end{equation}
 
 \subsection{Linear Regression Trigger}
-This approach is conceptually similar to the interval averaging trigger, with one major difference: Instead of comparing the current interval of runtimes to a previous one, it tries to estimate the runtime in the next interval based on data of the current interval and compares it that way \textellipsis
+This approach is conceptually similar to the interval averaging trigger, although with one major difference. Instead of comparing the current interval of runtimes to a previous one, the comparison is based on an estimate of the runtime in the next interval based on data of the current interval. 
+
+ \begin{figure}[htpb]
+ 	\centering
+ 	\begin{tikzpicture}
+% 		\def\width{3cm}
+% 		\def\spacing{1cm}
+% 		
+% 		\draw[thick, -Triangle] (0,0) -- (\width,0) node[font=\scriptsize, right]{\textellipsis};
+% 		\draw[thick, -Triangle] (\width+\spacing,0) -- (2*\width+\spacing,0) node[font=\scriptsize, right]{\textellipsis};
+% 		\draw[thick, -Triangle] (2*(\width+\spacing),0) -- (3*\width,0) node[font=\scriptsize,below left=3pt and -8pt]{iteration};
+% 		 
+% 		 
+%% 		% draw vertical lines
+% 		\foreach \x in {0,1,...,10}
+% 		\draw (\x cm,3pt) -- (\x cm,-3pt);
+% 		
+% 		\foreach \x/\descr in {4/t-2,5/t-1,6/t,7/t+1}
+% 		\node[font=\scriptsize, text height=1.75ex,
+% 		text depth=.5ex] at (\x,-.3) {$\descr$};
+% 		
+% 		% colored bar up
+% 		\foreach \x/\perccol in
+% 		{1/100,2/75,3/25,4/0}
+% 		\draw[lightgray!\perccol!red, line width=4pt] 
+% 		(\x,.5) -- +(1,0);
+% 		\draw[-Triangle, dashed, red] (5,.5) --  +(1,0);
+% 		
+% 		% colored bar down
+% 		\foreach \x/\perccol in
+% 		{3/100,4/75,5/0}
+% 		\draw[lightgray!\perccol!green, line width=4pt] 
+% 		(\x,-.7) -- +(1,0);
+% 		\draw[-Triangle, dashed, green] (6,-.7) --  +(1,0);
+% 		
+% 		% braces
+% 		\draw [thick ,decorate,decoration={brace,amplitude=5pt}] (4,0.7)  -- +(2,0) 
+% 		node [black,midway,above=4pt, font=\scriptsize] {Training period};
+% 		\draw [thick,decorate,decoration={brace,amplitude=5pt}] (6,-.9) -- +(-1,0)
+% 		node [black,midway,font=\scriptsize, below=4pt] {Testing period};
+ 	\end{tikzpicture}
+ 	\caption{An overview of the \texttt{TimeBasedSplitTrigger} and \texttt{TimeBasedRegression} trigger intervals. }
+ 	%\footnote{The figure is based on code presented in }
+ 	%\href{https://tex.stackexchange.com/questions/436259}{https://tex.stackexchange.com/questions/436259}
+ \end{figure}
+ 
+ 
+ \begin{figure}[htpb]
+ 	\centering
+ 	\begin{tikzpicture}
+ 		\begin{axis}[
+ 			height=0.4\textwidth, width=0.6\textwidth,
+ 			xmin = 0,
+ 			xmax = 8,
+ 			ymin = 0,
+ 			ymax = 2,
+ 			xlabel={Iteration},
+ 			ylabel={Iteration runtime},
+ 			ylabel near ticks,
+ 			enlarge x limits=0.15,
+ 			xtick={0, ..., 8},
+ 			xticklabels={,,,,$t_{i-1}$,$t_i$,,},
+ 			ytick=\empty,
+ 			bar width=15,
+ 			clip=false,
+ 			]
+ 			\pgfmathsetmacro{\k}{1.2}
+ 			\pgfmathsetmacro{\xzero}{4}
+ 			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue, samples at={0,...,8}, domain=0:8]
+ 			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
+ 			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue, samples at={5}, domain=0:10]
+ 			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
+ 			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue, samples at={4}, domain=0:10]
+ 			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
+ 			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:8,2) node[midway, yshift=2.5ex]{Future};
+ 		\end{axis}
+ 	\end{tikzpicture}
+ 	\caption{asdf}
+ 	\label{fig:split_vs_regression}
+ \end{figure}
+
 
 
 
@@ -41,8 +184,6 @@ The value of the estimator $\hat\beta_0$, i.e. the intersection at $y=0$, is not
 	A = \frac{n-1}{2}, \quad B=\sum_{k=0}^{n-1}\left(k-A\right)^2\label{eq:lin_reg_consts}
 \end{equation}
 
-%TODO: finish this
-
 $\hat\beta_1'$ can thus be interpreted as \enquote{in each iteration, the runtime is projected to increase $\hat\beta_1'$ nanoseconds}. This however, is not a sensible metric to compare to a user-set triggerFactor, as it heavily depends on the scenario and would require to know rough iteration runtime estimates beforehand. Therefore, we use a normalization function, such that a factor of $1.0$ is roughly equal to \enquote{no runtime increase}. The resulting value is also consistent to other triggers. The normalization implemented is presented in \eqref{eq:lin_reg_norm}.
 
 
@@ -51,13 +192,13 @@ $\hat\beta_1'$ can thus be interpreted as \enquote{in each iteration, the runtim
 \end{equation}
 
 In particular, we have:
-\vspace{-\topsep}
-\begin{itemize}
+
+\begin{enumerate}[label=(\roman*)]
 	\item $\hat\beta_{\text{norm}} = 1$ if there is no projected change in iteration runtime
 	\item $\hat\beta_{\text{norm}} > 1$ if there is a projected increase in iteration runtime
 	\item $\hat\beta_{\text{norm}} < 1$ if there is a projected decrease in iteration runtime
 	\item $\hat\beta_{\text{norm}} = 2$ if there the runtime of the next interval is projected to be double the current interval's runtime.
-\end{itemize}
+\end{enumerate}
 
 \section{Hybrid Triggers}
 %TODO: add ref to results

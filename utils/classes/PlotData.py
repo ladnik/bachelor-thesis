@@ -92,6 +92,7 @@ class PlotData:
 
             self.iteration = [int(row["Iteration"]) for row in lrows]
             self.runtime = [int(row["computeInteractions[ns]"]) for row in irows]
+            self.rebuildtime = [int(row["rebuildNeighborLists[ns]"]) for row in irows]
             self.tune = [row["inTuningPhase"].lower() in ["true"] for row in irows]
 
             self.configs = [
@@ -117,6 +118,7 @@ class PlotData:
 
             # throw out runtimes of tuning iterations
             self.iteration = remove_tuning_its(self.iteration, self.tune)
+            self.rebuildtime = remove_tuning_its(self.rebuildtime, self.tune)
             self.runtime = remove_tuning_its(self.runtime, self.tune)
             self.configs = remove_tuning_its(self.configs, self.tune)
             self.stringified_configs = [str(cfg) for cfg in self.configs]
@@ -205,6 +207,7 @@ class PlotData:
         output_prefix,
         mark_configs=True,
         mark_tuning_phases=True,
+        stack_rebuild_times=False,
         use_low_pass=False,
         average_n=[1],
     ):
@@ -229,6 +232,9 @@ class PlotData:
         # plot moving average of param for all n's
 
         if not use_low_pass:
+            if stack_rebuild_times:
+                ymax = [r + t for r, t in zip(self.runtime, self.rebuildtime)]
+                ax.vlines(self.iteration, self.runtime, ymax, linewidth=1, color="orange")
             average_n.sort()
             colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
             for idx, n in enumerate(average_n):
@@ -289,7 +295,7 @@ class PlotData:
                     linestyle="-",
                     linewidth=1,
                 )
-
+                
         ax.set(xlabel=r"iteration", ylabel=rf"computeInteractions[ns]")
         ax.grid()
         ax.set_title(

@@ -1,12 +1,132 @@
-\chapter[Introduction]{Introduction and Background}
+\chapter[Introduction]{Introduction}
 \label{cp:introduction}
 
 {
-\parindent0pt
-This chapter will \textellipsis
+	\parindent0pt
+	This chapter is intended to introduce the main ideas of molecular dynamics simulation. In \autoref{sec:motivation} \textellipsis
+	%TODO
 }
 
-\section{Motivation}
 
-\section{Particle simulation}
+% TODO: check atomic/molecular interactions
+
+\section{Motivation}
+\label{sec:motivation}
+
+
+% N-Body Particle Simulation
+
+
+\section{Molecular Dynamics}
+\label{sec:md}
+Molecular Dynamics (MD) simulation is one method of simulating a n-body problem on the atomic level. At that level, the interactions between atoms can be simulated based on Newton's laws of motion. The forces at play are interatomic potentials such as Lennard-Jones or Coloumb potentials.
+
+The main simulation loop consists of calculating the forces between particles or atoms and integrating the equations of motion. These two steps are repeated until an equilibrium is reached, at which point the desired measurements can be taken. \cite{Frenkel2002}
+
+Such MD simulations are used in different fields ranging from drug discovery \cite{Hollingsworth2018} to physics and material scieneces. %TODO: citations
+
+
+
+\subsection{Newton's laws of motion}
+\label{sec:newton}
+As referred to before, Newton's laws of motion are important in the context of MD simulation. \textellipsis
+
+The mentioned laws are as follows. \cite{Newton1687,Newton1934}
+\begin{enumerate}[label=\Roman*.]
+	\item \textit{Every object perseveres in its state of rest, or of uniform motion in a right line, unless it is compelled to change that state by forces impressed thereon.}
+
+	      In other words, if net force is zero for any body, its velocity is constant.
+	\item \textit{The alteration of motion is ever proportional to the motive force impressed; and is made in the direction of the right line in which that force is impressed.}
+
+	      In other words, $F=m\cdot a$.
+	\item \textit{To every action there is always opposed an equal reaction: or, the mutual actions of two bodies upon each other are always equal, and directed to contrary parts.}
+
+	      In other words, if one body exerts force $F_a$ on another body, than the second body exerts force $F_b=-F_a$ on the first body.
+\end{enumerate}
+
+
+\subsection{Lennard-Jones Potential}
+\label{sec:lj_potential}
+Simulating all pairwise interactions between atoms has complexity $\mathcal{O}\left(N^2\right)$. To reduce this complexity, most MD simulations restrict themselves to short-range interactions. As the forces of these interactions are negligible if the interacting particles are far apart, a cutoff-radius can be introduced after which the forces can be assumed to be close to zero, without having to compute them. This significantly reduces the computational complexity, as only the interactions between close neighbors have to be calculated. \cite{Gratl2021}
+
+The Lennard-Jones (LJ) potential is one such short-range interaction potential that acts on pairs of particles. It is a sufficiently good approximation such that macroscopic effects can be derived from simulating the interactions at an atomic level.
+It is most frequently used in the form of the 12-6 potential as defined in \eqref{eq:lj_12_6}.
+
+\begin{equation}
+	V_{\text{LJ}}(r)=4\varepsilon\left[\left(\frac{\sigma}{r}\right)^{12}-\left(\frac{\sigma}{r}\right)^{6}\right]\label{eq:lj_12_6}
+\end{equation}
+
+In this equation, $r$ is the distance between the two particles, $\varepsilon$ the interaction strength and $\sigma$ the distance at which the potential signs change (zero-crossing). Parameters $\varepsilon, \sigma$ are dependent on the simulation context, e.g. the material which ought to be simulated. The potential function is illustrated in \autoref{fig:lj_graph}. \cite{Wang2020, Lenhard2024}
+
+
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		\begin{axis}[height=0.4\textwidth, width=0.6\textwidth,
+			xmin = 0.75,
+			xmax = 3.25,
+			ymin = -1.25,
+			ymax = 2.25,
+			xlabel={Distance $r$ between particles},
+			ylabel={Potential $V_{\text{LJ}}$},
+			xtick={{2^(1/6)},1.5,2,2.5,3},
+			xticklabels={$r_\text{min}$,1.5$\sigma$,2$\sigma$,2.5$\sigma$,3$\sigma$},
+			ytick={-1, 0, 1, 2},
+			yticklabels={$-\varepsilon$,0,$\varepsilon$,2$\varepsilon$},
+			clip=false]
+			\addplot [
+				color=chaptertumblue, very thick,
+				domain=0.95:3,
+				samples=400,
+			]
+			{4*((1/x)^(12) - (1/x)^6)};
+			\draw[black!80] (axis cs:0.75,0) -- (axis cs:3.25,0);
+			\draw[black!80] (axis cs:{2^(1/6)},2.25) -- (axis cs:{2^(1/6)},-1.25);
+			\draw[black!80, dashed] (axis cs:0.75,-1) -- (axis cs:{2^(1/6)},-1);
+			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:0.75,2.25) -- (axis cs:{2^(1/6)-0.0125},2.25) node[midway, yshift=2.5ex]{Attraction\vphantom{p}};
+			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:{2^(1/6)+0.0125},2.25) -- (axis cs:3.25,2.25) node[midway, yshift=2.5ex]{Repulsion};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{An illustration of the potential well of the 12-6 LJ-Potential, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$. The figure is based on Lenhard et al. \cite{Lenhard2024}}
+	\label{fig:lj_graph}
+\end{figure}
+
+% TODO: mark r=1\sigma as zero-crossing point
+
+\subsection{Störmer-Verlet Algorithm}
+\label{sec:stoermer_verlet}
+Using LJ potentials and Newton's laws of motion, we can construct a system of ordinary differential equations. To solve them analytically is practically infeasible for large systems, therefore numeric solvers have to be used in approximating a solution.
+The Störmer-Verlet algorithm is one such numeric approach for solving the systems derived by Newton's laws of motion.
+With $\vb p_i(t), \vb v_i(t), a_i(t), m_i, \vb F_i(t)$ as the position, velocity, acceleration, mass and force acting on a particle $i$ at time $t$, we can derive the algorithm by the summation of Taylor expansions. First, we deduce the position of particle $i$ at time $t+\delta t$, as in \eqref{eq:pos_taylor_forward}. Secondly, we make a backwards step to $t-\delta t$, as in \eqref{eq:pos_taylor_backward}.
+\begin{equation}
+	\vb p_i(t+\delta t) = \vb p_i(t)+\delta t\dot{\vb p}_i(t)+\frac{1}{2}\delta t^2\ddot{\vb p}_i(t)+\frac{1}{6}\delta t^3\dddot{\vb p}_i(t)+\mathcal{O}(\delta t^4)\label{eq:pos_taylor_forward}
+\end{equation}
+\begin{equation}
+	\vb p_i(t-\delta t) = \vb p_i(t)-\delta t\dot{\vb p}_i(t)+\frac{1}{2}\delta t^2\ddot{\vb p}_i(t)-\frac{1}{6}\delta t^3\dddot{\vb p}_i(t)+\mathcal{O}(\delta t^4)\label{eq:pos_taylor_backward}
+\end{equation}
+
+By adding both \eqref{eq:pos_taylor_forward} and \eqref{eq:pos_taylor_backward} and reordering terms, we conclude \eqref{eq:pos_verlet}.
+\begin{equation}
+\vb p_i(t+\delta t) = 2\vb p_i(t) - \vb p_i(t-\delta t) + \delta t^2\ddot{\vb p}_i(t) + \mathcal{O}(\delta t^4)\label{eq:pos_verlet}
+\end{equation}
+
+As the second derivative of the position $\vb p_i(t)$ is the acceleration $\vb a_i(t)$, we can express \eqref{eq:pos_verlet} as \eqref{eq:acc_verlet}. Where, by Newton's second law, $\vb a_i(t) = \frac{\vb F_i(t)}{m_i}$.
+\begin{equation}
+	\vb p_i(t+\delta t) = 2\vb p_i(t) - \vb p_i(t-\delta t) + \delta t^2{\vb a}_i(t) + \mathcal{O}(\delta t^4)\label{eq:acc_verlet}
+\end{equation}
+
+A more exact approach is the so-called Velocity-Verlet-Algorithm, \ldots
+
+
+\cite{Fulst2013}
+\cite{Leimkuhler2005}
+
+% TODO: velocity verlet algorithm?
+
+% TODO: refer to experiments done in md-flexible
+% md-flexible is a simple molecular dynamics simulation built around AutoPas. It simulates the Lennard-Jones 12-6 potential on single-site particles with Störmer- Verlet time integration. 
+
+\cite{Hairer2003}
+
+
 

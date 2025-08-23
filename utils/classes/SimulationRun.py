@@ -81,7 +81,7 @@ scenarios = [
     "equilibrium",
     # "spinodial-decomposition",
     # "exploding-liquid",
-    "heating-sphere",
+    #"heating-sphere",
 ]
 
 iterations = {
@@ -99,17 +99,24 @@ tuning_interval = {
 }
 
 trigger_factors = {
-    "equilibrium": [1.25, 1.5, 2.75],
-    "spinodial-decomposition": [1.25, 1.5, 2.75],
-    "exploding-liquid": [1.25, 1.5, 2.75],
-    "heating-sphere": [1.25, 1.5, 2.75],
+    "equilibrium": [1.25, 1.5, 1.75],
+    "spinodial-decomposition": [1.25, 1.5, 1.75],
+    "exploding-liquid": [1.5, 1.75, 2.0],
+    "heating-sphere": [1.25, 1.5, 2.0],
 }
 
+trigger_types = [
+    "TimeBasedSimple",
+    "TimeBasedAverage",
+    "TimeBasedSplit",
+    "TimeBasedRegression",
+]
+
 trigger_n_samples = {
-    "equilibrium": [1000, 1500, 2000],
-    "spinodial-decomposition": [1000, 1500, 2000],
-    "exploding-liquid": [1000, 1500, 2000],
-    "heating-sphere": [1000, 1500, 2000],
+    "TimeBasedSimple": [10],
+    "TimeBasedAverage": [250, 500, 1000],
+    "TimeBasedSplit": [250, 500, 1000],
+    "TimeBasedRegression": [1000, 1500, 2000],
 }
 
 # trigger_types = {
@@ -138,12 +145,7 @@ trigger_n_samples = {
 #         "TimeBasedRegression",
 #     ],
 # }
-trigger_types = [
-    "TimeBasedSimple",
-    "TimeBasedAverage",
-    "TimeBasedSplit",
-    "TimeBasedRegression",
-]
+
 
 
 single_configs = [
@@ -174,7 +176,7 @@ static_jobs = [
 
 dynamic_jobs = [
     SimulationRun(
-        f"{scenario}_dynamic_{trigger_type}_{trigger_factor}",
+        f"{scenario}_dynamic_{trigger_type}_{trigger_factor}_{trigger_n}",
         CONFIG_DIR + scenario,
         "template.jinja",
         ConfigEnvironment(
@@ -188,7 +190,7 @@ dynamic_jobs = [
     for scenario in scenarios
     for trigger_type in trigger_types
     for trigger_factor in trigger_factors[scenario]
-    for trigger_n in trigger_n_samples[scenario]
+    for trigger_n in trigger_n_samples[trigger_type]
 ]
 
 # single_config_jobs = {
