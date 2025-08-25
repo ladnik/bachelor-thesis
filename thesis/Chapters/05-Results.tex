@@ -3,7 +3,7 @@
 
 {
 	\parindent0pt
-\textellipsis
+	\textellipsis
 }
 
 % How do results differ based on tuning strategy? Full-search vs. others
@@ -14,6 +14,71 @@
 All presented trigger strategies are based on a trigger factor $\lambda$. The averaging and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, sensible default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
 
 Therefore, we first inspect the relation between these parameters and the total simulation runtime for a range of combinations to find parameter defaults for further evaluation.
+
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		\begin{axis}[
+				height=0.4\textwidth, width=0.6\textwidth,
+				xlabel={Trigger Factor $\lambda$},
+				ylabel={Speedup \%},
+				ylabel near ticks,
+			]
+			% TimeBasedSimple
+			\addplot[chaptertumblue] coordinates{
+					(1.25,-5)
+					(1.5,12)
+					(1.75,5)};
+			% TimeBasedAverage 1000
+			\addplot[red] coordinates{
+					(1.25,-43)
+					(1.5,-38)
+					(1.75,1)};
+			% TimeBasedAverage 500
+			\addplot[red] coordinates{
+					(1.25,-49)
+					(1.5,-38)
+					(1.75,13)};
+			% TimeBasedAverage 250
+			\addplot[red] coordinates{
+					(1.25,-33)
+					(1.5,0)
+					(1.75,12)};
+			% TimeBasedSplit 1000
+			\addplot[orange] coordinates{
+					(1.25,1)
+					(1.5,8)
+					(1.75,2)};
+			% TimeBasedSplit 500
+			\addplot[orange] coordinates{
+					(1.25,13)
+					(1.5,15)
+					(1.75,12)};
+			% TimeBasedSplit 250
+			\addplot[orange] coordinates{
+					(1.25,9)
+					(1.5,13)
+					(1.75,14)};
+			% TimeBasedRegression 1000
+			\addplot[green] coordinates{
+				(1.25,7)
+				(1.5,12)
+				(1.75,14)};
+			% TimeBasedRegression 1500
+			\addplot[green] coordinates{
+				(1.25,16)
+				(1.5,12)
+				(1.75,15)};
+			% TimeBasedRegression 2000
+			\addplot[green] coordinates{
+				(1.25,12)
+				(1.5,15)
+				(1.75,13)};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{Trigger behavior in the equilibrium scenario.}
+	\label{fig:params_equil}
+\end{figure}
 
 \section{Trigger Behavior}
 The blue bars in the graphs represent the runtime of that particular iteration.

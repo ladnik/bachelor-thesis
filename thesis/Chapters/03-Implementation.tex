@@ -31,47 +31,47 @@ The \texttt{TimeBasedAverage} method is different from the \texttt{TimeBasedSimp
 	t_i \ge \frac{\lambda}{n}\cdot \sum_{k=i-n-1}^{i-1}t_{k}\label{eq:time_based_average_formula}
 \end{equation}
 
-%\begin{figure}[htpb]
-%	\centering
-%	\begin{tikzpicture}
-%		\def\barwidth{15}
-%		\begin{axis}[
-%			height=0.4\textwidth, width=0.6\textwidth,
-%			xmin = 0,
-%			xmax = 8,
-%			ymin = 0,
-%			ymax = 2,
-%			xlabel={Iteration},
-%			ylabel={Iteration runtime},
-%			ylabel near ticks,
-%			enlarge x limits=0.15,
-%			xtick={0, ..., 8},
-%			xticklabels={,,,,$t_{i-1}$,$t_i$,,},
-%			ytick=\empty,
-%			bar width=\barwidth,
-%			clip=false,
-%			]
-%			\pgfmathsetmacro{\k}{1.2}
-%			\pgfmathsetmacro{\xzero}{4}
-%			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue] coordinates{
-%			(0,0.85)
-%			(1,1.17)
-%			(2,0.95)
-%			(3,1.1)
-%			(6,1.13)
-%			(7,1.33)
-%			(8,0.55)
-%			};
-%			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue] coordinates {(4,0.9)};
-%			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue] coordinates {(5,1.5)};
-%			\addplot[ybar, fill=none, draw=black, thick] coordinates {(5,1.35)};
-%			
-%			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:8,2) node[midway, yshift=2.5ex]{Future};
-%		\end{axis}
-%	\end{tikzpicture}
-%	\caption{asdf}
-%	\label{fig:simple_vs_averaging}
-%\end{figure}
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		\def\barwidth{15}
+		\begin{axis}[
+			height=0.4\textwidth, width=0.6\textwidth,
+			xmin = 0,
+			xmax = 8,
+			ymin = 0,
+			ymax = 2,
+			xlabel={Iteration},
+			ylabel={Iteration runtime},
+			ylabel near ticks,
+			enlarge x limits=0.15,
+			xtick={0, ..., 8},
+			xticklabels={,,,,$t_{i-1}$,$t_i$,,},
+			ytick=\empty,
+			bar width=\barwidth,
+			clip=false,
+			]
+			\pgfmathsetmacro{\k}{1.2}
+			\pgfmathsetmacro{\xzero}{4}
+			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue] coordinates{
+			(0,0.85)
+			(1,1.17)
+			(2,0.95)
+			(3,1.1)
+			(6,1.13)
+			(7,1.33)
+			(8,0.55)
+			};
+			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue] coordinates {(4,0.9)};
+			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue] coordinates {(5,1.5)};
+			\addplot[ybar, draw=chaptertumblue, pattern=north east lines, pattern color=chaptertumblue!10] coordinates {(5,1.35)};
+			
+			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{asdf}
+	\label{fig:simple_vs_averaging}
+\end{figure}
 
 
 \subsection{Interval averaging Trigger}
