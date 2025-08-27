@@ -2,21 +2,70 @@
 \label{cp:implementation}
 
 {
-\parindent0pt
-To dynamically initiate new tuning phases, a strategy must be found such that they can be triggered at runtime on live simulation data. Depending on the scenario and available statistics provided by the simulation, different methods of finding these trigger points may be optimal. In this chapter therefore, the strategies investigated are presented.
+	\parindent0pt
+	To dynamically initiate new tuning phases, a strategy must be found such that they can be triggered at runtime on live simulation data. Depending on the scenario and available statistics provided by the simulation, different methods of finding these trigger points may be optimal. In this chapter therefore, the strategies investigated are presented.
 }
 
 \section{Considerations}
 \subsection{Computational overhead}
-Our trigger strategies introduce additional computations, as we have to make decisions based on data we can only collect at runtime. Therefore, we must keep this overhead as small as possible, otherwise gains made by retuning less often might easily be dwarfed by expensive computations.
-Some optimizations that were used in our implementation are as follows: \textellipsis
-%TODO
+Our trigger strategies introduce additional computations, as we have to make decisions based on data that can only be collected at runtime. Therefore, the overhead must be kept as small as possible, otherwise gains made by triggering less tuning phases might easily be dwarfed by expensive computations. Additionally, there might be feedback of our method to itself, as our strategies may affect iteration runtime which in turn alters the trigger behavior.
+
+To exemplify the importance of optimizing the trigger routines, \autoref{fig:optimization_speedup} illustrates the runtime differences between naive and optimized triggers in the equilibrium scenario. The naive version recalculates the average over all samples each iteration, whereas the optimized version uses a ring buffer and running summation to reduce computational cost. 
+
+% TODO: check if this makes any sense
+
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		\def\barwidth{15pt}
+		\begin{axis}[
+			height=0.4\textwidth,
+			xlabel={Trigger strategy},
+			ylabel={Total runtime},
+			enlarge x limits=0.25,
+			symbolic x coords={Avg,Split,Regression},
+			xtick=data,
+			bar width=\barwidth,
+			legend entries={Unoptimized, Optimized}
+			]
+			
+			\addlegendimage{legend image code/.code={
+					\draw[fill=tumblueaccmedium, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+			}}
+			\addlegendentry{\scriptsize Unoptimized}
+			\addlegendimage{legend image code/.code={
+					\draw[fill=tumblueacclight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+			}}
+			\addlegendentry{\scriptsize Optimized}
+			
+			% unoptimized average
+			\addplot[ybar, bar shift=-0.5*\barwidth,fill=tumblueaccmedium, draw=chaptertumblue] coordinates {
+				(Avg,1694063817546)
+				(Split,1141728867654)
+				(Regression,1112338563086)
+			};
+			% optimized average
+			\addplot[ybar, bar shift=0.5*\barwidth,fill=tumblueacclight, draw=chaptertumblue] coordinates {
+				(Avg,962648240758)
+				(Split,999681150940)
+				(Regression,889891999680)
+			};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{asdf}
+	\label{fig:optimization_speedup}
+\end{figure}
+%TODO: add speedup after optimization (self influence of runtime)
+
 \subsection{Available simulation statistics}
+
 \subsection{Interaction with tuning strategies}
+As introduced in \autoref{sec:tuning_strategies}, AutoPas offers multiple different tuning strategies. Depending on the specific scenario settings, one strategy might be more efficient -- e.g. the \texttt{slow-config-filter} setting in the heating-sphere example. To keep results comparable between scenarios therefore, all experiments were executed using the \texttt{full-search} strategy. As this strategy is expected to sample more suboptimal configurations than others, the effect of tuning iterations on the whole simulation runtime is higher. Using more tailored tuning strategies, the improvements as presented in this thesis might not be as visible.
+% TODO: move this?
 
 \section{Time-based Triggers}
 
-The simplest approach in detecting whether the current configuration might become suboptimal is to observe changes in iteration runtime. As a specific configuration becomes less suitable as the simulation state changes, one would expect the runtime to increase, as e.g. suboptimal containers lead to unfavorable access patterns. Therefore, the primary focus of this thesis lies on runtime-based strategies in finding trigger points.
+The simplest approach in detecting whether the current configuration might have become suboptimal, is to observe changes in iteration runtime. As a specific configuration becomes less suitable as the simulation state changes, one would expect the runtime to increase, as e.g. suboptimal containers lead to unfavorable access patterns. Therefore, the primary focus of this thesis lies on runtime-based strategies in finding trigger points.
 
 \subsection{Simple Trigger}
 \label{subsec:simple_trigger}
@@ -26,50 +75,134 @@ Regarding the iteration runtime analysis mentioned, the naive strategy compares 
 \subsection{Single-iteration averaging Trigger}
 The simple strategy descriped in \autoref{subsec:simple_trigger} is quite unstable. Because of hardware heterogeneity, the iteration runtimes may have …\textellipsis % TODO: filters?
 
-The \texttt{TimeBasedAverage} method is different from the \texttt{TimeBasedSimple} trigger in that the first compares to the  moving average of the last $n$ runtime samples. The formula is provided in \eqref{eq:time_based_average_formula}. 
+The \texttt{TimeBasedAverage} method is different from the \texttt{TimeBasedSimple} trigger in that the first compares to the  moving average of the last $n$ runtime samples. The formula is provided in \eqref{eq:time_based_average_formula}.
 \begin{equation}
 	t_i \ge \frac{\lambda}{n}\cdot \sum_{k=i-n-1}^{i-1}t_{k}\label{eq:time_based_average_formula}
 \end{equation}
 
+
 \begin{figure}[htpb]
 	\centering
-	\begin{tikzpicture}
-		\def\barwidth{15}
-		\begin{axis}[
-			height=0.4\textwidth, width=0.6\textwidth,
-			xmin = 0,
-			xmax = 8,
-			ymin = 0,
-			ymax = 2,
-			xlabel={Iteration},
-			ylabel={Iteration runtime},
-			ylabel near ticks,
-			enlarge x limits=0.15,
-			xtick={0, ..., 8},
-			xticklabels={,,,,$t_{i-1}$,$t_i$,,},
-			ytick=\empty,
-			bar width=\barwidth,
-			clip=false,
-			]
-			\pgfmathsetmacro{\k}{1.2}
-			\pgfmathsetmacro{\xzero}{4}
-			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue] coordinates{
-			(0,0.85)
-			(1,1.17)
-			(2,0.95)
-			(3,1.1)
-			(6,1.13)
-			(7,1.33)
-			(8,0.55)
-			};
-			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue] coordinates {(4,0.9)};
-			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue] coordinates {(5,1.5)};
-			\addplot[ybar, draw=chaptertumblue, pattern=north east lines, pattern color=chaptertumblue!10] coordinates {(5,1.35)};
-			
-			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
-		\end{axis}
-	\end{tikzpicture}
-	\caption{asdf}
+	\begin{subfigure}{0.5\textwidth}
+		\begin{tikzpicture}
+			\tikzset{
+				customdash/.style={dash pattern=on 2pt off 2pt on 2pt off 2pt}
+			}
+			\begin{axis}[
+					height=0.75\textwidth, width=\textwidth,
+					xmin = 0,
+					xmax = 8,
+					ymin = 0,
+					ymax = 2,
+					xlabel={Iteration},
+					ylabel={Iteration runtime},
+					ylabel near ticks,
+					enlarge x limits=0.1,
+					xtick={0, ..., 8},
+					xticklabels={,,,,$i-1$,$i$,,},
+					ytick=\empty,
+					bar width=12pt,
+					clip=false,
+					legend pos=north east,
+					xticklabel style={font={\scriptsize}}
+				]
+
+				\addlegendimage{legend image code/.code={
+							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
+				\addlegendentry{\scriptsize$t_i$}
+				\addlegendimage{legend image code/.code={
+							\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
+				\addlegendentry{\scriptsize$\lambda t_{i-1}$}
+
+				\pgfmathsetmacro{\lambdaval}{1.5}
+				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates{
+						(0,0.9)
+						(1,1.17)
+						(2,0.95)
+						(3,1.1)
+						(6,1.13)
+						(7,1.33)
+						(8,0.55)
+					};
+				\addplot[ybar, fill=none, draw=chaptertumblue, customdash] coordinates{
+						(1,0.9*\lambdaval)
+						(2,1.17*\lambdaval)
+						(3,0.95*\lambdaval)
+						(4,1.1*\lambdaval)
+					};
+				\addplot[ybar, fill=tumblueaccmedium, draw=chaptertumblue] coordinates {(4,0.9)};
+				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue] coordinates {(5,1.7)};
+				% TODO: broken dash?
+				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,0.9*\lambdaval)}, dotted] coordinates{(5,0)};
+
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
+
+
+			\end{axis}
+		\end{tikzpicture}
+	\end{subfigure}%
+	\begin{subfigure}{0.5\textwidth}
+				\begin{tikzpicture}
+			\tikzset{
+				customdash/.style={dash pattern=on 2pt off 2pt on 2pt off 2pt}
+			}
+			\def\barwidth{12pt}
+			\begin{axis}[
+				height=0.75\textwidth, width=\textwidth,
+				xmin = 0,
+				xmax = 8,
+				ymin = 0,
+				ymax = 2,
+				xlabel={Iteration},
+				ylabel={Iteration runtime},
+				ylabel near ticks,
+				enlarge x limits=0.1,
+				xtick={0, ..., 8},
+				xticklabels={$i-n-1$,,\phantom{$i$}\textellipsis,,$i-1$,$i$,,},
+				ytick=\empty,
+				bar width=\barwidth,
+				clip=false,
+				legend pos=north west,
+				xticklabel style={font={\scriptsize}}
+				]
+				
+				\addlegendimage{legend image code/.code={
+						\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+				}}
+				\addlegendentry{\scriptsize$t_i$}
+				\addlegendimage{legend image code/.code={
+						\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+				}}
+				\addlegendentry{\scriptsize$\lambda \text{avg}\left[t_{i-n-1}, t_{i-1}\right]$}
+				
+				\pgfmathsetmacro{\lambdaval}{1.5}
+				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates{
+					(0,0.9)
+					(1,1.17)
+					(2,0.95)
+					(3,1.1)
+					(4,0.9)
+					(6,1.13)
+					(7,1.33)
+					(8,0.55)
+				};
+				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue] coordinates {(5,1.7)};
+				% TODO: broken dash?
+				% avg is 1,004
+				\draw[thick, red] ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) -- ([xshift=0.5*\barwidth]axis cs: 4, 1.004);
+				\node[red, anchor=south, align=left, inner sep=0pt, yshift=-0.125em] at (axis cs: 0, 1.004) {\scriptsize$\text{avg}$};
+				
+				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,1.004*\lambdaval)}, dotted] coordinates{(5,0)};
+				
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
+				
+				
+			\end{axis}
+		\end{tikzpicture}
+	\end{subfigure}
+	\caption{Comparison between the \texttt{TimeBasedSimpleTrigger} and \texttt{TimeBasedAverageTrigger} strategies for $\lambda=1.5$.}
 	\label{fig:simple_vs_averaging}
 \end{figure}
 
@@ -84,92 +217,92 @@ This strategy splits the measurements of the last $n$ iterations and the current
 \end{equation}
 
 \subsection{Linear Regression Trigger}
-This approach is conceptually similar to the interval averaging trigger, although with one major difference. Instead of comparing the current interval of runtimes to a previous one, the comparison is based on an estimate of the runtime in the next interval based on data of the current interval. 
+This approach is conceptually similar to the interval averaging trigger, although with one major difference. Instead of comparing the current interval of runtimes to a previous one, the comparison is based on an estimate of the runtime in the next interval based on data of the current interval.
 
- \begin{figure}[htpb]
- 	\centering
- 	\begin{tikzpicture}
-% 		\def\width{3cm}
-% 		\def\spacing{1cm}
-% 		
-% 		\draw[thick, -Triangle] (0,0) -- (\width,0) node[font=\scriptsize, right]{\textellipsis};
-% 		\draw[thick, -Triangle] (\width+\spacing,0) -- (2*\width+\spacing,0) node[font=\scriptsize, right]{\textellipsis};
-% 		\draw[thick, -Triangle] (2*(\width+\spacing),0) -- (3*\width,0) node[font=\scriptsize,below left=3pt and -8pt]{iteration};
-% 		 
-% 		 
-%% 		% draw vertical lines
-% 		\foreach \x in {0,1,...,10}
-% 		\draw (\x cm,3pt) -- (\x cm,-3pt);
-% 		
-% 		\foreach \x/\descr in {4/t-2,5/t-1,6/t,7/t+1}
-% 		\node[font=\scriptsize, text height=1.75ex,
-% 		text depth=.5ex] at (\x,-.3) {$\descr$};
-% 		
-% 		% colored bar up
-% 		\foreach \x/\perccol in
-% 		{1/100,2/75,3/25,4/0}
-% 		\draw[lightgray!\perccol!red, line width=4pt] 
-% 		(\x,.5) -- +(1,0);
-% 		\draw[-Triangle, dashed, red] (5,.5) --  +(1,0);
-% 		
-% 		% colored bar down
-% 		\foreach \x/\perccol in
-% 		{3/100,4/75,5/0}
-% 		\draw[lightgray!\perccol!green, line width=4pt] 
-% 		(\x,-.7) -- +(1,0);
-% 		\draw[-Triangle, dashed, green] (6,-.7) --  +(1,0);
-% 		
-% 		% braces
-% 		\draw [thick ,decorate,decoration={brace,amplitude=5pt}] (4,0.7)  -- +(2,0) 
-% 		node [black,midway,above=4pt, font=\scriptsize] {Training period};
-% 		\draw [thick,decorate,decoration={brace,amplitude=5pt}] (6,-.9) -- +(-1,0)
-% 		node [black,midway,font=\scriptsize, below=4pt] {Testing period};
- 	\end{tikzpicture}
- 	\caption{An overview of the \texttt{TimeBasedSplitTrigger} and \texttt{TimeBasedRegression} trigger intervals. }
- 	%\footnote{The figure is based on code presented in }
- 	%\href{https://tex.stackexchange.com/questions/436259}{https://tex.stackexchange.com/questions/436259}
- \end{figure}
- 
- 
- \begin{figure}[htpb]
- 	\centering
- 	\begin{tikzpicture}
- 		\begin{axis}[
- 			height=0.4\textwidth, width=0.6\textwidth,
- 			xmin = 0,
- 			xmax = 8,
- 			ymin = 0,
- 			ymax = 2,
- 			xlabel={Iteration},
- 			ylabel={Iteration runtime},
- 			ylabel near ticks,
- 			enlarge x limits=0.15,
- 			xtick={0, ..., 8},
- 			xticklabels={,,,,$t_{i-1}$,$t_i$,,},
- 			ytick=\empty,
- 			bar width=15,
- 			clip=false,
- 			]
- 			\pgfmathsetmacro{\k}{1.2}
- 			\pgfmathsetmacro{\xzero}{4}
- 			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue, samples at={0,...,8}, domain=0:8]
- 			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
- 			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue, samples at={5}, domain=0:10]
- 			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
- 			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue, samples at={4}, domain=0:10]
- 			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
- 			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:8,2) node[midway, yshift=2.5ex]{Future};
- 		\end{axis}
- 	\end{tikzpicture}
- 	\caption{asdf}
- 	\label{fig:split_vs_regression}
- \end{figure}
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		% 		\def\width{3cm}
+		% 		\def\spacing{1cm}
+		% 		
+		% 		\draw[thick, -Triangle] (0,0) -- (\width,0) node[font=\scriptsize, right]{\textellipsis};
+		% 		\draw[thick, -Triangle] (\width+\spacing,0) -- (2*\width+\spacing,0) node[font=\scriptsize, right]{\textellipsis};
+		% 		\draw[thick, -Triangle] (2*(\width+\spacing),0) -- (3*\width,0) node[font=\scriptsize,below left=3pt and -8pt]{iteration};
+		% 		 
+		% 		 
+		%% 		% draw vertical lines
+		% 		\foreach \x in {0,1,...,10}
+		% 		\draw (\x cm,3pt) -- (\x cm,-3pt);
+		% 		
+		% 		\foreach \x/\descr in {4/t-2,5/t-1,6/t,7/t+1}
+		% 		\node[font=\scriptsize, text height=1.75ex,
+		% 		text depth=.5ex] at (\x,-.3) {$\descr$};
+		% 		
+		% 		% colored bar up
+		% 		\foreach \x/\perccol in
+		% 		{1/100,2/75,3/25,4/0}
+		% 		\draw[lightgray!\perccol!red, line width=4pt] 
+		% 		(\x,.5) -- +(1,0);
+		% 		\draw[-Triangle, dashed, red] (5,.5) --  +(1,0);
+		% 		
+		% 		% colored bar down
+		% 		\foreach \x/\perccol in
+		% 		{3/100,4/75,5/0}
+		% 		\draw[lightgray!\perccol!green, line width=4pt] 
+		% 		(\x,-.7) -- +(1,0);
+		% 		\draw[-Triangle, dashed, green] (6,-.7) --  +(1,0);
+		% 		
+		% 		% braces
+		% 		\draw [thick ,decorate,decoration={brace,amplitude=5pt}] (4,0.7)  -- +(2,0) 
+		% 		node [black,midway,above=4pt, font=\scriptsize] {Training period};
+		% 		\draw [thick,decorate,decoration={brace,amplitude=5pt}] (6,-.9) -- +(-1,0)
+		% 		node [black,midway,font=\scriptsize, below=4pt] {Testing period};
+	\end{tikzpicture}
+	\caption{An overview of the \texttt{TimeBasedSplitTrigger} and \texttt{TimeBasedRegressionTrigger} intervals. }
+	%\footnote{The figure is based on code presented in }
+	%\href{https://tex.stackexchange.com/questions/436259}{https://tex.stackexchange.com/questions/436259}
+\end{figure}
+
+
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		\begin{axis}[
+				height=0.4\textwidth, width=0.6\textwidth,
+				xmin = 0,
+				xmax = 8,
+				ymin = 0,
+				ymax = 2,
+				xlabel={Iteration},
+				ylabel={Iteration runtime},
+				ylabel near ticks,
+				enlarge x limits=0.15,
+				xtick={0, ..., 8},
+				xticklabels={,,,,$t_{i-1}$,$t_i$,,},
+				ytick=\empty,
+				bar width=15pt,
+				clip=false,
+			]
+			\pgfmathsetmacro{\k}{1.2}
+			\pgfmathsetmacro{\xzero}{4}
+			\addplot[ybar, fill=chaptertumblue!10, draw=chaptertumblue, samples at={0,...,8}, domain=0:8]
+			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
+			\addplot[ybar, fill=chaptertumblue!80, draw=chaptertumblue, samples at={5}, domain=0:10]
+			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
+			\addplot[ybar, fill=chaptertumblue!50, draw=chaptertumblue, samples at={4}, domain=0:10]
+			{0.5+1.25/(1+exp(-\k*(x-\xzero)))};
+			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:8,2) node[midway, yshift=2.5ex]{Future};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{asdf}
+	\label{fig:split_vs_regression}
+\end{figure}
 
 
 
 
 The general idea is to fit a simple linear regression, adapted to our use case, on the last $n$ runtime samples. Using the linear regression we obtain a slope estimator $\hat{\beta}_1$, by which we can predict the runtime in the next interval. In the following, $t_k$ is the runtime at iteration $k$, $i$ the current iteration and $\bar t$, $\bar k$ the average runtime and iteration respectively. Then the slope estimator $\hat{\beta}_1$ in the standard simple linear regression model is presented in \eqref{eq:lin_reg}.
- 
+
 
 \begin{equation}
 	\hat{\beta}_1=\frac{\sum_{k=i-n-1}^{i}(k-\bar k)(t_k-\bar t)}{\sum_{k=i-n-1}^{i}(k-\bar k)^2},\quad\bar t=\frac{1}{n}\sum_{k=i-n-1}^it_k, \quad \bar k = \frac{1}{n}\sum_{k=i-n-1}^ik\label{eq:lin_reg}
@@ -178,7 +311,7 @@ The general idea is to fit a simple linear regression, adapted to our use case, 
 The value of the estimator $\hat\beta_0$, i.e. the intersection at $y=0$, is not of interest. Similarly, as the samples are taken in constant steps of one iteration, the values of $k$ can be shifted to the interval $[0, n]$. Considering these two points, the model can be transformed to \eqref{eq:lin_reg_simpl}, where $A, B$ are constants that can be precomputed at initialization, as given in \eqref{eq:lin_reg_consts}.
 
 \begin{equation}
-\hat{\beta}_1' =\frac{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)(t_{i-n-1+k}-\bar t)}{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)^2}= \frac{1}{B}\sum_{k=0}^{n-1}\left(k-A\right)(t_{i-n-1+k}-\bar t)\label{eq:lin_reg_simpl}
+	\hat{\beta}_1' =\frac{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)(t_{i-n-1+k}-\bar t)}{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)^2}= \frac{1}{B}\sum_{k=0}^{n-1}\left(k-A\right)(t_{i-n-1+k}-\bar t)\label{eq:lin_reg_simpl}
 \end{equation}
 \begin{equation}
 	A = \frac{n-1}{2}, \quad B=\sum_{k=0}^{n-1}\left(k-A\right)^2\label{eq:lin_reg_consts}
@@ -188,7 +321,7 @@ $\hat\beta_1'$ can thus be interpreted as \enquote{in each iteration, the runtim
 
 
 \begin{equation}
-	\hat\beta_{\text{norm}} = \frac{n\cdot\hat\beta_1'}{\bar t}\label{eq:lin_reg_norm}
+	\hat\beta_{\text{norm}} = 1+\frac{n\cdot\hat\beta_1'}{2\bar t}\label{eq:lin_reg_norm}
 \end{equation}
 
 In particular, we have:
@@ -204,4 +337,6 @@ In particular, we have:
 %TODO: add ref to results
 %TODO: cite liveinfo paper
 As will be discussed later, time-based approaches are not suitable for all scenarios. In these scenarios, iteration runtimes alone might not be a good enough indicator for scenario change. As AutoPas provides additional live simulation statistics through its \texttt{liveinfo} interface, these can be used in combination with iteration runtimes to find better strategies in detecting scenario change.
+
+% TODO: possible duplication of \enquote{Considerations}
 

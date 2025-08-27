@@ -314,3 +314,5 @@ TSWLatexianTemp*
 ### Overleaf Bundle Script ###
 overleaf-bundle.sh
 ipleiria-thesis-overleaf-*.zip
+
+**/tikzcache

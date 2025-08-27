@@ -14,18 +14,24 @@
     aiack=false
 ]{IPLeiriaThesis} % Refer to the Wiki for a list of available options.
 
+%\usetikzlibrary{external}
 \usepackage{pgfplots}
-\usepgfplotslibrary{groupplots}
+%\pgfplotsset{compat=1.18}
+%\usepgfplotslibrary{groupplots}
+%\usepgfplotslibrary{external}
+%\tikzexternalize[prefix=tikzcache/]
+
+
+%\tikzset{external/force remake}
+
 \usepackage{adjustbox}
 \usepackage{subcaption}
 \usepackage{siunitx}
+\usepackage[htt]{hyphenat}
 
 \usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc, patterns, calligraphy}
 
 \newcommand{\vb}[1]{\ensuremath{\mathbf{#1}}}
-
-%\usetikzlibrary{external}
-%\tikzexternalize[] 
 
 %%% Document Version %%%
 \DocumentVersion{1.0.0} % Required only if the 'docstage' is set to 'working'.

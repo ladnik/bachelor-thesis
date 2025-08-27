@@ -11,74 +11,267 @@
 
 \section{Trigger Parameters}
 % TODO: compare trigger factors and intervals
-All presented trigger strategies are based on a trigger factor $\lambda$. The averaging and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, sensible default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
+All presented trigger strategies are based on a trigger factor $\lambda$. The averaging, split and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, sensible default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
 
-Therefore, we first inspect the relation between these parameters and the total simulation runtime for a range of combinations to find parameter defaults for further evaluation.
+Therefore, we first inspect the relation between these parameters and the total simulation runtime for a range of combinations to find suitable default parameters for further evaluation.
+
+\tikzset{
+	linestyleA/.style={chaptertumblue, densely dotted, thick},
+	linestyleB/.style={tumblueaccdark, densely dashed, thick},
+	linestyleC/.style={tumblueaccmedium, solid, thick},
+}
+
+\pgfplotsset{
+	triggerplot/.style={
+			height=0.7\textwidth,
+			width=\textwidth,
+			xlabel={Trigger Factor $\lambda$},
+			xtick={1.25, 1.5, 1.75},
+			legend style={font=\tiny},
+			legend cell align=center,
+			legend columns=-1,
+			legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
+			legend image post style={xscale=0.5},
+			ylabel near ticks},
+	logtriggerplot/.style={
+			triggerplot,
+			log basis y = 10,
+			log ticks with fixed point}
+}
+
+\subsection{Equilibrium}
 
 \begin{figure}[htpb]
-	\centering
-	\begin{tikzpicture}
-		\begin{axis}[
-				height=0.4\textwidth, width=0.6\textwidth,
+	\pgfplotsset{
+		triggerplot/.style={
+				height=0.7\textwidth,
+				width=\textwidth,
 				xlabel={Trigger Factor $\lambda$},
-				ylabel={Speedup \%},
-				ylabel near ticks,
-			]
-			% TimeBasedSimple
-			\addplot[chaptertumblue] coordinates{
-					(1.25,-5)
-					(1.5,12)
-					(1.75,5)};
-			% TimeBasedAverage 1000
-			\addplot[red] coordinates{
-					(1.25,-43)
-					(1.5,-38)
-					(1.75,1)};
-			% TimeBasedAverage 500
-			\addplot[red] coordinates{
-					(1.25,-49)
-					(1.5,-38)
-					(1.75,13)};
-			% TimeBasedAverage 250
-			\addplot[red] coordinates{
-					(1.25,-33)
-					(1.5,0)
-					(1.75,12)};
-			% TimeBasedSplit 1000
-			\addplot[orange] coordinates{
-					(1.25,1)
-					(1.5,8)
-					(1.75,2)};
-			% TimeBasedSplit 500
-			\addplot[orange] coordinates{
-					(1.25,13)
-					(1.5,15)
-					(1.75,12)};
-			% TimeBasedSplit 250
-			\addplot[orange] coordinates{
-					(1.25,9)
-					(1.5,13)
-					(1.75,14)};
-			% TimeBasedRegression 1000
-			\addplot[green] coordinates{
-				(1.25,7)
-				(1.5,12)
-				(1.75,14)};
-			% TimeBasedRegression 1500
-			\addplot[green] coordinates{
-				(1.25,16)
-				(1.5,12)
-				(1.75,15)};
-			% TimeBasedRegression 2000
-			\addplot[green] coordinates{
-				(1.25,12)
-				(1.5,15)
-				(1.75,13)};
-		\end{axis}
-	\end{tikzpicture}
-	\caption{Trigger behavior in the equilibrium scenario.}
+				xtick={1.25, 1.5, 1.75},
+				legend style={font=\tiny},
+				legend cell align=center,
+				legend columns=-1,
+				legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
+				legend image post style={xscale=0.5},
+				ylabel near ticks},
+		logtriggerplot/.style={
+				triggerplot,
+				log basis y = 10,
+				log ticks with fixed point}
+	}
+	\centering
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					ylabel={Speedup \%},
+				]
+				% TimeBasedSimple
+				\addplot[tumblueacclight, thick] coordinates{
+						(1.25,-5)
+						(1.5,12)
+						(1.75,5)};
+				% TimeBasedAverage 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,21)
+						(1.5,44)
+						(1.75,47)};
+				% TimeBasedAverage 500
+				\addplot[linestyleB] coordinates{
+						(1.25,10)
+						(1.5,34)
+						(1.75,47)};
+				% TimeBasedAverage 250
+				\addplot[linestyleC] coordinates{
+						(1.25,17)
+						(1.5,26)
+						(1.75,34)};
+				\legend{Simple,Avg-1000,Avg-500, Avg-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Simple and Average Triggers}
+	\end{subfigure}
+	\hspace{0.05\textwidth}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					logtriggerplot,
+					ylabel={Tuning iterations \%},
+					ymode=log,
+					ymin=1,
+					ymax=100,
+				]
+				% TimeBasedSimple
+				\addplot[tumblueacclight, thick] coordinates{
+						(1.25,29.37)
+						(1.5,2.26)
+						(1.75,2.26)};
+				% TimeBasedAverage 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,2.26)
+						(1.5,1.51)
+						(1.75,1.51)};
+				% TimeBasedAverage 500
+				\addplot[linestyleB] coordinates{
+						(1.25,2.26)
+						(1.5,2.26)
+						(1.75,1.51)};
+				% TimeBasedAverage 250
+				\addplot[linestyleC] coordinates{
+						(1.25,2.26)
+						(1.5,1.51)
+						(1.75,1.51)};
+				\legend{Simple,Avg-1000,Avg-500, Avg-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Simple and Average Triggers}
+	\end{subfigure}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					ylabel={Speedup \%},
+				]
+				% TimeBasedSplit 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,42)
+						(1.5,46)
+						(1.75,35)};
+				% TimeBasedSplit 500
+				\addplot[linestyleB] coordinates{
+						(1.25,43)
+						(1.5,38)
+						(1.75,40)};
+				% TimeBasedSplit 250
+				\addplot[linestyleC] coordinates{
+						(1.25,-6)
+						(1.5,28)
+						(1.75,-7)};
+				\legend{Split-1000,Split-500, Split-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Split Trigger}
+	\end{subfigure}
+	\hspace{0.05\textwidth}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					logtriggerplot,
+					ylabel={Tuning iterations \%},
+					ymode=log,
+					ymin=1,
+					ymax=100,
+				]
+				% TimeBasedSplit 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,3.77)
+						(1.5,3.01)
+						(1.75,3.77)};
+				% TimeBasedSplit 500
+				\addplot[linestyleB] coordinates{
+						(1.25,4.52)
+						(1.5,4.52)
+						(1.75,3.77)};
+				% TimeBasedSplit 250
+				\addplot[linestyleC] coordinates{
+						(1.25,81.7)
+						(1.5,6.03)
+						(1.75,81.9)};
+				\legend{Split-1000,Split-500, Split-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Split Trigger}
+	\end{subfigure}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					ylabel={Speedup \%},
+				]
+				% TimeBasedRegression 2000
+				\addplot[linestyleA] coordinates{
+						(1.25,46)
+						(1.5,33)
+						(1.75,34)};
+
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+						(1.25,46)
+						(1.5,46)
+						(1.75,31)};
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+						(1.25,43)
+						(1.5,44)
+						(1.75,44)};
+
+				\legend{Reg-2000,Reg-1500,Reg-1000}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Regression Trigger}
+	\end{subfigure}%
+	\hspace{0.05\textwidth}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					logtriggerplot,
+					ylabel={Tuning iterations \%},
+					%ymode=log,
+					ymin=0,
+					ymax=1,
+					ytick={0, 0.25, 0.75, 1.0},
+				]
+				% TimeBasedRegression 2000
+				\addplot[linestyleA] coordinates{
+						(1.25,0.75)
+						(1.5,0.75)
+						(1.75,0.75)};
+
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+						(1.25,0.75)
+						(1.5,0.75)
+						(1.75,0.75)};
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+						(1.25,0.75)
+						(1.5,0.75)
+						(1.75,0.75)};
+
+				\legend{Reg-2000,Reg-1500,Reg-1000}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Regression Trigger}
+	\end{subfigure}%
+	\caption{Trigger behavior in the equilibrium scenario, the numbers in the legends refer to the number of samples $n$ considered. Note the logarithmic scale in the plots for the tuning iterations.}
 	\label{fig:params_equil}
 \end{figure}
+
+As can be seen in \autoref{fig:params_equil}, a trigger factor of $\lambda=1.5$ leads to increased speedup compared to $\lambda=1.25$. This is however mainly due to the nature of the equilibrium scenario: after the initial configuration selection, the optimal configuration is not expected to change.
+Therefore, not initiating any new tuning phases will lead to a decrease in total simulation runtime. That the speedup is indeed  a result of the decreased number of tuning iterations can be verified by looking at the right-hand side plots; for the simple and averaging trigger it is most noticeable.
+Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. For a too large number of samples, the speedup decreases however, computational overhead is directly proportional to the number of samples. This is best seen in the plots for the regression trigger, as the share of tuning iterations remains constant for all sample sizes, but the speedup decreases. Especially for the regression triggers, the computations required per sample and in each iteration are significant.
+%The increase of th enumber of tuning iterations as seen in the split trigger with $n=250$ can be explained by \textellipsis
+% TODO: self-interaction
+
+The collected data suggests default parameters as presented in \autoref{tab:equil_defaults}.
+\begin{table}[htpb]
+	\centering
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Trigger}                      & \textbf{Trigger factor $\lambda$} & \textbf{Number of samples $n$} \\ [0em]
+		\midrule
+		\texttt{TimeBasedSimple}     & $1.75$                   & -                     \\
+		\texttt{TimeBasedAverage}    & $1.75$                   & 500                   \\
+		\texttt{TimeBasedSplit}      & $1.5$                    & 1000                  \\
+		\texttt{TimeBasedRegression} & $1.5$                    & 1500                  \\
+		\bottomrule
+	\end{tabular}
+	\caption{Suggested default parameters for the equilibrium scenario.}
+	\label{tab:equil_defaults}
+\end{table}
+
+\subsection{Exploding Liquid}
+\subsection{Heating Sphere}
 
 \section{Trigger Behavior}
 The blue bars in the graphs represent the runtime of that particular iteration.
@@ -89,11 +282,8 @@ In the configuration plots, the colored background identifies the used configura
 \subsection{Interval averaging Trigger}
 \subsection{Linear Regression Trigger}
 
-% maybe also which parameters are sensible default values
 
 \section{Optimality}
 \section{Runtime}
 \section{Share of tuning iterations}
-\section{Trigger Parameters}
-% sensible default values
 
