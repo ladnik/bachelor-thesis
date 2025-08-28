@@ -40,7 +40,7 @@ $aux_dir = '.aux';
 add_cus_dep('glo', 'gls', 0, 'run_makeglossaries');
 add_cus_dep('acn', 'acr', 0, 'run_makeglossaries');
 
-$ignore_files_regex = qr{^tikzcache/};
+# $ignore_files_regex = qr{^tikzcache/};
 
 sub run_makeglossaries {
     my ($base_name, $path) = fileparse($_[0]);

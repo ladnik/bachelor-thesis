@@ -19,6 +19,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 	linestyleA/.style={chaptertumblue, densely dotted, thick},
 	linestyleB/.style={tumblueaccdark, densely dashed, thick},
 	linestyleC/.style={tumblueaccmedium, solid, thick},
+	linestyleD/.style={tumblueacclight, densely dashdotted, thick},
 }
 
 \pgfplotsset{
@@ -67,7 +68,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 					ylabel={Speedup \%},
 				]
 				% TimeBasedSimple
-				\addplot[tumblueacclight, thick] coordinates{
+				\addplot[linestyleD] coordinates{
 						(1.25,-5)
 						(1.5,12)
 						(1.75,5)};

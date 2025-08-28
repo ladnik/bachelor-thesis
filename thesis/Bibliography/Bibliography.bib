@@ -313,4 +313,25 @@
   url       = {http://dx.doi.org/10.1088/1674-4527/17/8/85},
 }
 
+@MastersThesis{Lerchner2024,
+  author   = {Lerchner, Manuel},
+  school   = {Technical University of Munich},
+  title    = {Exploring Fuzzy Tuning Technique for Molecular Dynamics Simulations in AutoPas},
+  year     = {2024},
+  month    = {Aug},
+  abstract = {AutoPas is a high-performance, auto-tuned particle simulation library for many-body systems, capable of dynamically switching between algorithms and data structures to guarantee optimal performance throughout the simulation.
+This thesis introduces a novel fuzzy logic-based tuning strategy for AutoPas, allowing users to guide the tuning process by specifying custom Fuzzy Systems, which can be used to efficiently prune the search space of possible parameter configurations. Efficient tuning strategies are crucial, as they allow for discarding poor parameter configurations without evaluating them, thus reducing tuning time and improving overall library performance.
+We demonstrate that a data-driven approach can automatically generate Fuzzy Systems that significantly outperform existing tuning strategies on specific benchmarks, resulting in speedups of up to 1.96x compared to the FullSearch Strategy on scenarios included in the training data and up to 1.35x on scenarios not directly included.
+The Fuzzy Tuning Strategy can drastically reduce the number of evaluated configurations during tuning phases while achieving comparable tuning results, making it a promising alternative to the existing tuning strategies.},
+  keywords = {AutoPas; Auto-tuning; Fuzzy Logic;},
+}
+
+@Misc{AutoPas2025,
+  author = {{AutoPas}},
+  note   = {Accessed: 2025-08-28},
+  title  = {AutoPas Doxygen Documentation},
+  year   = {2025},
+  url    = {https://autopas.github.io/doxygen_documentation/git-master/},
+}
+
 @Comment{jabref-meta: databaseType:bibtex;}
