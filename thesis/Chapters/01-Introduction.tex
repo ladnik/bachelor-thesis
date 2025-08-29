@@ -4,7 +4,6 @@
 {
 	\parindent0pt
 	This chapter introduces some fundamental concepts necessary to understand Molecular Dynamics (MD) simulations. We begin with a discussion of the motivation behind the general $n$-body problem and the goals of this thesis in \autoref{sec:motivation}.
-	
 	Afterwards, the components of a simple MD simulation loop are presented in \autoref{sec:md}. These include Newton’s laws of motion for providing the governing equations of particle trajectories, the Lennard-Jones potential as a model for pairwise interactions, and the Störmer-Verlet algorithms as a numerical scheme for integrating the equations of motion.
 }
 
@@ -22,8 +21,7 @@ These days, particle simulations have established themselves as indispensable to
 
 One example of a software framework enabling $n$-body simulations is the AutoPas library \cite{Gratl2019}. Its internal mechanisms will be discussed in detail in \autoref{cp:autopas}; for the motivation of this thesis it suffices to know, that AutoPas seeks to dynamically select optimal simulation configurations without requiring expert knowledge during setup (\enquote{autotuning}).
 
-To achieve this, so-called tuning phases are initiated at fixed intervals. During each tuning phase, different configurations are sampled for a predetermined number of iterations, after which the best performing configuration is selected to simulate the remaining iterations until the next tuning phase. Naturally, these static intervals do not necessarily align with the points at which it would be most advantageous to switch configurations. Consider a scenario, in which the optimal configuration changes rapidly in the beginning, but stabilizes and settles into an equilibrium later on. Having one uniform static interval, it would be either too short -- resulting in unnecessary tuning phases during equilibrium, or too long -- resulting in suboptimal performance in the early phase.
-
+To achieve this, so-called tuning phases are initiated at fixed intervals. During each tuning phase, different configurations are sampled for a predetermined number of iterations, after which the best performing configuration is selected to simulate the remaining iterations until the next tuning phase. Naturally, these static intervals do not necessarily align with the points at which it would be most advantageous to switch configurations. Consider a scenario, in which the optimal configuration changes rapidly in the beginning, but stabilizes and settles into an equilibrium later on. Having one uniform static interval, it would be either too short --- resulting in unnecessary tuning phases during equilibrium, or too long --- resulting in suboptimal performance in the early phase.
 This thesis proposes a method to resolve this problem by dynamically initiating tuning phases based on live simulation data.
 
 % TODO: dynamic intervals figure?
@@ -47,7 +45,7 @@ Considering the formula presented in \eqref{eq:born_oppenheimer}, the main MD si
 
 
 
-\subsection{Newton's laws of motion}
+\subsection{Newton's Laws of Motion}
 \label{sec:newton}
 As referred to before, Newton's laws of motion can be applied to MD simulation in approximating particle behavior. These well-known laws of classical mechanics are as follows. \cite{Newton1934}
 \begin{enumerate}[label=\Roman*.]

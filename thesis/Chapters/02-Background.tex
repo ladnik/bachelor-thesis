@@ -4,9 +4,8 @@
 {
 	\parindent0pt
 	This chapter examines the particle simulation library AutoPas and provides an overview of its architecture and features. In \autoref{sec:background}, the concept of autotuning is introduced, as well as the  introduces the \texttt{md-flexible} application.
-	
 	The various configuration parameters available for the simulation are introduced thereafter in \autoref{sec:config_params}. Additionally, \autoref{sec:tuning_strategies} shortly outlines the different tuning strategies for the selection of the optimal combination of these parameters.
-
+	
 	The contents of this chapter are mainly drawn from the works introducing AutoPas, specifically the publications by Gratl et al. \cite{Gratl2019, Gratl2021} and Seckler et al. \cite{Seckler2021}, as well as the AutoPas documentation \cite{AutoPas2025}.
 }
 
@@ -48,8 +47,8 @@ Additionally, there are a number of additional configuration parameters that do 
 			\def\lblspc{2em}
 			\def\rowspc{8ex}
 			\tikzset{
-				lbl/.style={draw=none, minimum width=\sz, minimum height=\sz, text depth=0pt},
-				attr/.style={draw, minimum width=\sz, minimum height=\sz, anchor=west, text depth=0pt},
+				lbl/.style={draw=none, minimum width=\sz, minimum height=\sz, text depth=1pt},
+				attr/.style={draw, minimum width=\sz, minimum height=\sz, anchor=west, text depth=1pt},
 				br/.style={decorate,decoration={brace, amplitude=1ex, raise=0.5ex}},
 				p1/.style={draw=black, fill=lightblue},
 				p2/.style={draw=black, fill=lightviolet},
@@ -100,11 +99,11 @@ Additionally, there are a number of additional configuration parameters that do 
 
 		\end{tikzpicture}
 	\end{center}
-	\caption{Comparison between the Array of Structures (AoS) and Structure of Arrays (SoA) memory layouts. In this figure, $r^{(n)}$ corresponds to the position vector of the $n$th particle.}
+	\caption{Comparison between the Array of Structures (AoS) and Structure of Arrays (SoA) memory layouts. The $r^{(i)}$'s correspond to the position vector of the $i$th particle.}
 	\label{fig:aos_soa}
 \end{figure}
 
-\section{Tuning strategies}
+\section{Tuning Strategies}
 \label{sec:tuning_strategies}
 % keep this rather short
 

@@ -28,9 +28,9 @@ Therefore, we first inspect the relation between these parameters and the total 
 			width=\textwidth,
 			xlabel={Trigger Factor $\lambda$},
 			xtick={1.25, 1.5, 1.75},
-			legend style={font=\tiny},
+			legend style={font=\small},
 			legend cell align=center,
-			legend columns=-1,
+			legend columns=3,
 			legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
 			legend image post style={xscale=0.5},
 			ylabel near ticks},
@@ -43,28 +43,12 @@ Therefore, we first inspect the relation between these parameters and the total 
 \subsection{Equilibrium}
 
 \begin{figure}[htpb]
-	\pgfplotsset{
-		triggerplot/.style={
-				height=0.7\textwidth,
-				width=\textwidth,
-				xlabel={Trigger Factor $\lambda$},
-				xtick={1.25, 1.5, 1.75},
-				legend style={font=\tiny},
-				legend cell align=center,
-				legend columns=-1,
-				legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
-				legend image post style={xscale=0.5},
-				ylabel near ticks},
-		logtriggerplot/.style={
-				triggerplot,
-				log basis y = 10,
-				log ticks with fixed point}
-	}
 	\centering
 	\begin{subfigure}{0.45\textwidth}
 		\begin{tikzpicture}
 			\begin{axis}[
 					triggerplot,
+					legend columns=2,
 					ylabel={Speedup \%},
 				]
 				% TimeBasedSimple
@@ -87,7 +71,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 						(1.25,17)
 						(1.5,26)
 						(1.75,34)};
-				\legend{Simple,Avg-1000,Avg-500, Avg-250}
+				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
 		\end{tikzpicture}
 		%		\subcaption{Simple and Average Triggers}
@@ -97,7 +81,8 @@ Therefore, we first inspect the relation between these parameters and the total 
 		\begin{tikzpicture}
 			\begin{axis}[
 					logtriggerplot,
-					ylabel={Tuning iterations \%},
+					legend columns=2,
+					ylabel={Tuning Iterations \%},
 					ymode=log,
 					ymin=1,
 					ymax=100,
@@ -122,7 +107,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 						(1.25,2.26)
 						(1.5,1.51)
 						(1.75,1.51)};
-				\legend{Simple,Avg-1000,Avg-500, Avg-250}
+				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
 		\end{tikzpicture}
 		%		\subcaption{Simple and Average Triggers}
@@ -148,7 +133,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 						(1.25,-6)
 						(1.5,28)
 						(1.75,-7)};
-				\legend{Split-1000,Split-500, Split-250}
+				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
 		\end{tikzpicture}
 		%		\subcaption{Split Trigger}
@@ -158,7 +143,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 		\begin{tikzpicture}
 			\begin{axis}[
 					logtriggerplot,
-					ylabel={Tuning iterations \%},
+					ylabel={Tuning Iterations \%},
 					ymode=log,
 					ymin=1,
 					ymax=100,
@@ -178,7 +163,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 						(1.25,81.7)
 						(1.5,6.03)
 						(1.75,81.9)};
-				\legend{Split-1000,Split-500, Split-250}
+				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
 		\end{tikzpicture}
 		%		\subcaption{Split Trigger}
@@ -216,7 +201,7 @@ Therefore, we first inspect the relation between these parameters and the total 
 		\begin{tikzpicture}
 			\begin{axis}[
 					logtriggerplot,
-					ylabel={Tuning iterations \%},
+					ylabel={Tuning Iterations \%},
 					%ymode=log,
 					ymin=0,
 					ymax=1,
@@ -261,7 +246,7 @@ The collected data suggests default parameters as presented in \autoref{tab:equi
 		\toprule
 		\textbf{Trigger}                      & \textbf{Trigger factor $\lambda$} & \textbf{Number of samples $n$} \\ [0em]
 		\midrule
-		\texttt{TimeBasedSimple}     & $1.75$                   & -                     \\
+		\texttt{TimeBasedSimple}     & $1.75$                   & --                     \\
 		\texttt{TimeBasedAverage}    & $1.75$                   & 500                   \\
 		\texttt{TimeBasedSplit}      & $1.5$                    & 1000                  \\
 		\texttt{TimeBasedRegression} & $1.5$                    & 1500                  \\
@@ -286,5 +271,5 @@ In the configuration plots, the colored background identifies the used configura
 
 \section{Optimality}
 \section{Runtime}
-\section{Share of tuning iterations}
+\section{Share of Tuning Iterations}
 

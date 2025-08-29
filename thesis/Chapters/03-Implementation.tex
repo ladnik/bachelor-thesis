@@ -7,10 +7,11 @@
 }
 
 \section{Considerations}
-\subsection{Computational overhead}
+%TODO: text here?
+\subsection{Computational Overhead}
 Our trigger strategies introduce additional computations, as we have to make decisions based on data that can only be collected at runtime. Therefore, the overhead must be kept as small as possible, otherwise gains made by triggering less tuning phases might easily be dwarfed by expensive computations. Additionally, there might be feedback of our method to itself, as our strategies may affect iteration runtime which in turn alters the trigger behavior.
 
-To exemplify the importance of optimizing the trigger routines, \autoref{fig:optimization_speedup} illustrates the runtime differences between naive and optimized triggers in the equilibrium scenario. The naive version recalculates the average over all samples each iteration, whereas the optimized version uses a ring buffer and running summation to reduce computational cost. 
+To exemplify the importance of optimizing the trigger routines, \autoref{fig:optimization_speedup} illustrates the runtime differences between naive and optimized triggers in the equilibrium scenario. The naive version recalculates the average over all samples each iteration, whereas the optimized version uses a ring buffer and running summation to reduce computational cost.
 The speedup experienced is not only due to a lowering of computational overhead, but also due to less tuning iterations. This fact can be explained by the aforementioned self influence of the triggers: higher overhead might lead to higher fluctuation in iteration runtime which in turn leads to unstable trigger behavior, especially in the averaging trigger.
 
 % TODO: real overhead hard to quantify?
@@ -21,37 +22,37 @@ The speedup experienced is not only due to a lowering of computational overhead,
 	\begin{tikzpicture}
 		\def\barwidth{15pt}
 		\begin{axis}[
-			height=0.4\textwidth,
-			xlabel={Trigger strategy},
-			ylabel={Total runtime in \unit{ns}},
-			enlarge x limits=0.25,
-			symbolic x coords={Avg,Split,Regression},
-			xtick=data,
-			bar width=\barwidth,
-			legend entries={Unoptimized, Optimized}
+				height=0.4\textwidth,
+				xlabel={Trigger strategy},
+				ylabel={Total runtime in \unit{ns}},
+				enlarge x limits=0.25,
+				symbolic x coords={Avg,Split,Regression},
+				xtick=data,
+				bar width=\barwidth,
+				legend entries={Unoptimized, Optimized}
 			]
-			
+
 			\addlegendimage{legend image code/.code={
-					\draw[fill=tumblueaccmedium, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-			}}
+						\draw[fill=tumblueaccmedium, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+					}}
 			\addlegendentry{\scriptsize Unoptimized}
 			\addlegendimage{legend image code/.code={
-					\draw[fill=tumblueacclight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-			}}
+						\draw[fill=tumblueacclight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+					}}
 			\addlegendentry{\scriptsize Optimized}
-			
+
 			% unoptimized average
 			\addplot[ybar, bar shift=-0.5*\barwidth,fill=tumblueaccmedium, draw=chaptertumblue] coordinates {
-				(Avg,1694063817546)
-				(Split,1141728867654)
-				(Regression,1112338563086)
-			};
+					(Avg,1694063817546)
+					(Split,1141728867654)
+					(Regression,1112338563086)
+				};
 			% optimized average
 			\addplot[ybar, bar shift=0.5*\barwidth,fill=tumblueacclight, draw=chaptertumblue] coordinates {
-				(Avg,962648240758)
-				(Split,999681150940)
-				(Regression,889891999680)
-			};
+					(Avg,962648240758)
+					(Split,999681150940)
+					(Regression,889891999680)
+				};
 		\end{axis}
 	\end{tikzpicture}
 	\caption{Average Speedup between unoptimized and optimized runs for the \texttt{TimeBasedAverage}, \texttt{TimeBasedSplit} and \texttt{TimeBasedRegression} strategies.}
@@ -59,12 +60,14 @@ The speedup experienced is not only due to a lowering of computational overhead,
 \end{figure}
 %TODO: add speedup after optimization (self influence of runtime)
 
-\subsection{Available simulation statistics}
-% TODO: justify not tracking rebuild times
+\subsection{Available Simulation Statistics}
+% TODO: justify not tracking rebuild times: plot iteration runtime - rebuildtimes vs rebuildtimes, rebuildtimes should experience no significant changes whilst iteration runtimes increase
 
-\subsection{Interaction with tuning strategies}
+\subsection{Interaction with Tuning Strategies}
 As introduced in \autoref{sec:tuning_strategies}, AutoPas offers multiple different tuning strategies. Depending on the specific scenario settings, one strategy might be more efficient -- e.g. the \texttt{slow-config-filter} setting in the heating-sphere example. To keep results comparable between scenarios therefore, all experiments were executed using the \texttt{full-search} strategy. As this strategy is expected to sample more suboptimal configurations than others, the effect of tuning iterations on the whole simulation runtime is higher. Using more tailored tuning strategies, the improvements as presented in this thesis might not be as visible.
 % TODO: move this?
+
+% TODO: new subsection (?): Detection of change: Liveinfo vs. Runtime, Increase vs. Magnitude (significant Increase or Decrease)
 
 \section{Time-based Triggers}
 
@@ -140,72 +143,72 @@ The \texttt{TimeBasedAverage} method is different from the \texttt{TimeBasedSimp
 				% TODO: broken dash?
 				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,0.9*\lambdaval)}, dotted] coordinates{(5,0)};
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new Tuning Phase};
 
 
 			\end{axis}
 		\end{tikzpicture}
 	\end{subfigure}%
 	\begin{subfigure}{0.5\textwidth}
-				\begin{tikzpicture}
+		\begin{tikzpicture}
 			\tikzset{
 				customdash/.style={dash pattern=on 2pt off 2pt on 2pt off 2pt}
 			}
 			\def\barwidth{12pt}
 			\begin{axis}[
-				height=0.75\textwidth, width=\textwidth,
-				xmin = 0,
-				xmax = 8,
-				ymin = 0,
-				ymax = 2,
-				xlabel={Iteration},
-				ylabel={Iteration runtime},
-				ylabel near ticks,
-				enlarge x limits=0.1,
-				xtick={0,4,5},
-				xticklabels={$i-n$,$i-1$,$i$,,},
-				ytick=\empty,
-				bar width=\barwidth,
-				clip=false,
-				legend pos=north west,
-				xticklabel style={font={\scriptsize}}
+					height=0.75\textwidth, width=\textwidth,
+					xmin = 0,
+					xmax = 8,
+					ymin = 0,
+					ymax = 2,
+					xlabel={Iteration},
+					ylabel={Iteration runtime},
+					ylabel near ticks,
+					enlarge x limits=0.1,
+					xtick={0,4,5},
+					xticklabels={$i-n$,$i-1$,$i$,,},
+					ytick=\empty,
+					bar width=\barwidth,
+					clip=false,
+					legend pos=north west,
+					xticklabel style={font={\scriptsize}}
 				]
-				
+
 				\addlegendimage{legend image code/.code={
-						\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-				}}
+							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
 				\addlegendentry{\scriptsize$t_k$}
 				\addlegendimage{legend image code/.code={
-						\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-				}}
+							\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
 				\addlegendentry{\scriptsize$\lambda \text{avg}\left[t_{i-n}, t_{i-1}\right]$}
-				
+
 				\pgfmathsetmacro{\lambdaval}{1.5}
 				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates{
-					(0,0.9)
-					(1,1.17)
-					(2,0.95)
-					(3,1.1)
-					(4,0.9)
-					(6,1.13)
-					(7,1.33)
-					(8,0.55)
-				};
+						(0,0.9)
+						(1,1.17)
+						(2,0.95)
+						(3,1.1)
+						(4,0.9)
+						(6,1.13)
+						(7,1.33)
+						(8,0.55)
+					};
 				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue] coordinates {(5,1.7)};
 				% TODO: broken dash?
 				% avg is 1,004
 				\draw[thick, chapterdarkred] ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) -- ([xshift=0.5*\barwidth]axis cs: 4, 1.004);
 				\node[chapterdarkred, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) {\scriptsize$\text{avg}$};
-				
+
 				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,1.004*\lambdaval)}, dotted] coordinates{(5,0)};
-				
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
-				
-				
+
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+
+
 			\end{axis}
 		\end{tikzpicture}
 	\end{subfigure}
-	\caption{Comparison between the \texttt{TimeBasedSimpleTrigger} and \texttt{TimeBasedAverageTrigger} strategies for $\lambda=1.5$ and $n=5$. A new tuning phase is initiated in both cases, however the \texttt{TimeBasedAverageTrigger} results in a higher threshold.}
+	\caption{Comparison between the \texttt{TimeBasedSimpleTrigger} (left) and \texttt{TimeBasedAverageTrigger} (right) strategies for $\lambda=1.5$ and $n=5$. A new tuning phase is initiated in both cases, however the \texttt{TimeBasedAverageTrigger} results in a higher threshold.}
 	\label{fig:simple_vs_averaging}
 	% TODO: caption
 \end{figure}
@@ -312,71 +315,71 @@ This approach is conceptually similar to the interval averaging trigger, althoug
 			}
 			\def\barwidth{6pt}
 			\begin{axis}[
-				height=0.75\textwidth, width=\textwidth,
-				xmin = 0,
-				xmax = 15,
-				ymin = 0,
-				ymax = 2,
-				xlabel={Iteration},
-				ylabel={Iteration runtime},
-				ylabel near ticks,
-				enlarge x limits=0.1,
-				xtick={0,5,11},
-				xticklabels={$t_{i-n}$,$t_{i-j}$,$i$},
-				ytick=\empty,
-				bar width=\barwidth,
-				clip=false,
-				legend pos=north west,
-				xticklabel style={font={\scriptsize}}
+					height=0.75\textwidth, width=\textwidth,
+					xmin = 0,
+					xmax = 15,
+					ymin = 0,
+					ymax = 2,
+					xlabel={Iteration},
+					ylabel={Iteration runtime},
+					ylabel near ticks,
+					enlarge x limits=0.1,
+					xtick={0,5,11},
+					xticklabels={$t_{i-n}$,$t_{i-j}$,$i$},
+					ytick=\empty,
+					bar width=\barwidth,
+					clip=false,
+					legend pos=north west,
+					xticklabel style={font={\scriptsize}}
 				]
-				
+
 				\addlegendimage{legend image code/.code={
-						\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-				}}
+							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
 				\addlegendentry{\scriptsize$t_k$}
 				\addlegendimage{legend image code/.code={
-						\draw[draw=chaptertumblue, thick, densely dashed, anchor=center] (0cm, 0cm)  -- (0.3cm,0cm);
-				}}
+							\draw[draw=chaptertumblue, thick, densely dashed, anchor=center] (0cm, 0cm)  -- (0.3cm,0cm);
+						}}
 				\addlegendentry{\scriptsize$\lambda\text{avg}(A)$}
-				
+
 				\pgfmathsetmacro{\lambdaval}{1.5}
 				\pgfmathsetmacro{\k}{0.7}
 				\pgfmathsetmacro{\xzero}{5}
 				\pgfmathsetmacro{\yoff}{0.5}
 				\pgfmathsetmacro{\yscale}{1.25}
-				
+
 				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue, samples at={0,...,10,12,13,14,15}, domain=0:15] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
 				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue, samples at={11}, domain=0:15] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
-				
+
 				\pgfmathsetmacro{\tmpsum}{0}
 				\foreach \x in {0,...,5}{%
-					\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
-					\global\let\tmpsum=\pgfmathresult%
-				}
+						\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
+						\global\let\tmpsum=\pgfmathresult%
+					}
 				\pgfmathsetmacro{\avgA}{\tmpsum/6}
-				
+
 				\pgfmathsetmacro{\tmpsum}{0}
 				\foreach \x in {6,...,11}{%
-					\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
-					\global\let\tmpsum=\pgfmathresult%
-				}
-				\pgfmathsetmacro{\avgB}{\tmpsum/6} 
-				
+						\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
+						\global\let\tmpsum=\pgfmathresult%
+					}
+				\pgfmathsetmacro{\avgB}{\tmpsum/6}
+
 				\draw[thick, chapterdarkred] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 5, \avgA);
 				\node[chapterdarkred, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) {\scriptsize$\text{avg}(A)$};
-				
+
 				\draw[thick, violet] ([xshift=-0.5*\barwidth]axis cs: 6, \avgB) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgB);
 				\node[violet, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 6, \avgB) {\scriptsize$\text{avg}(B)$};
-				
+
 				\draw[thick, densely dashed, chaptertumblue] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
-%				\node[chaptertumblue, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) {\scriptsize$\lambda\text{avg}(A)$};
-				
-%				% TODO: broken dash?
-%				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,0.9*\lambdaval)}, dotted] coordinates{(5,0)};
-				
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:12,2) -- (axis cs:16,2) node[midway, yshift=2.5ex]{new tuning phase};
-				
-				
+				%				\node[chaptertumblue, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) {\scriptsize$\lambda\text{avg}(A)$};
+
+				%				% TODO: broken dash?
+				%				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,0.9*\lambdaval)}, dotted] coordinates{(5,0)};
+
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:12,2) -- (axis cs:16,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+
+
 			\end{axis}
 		\end{tikzpicture}
 	\end{subfigure}%
@@ -387,55 +390,55 @@ This approach is conceptually similar to the interval averaging trigger, althoug
 			}
 			\def\barwidth{12pt}
 			\begin{axis}[
-				height=0.75\textwidth, width=\textwidth,
-				xmin = 0,
-				xmax = 8,
-				ymin = 0,
-				ymax = 2,
-				xlabel={Iteration},
-				ylabel={Iteration runtime},
-				ylabel near ticks,
-				enlarge x limits=0.1,
-				xtick={0, ..., 8},
-				xticklabels={$i-n-1$,,\phantom{$i$}\textellipsis,,$i-1$,$i$,,},
-				ytick=\empty,
-				bar width=\barwidth,
-				clip=false,
-				legend pos=north west,
-				xticklabel style={font={\scriptsize}}
+					height=0.75\textwidth, width=\textwidth,
+					xmin = 0,
+					xmax = 8,
+					ymin = 0,
+					ymax = 2,
+					xlabel={Iteration},
+					ylabel={Iteration runtime},
+					ylabel near ticks,
+					enlarge x limits=0.1,
+					xtick={0, ..., 8},
+					xticklabels={$i-n-1$,,\phantom{$i$}\textellipsis,,$i-1$,$i$,,},
+					ytick=\empty,
+					bar width=\barwidth,
+					clip=false,
+					legend pos=north west,
+					xticklabel style={font={\scriptsize}}
 				]
-				
+
 				\addlegendimage{legend image code/.code={
-						\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-				}}
+							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
 				\addlegendentry{\scriptsize$t_k$}
 				\addlegendimage{legend image code/.code={
-						\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-				}}
+							\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+						}}
 				\addlegendentry{\scriptsize$\lambda \text{avg}\left[t_{i-n-1}, t_{i-1}\right]$}
-				
+
 				\pgfmathsetmacro{\lambdaval}{1.5}
 				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates{
-					(0,0.9)
-					(1,1.17)
-					(2,0.95)
-					(3,1.1)
-					(4,0.9)
-					(6,1.13)
-					(7,1.33)
-					(8,0.55)
-				};
+						(0,0.9)
+						(1,1.17)
+						(2,0.95)
+						(3,1.1)
+						(4,0.9)
+						(6,1.13)
+						(7,1.33)
+						(8,0.55)
+					};
 				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue] coordinates {(5,1.7)};
 				% TODO: broken dash?
 				% avg is 1,004
 				\draw[thick, chapterdarkred] ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) -- ([xshift=0.5*\barwidth]axis cs: 4, 1.004);
 				\node[chapterdarkred, anchor=south, align=left, inner sep=0pt, yshift=-0.125em] at (axis cs: 0, 1.004) {\scriptsize$\text{avg}$};
-				
+
 				\addplot[ybar, fill=none, draw=tumblueaccverylight, shift={(axis direction cs:0,1.004*\lambdaval)}, dotted] coordinates{(5,0)};
-				
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new tuning phase};
-				
-				
+
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:6,2) -- (axis cs:9,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+
+
 			\end{axis}
 		\end{tikzpicture}
 	\end{subfigure}
@@ -453,14 +456,16 @@ The general idea is to fit a simple linear regression, adapted to our use case, 
 	\hat{\beta}_1=\frac{\sum_{k=i-n-1}^{i}(k-\bar k)(t_k-\bar t)}{\sum_{k=i-n-1}^{i}(k-\bar k)^2},\quad\bar t=\frac{1}{n}\sum_{k=i-n-1}^it_k, \quad \bar k = \frac{1}{n}\sum_{k=i-n-1}^ik\label{eq:lin_reg}
 \end{equation}
 
-The value of the estimator $\hat\beta_0$, i.e. the intersection at $y=0$, is not of interest. Similarly, as the samples are taken in constant steps of one iteration, the values of $k$ can be shifted to the interval $[0, n]$. Considering these two points, the model can be transformed to \eqref{eq:lin_reg_simpl}, where $A, B$ are constants that can be precomputed at initialization, as given in \eqref{eq:lin_reg_consts}.
+The value of the estimator $\hat\beta_0$, i.e. the intersection at $y=0$, is not of interest. Similarly, as the samples are taken in constant steps of one iteration, the values of $k$ can be shifted to the interval $[0, n]$. Considering these two points, the model can be transformed to \eqref{eq:lin_reg_simpl}.
 
 \begin{equation}
-	\hat{\beta}_1' =\frac{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)(t_{i-n-1+k}-\bar t)}{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)^2}= \frac{1}{B}\sum_{k=0}^{n-1}\left(k-A\right)(t_{i-n-1+k}-\bar t)\label{eq:lin_reg_simpl}
+	\hat{\beta}_1' =\frac{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)(t_{i-n-1+k}-\bar t)}{\sum_{k=0}^{n-1}\left(k-\frac{n(n-1)}{2n}\right)^2}= \frac{1}{C_2}\sum_{k=0}^{n-1}\left(k-C_1\right)(t_{i-n-1+k}-\bar t)\label{eq:lin_reg_simpl}
 \end{equation}
+where $C_1, C_2$ are constants that can be precomputed at initialization:
 \begin{equation}
-	A = \frac{n-1}{2}, \quad B=\sum_{k=0}^{n-1}\left(k-A\right)^2\label{eq:lin_reg_consts}
+	C_1 = \frac{n-1}{2}, \quad C_2=\sum_{k=0}^{n-1}\left(k-C_1\right)^2\label{eq:lin_reg_consts}
 \end{equation}
+
 
 $\hat\beta_1'$ can thus be interpreted as \enquote{in each iteration, the runtime is projected to increase $\hat\beta_1'$ nanoseconds}. This however, is not a sensible metric to compare to a user-set triggerFactor, as it heavily depends on the scenario and would require to know rough iteration runtime estimates beforehand. Therefore, we use a normalization function, such that a factor of $1.0$ is roughly equal to \enquote{no runtime increase}. The resulting value is also consistent to other triggers. The normalization implemented is presented in \eqref{eq:lin_reg_norm}.
 
@@ -472,9 +477,9 @@ $\hat\beta_1'$ can thus be interpreted as \enquote{in each iteration, the runtim
 In particular, we have:
 
 \begin{enumerate}[label=(\roman*)]
-	\item $\hat\beta_{\text{norm}} = 1$ if there is no projected change in iteration runtime
-	\item $\hat\beta_{\text{norm}} > 1$ if there is a projected increase in iteration runtime
-	\item $\hat\beta_{\text{norm}} < 1$ if there is a projected decrease in iteration runtime
+	\item $\hat\beta_{\text{norm}} = 1$ if there is no projected change in iteration runtime.
+	\item $\hat\beta_{\text{norm}} > 1$ if there is a projected increase in iteration runtime.
+	\item $\hat\beta_{\text{norm}} < 1$ if there is a projected decrease in iteration runtime.
 	\item $\hat\beta_{\text{norm}} = 2$ if there the runtime of the next interval is projected to be double the current interval's runtime.
 \end{enumerate}
 
