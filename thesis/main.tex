@@ -17,7 +17,7 @@
 %\usetikzlibrary{external} 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usepgfplotslibrary{groupplots}
+\usepgfplotslibrary{groupplots,colormaps}
 %\usepgfplotslibrary{external} 
 %\tikzexternalize[prefix=tikzcache/]
 %\tikzset{external/force remake}
@@ -25,6 +25,7 @@
 %\includeonly{ {Chapters/01-Introduction} }
 %\includeonly{ {Chapters/02-Background} }
 %\includeonly{ {Chapters/03-Implementation} }
+\includeonly{ {Chapters/04-Evaluation} }
 %\includeonly{ {Chapters/05-Results} }
 
 \usepackage{microtype}
@@ -34,6 +35,7 @@
 \usepackage{siunitx}
 \usepackage[htt]{hyphenat}
 \usepackage{mleftright}
+\usepackage{ifthen}
 
 \usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc, patterns, calligraphy, matrix, positioning, fit}
 
@@ -49,8 +51,8 @@
 \graphicspath{ {./Figures} {./Figures/scenarios}}
 
 \newif\ifdropfigures
-\dropfigurestrue
-%\dropfiguresfalse
+%\dropfigurestrue
+\dropfiguresfalse
 \ifdropfigures
 \renewcommand{\includegraphics}[2][]{}
 \fi

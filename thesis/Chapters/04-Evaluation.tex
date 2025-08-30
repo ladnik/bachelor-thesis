@@ -3,11 +3,11 @@
 
 {
 	\parindent0pt
-This chapter presents the scenarios and criteria employed in the evaluation of our implementation. \autoref{sec:benchmark_scenarios} introduces a series of benchmarking scenarios, which have been chosen to reflect distinct simulation characteristics appearing in real-world applications.
+	This chapter presents the scenarios and criteria employed in the evaluation of our implementation. \autoref{sec:benchmark_scenarios} introduces a series of benchmarking scenarios, which have been chosen to reflect distinct simulation characteristics appearing in real-world applications.
 
-Subsequently, \autoref{sec:metrics} defines the evaluation metrics applied to these benchmarks. The metrics are intended to provide comparability between simulation runs with dynamic tuning intervals and to the baseline runs with static tuning intervals.
+	Subsequently, \autoref{sec:metrics} defines the evaluation metrics applied to these benchmarks. The metrics are intended to provide comparability between simulation runs with dynamic tuning intervals and to the baseline runs with static tuning intervals.
 
-Together, the benchmarking scenarios and evaluation metrics provide a framework for assessing the performance and reliability of the proposed strategies.
+	Together, the benchmarking scenarios and evaluation metrics provide a framework for assessing the performance and reliability of the proposed strategies.
 }
 
 
@@ -16,6 +16,63 @@ Together, the benchmarking scenarios and evaluation metrics provide a framework 
 As to not limit our analysis to one specific simulation setting, we use a selection of benchmarking scenarios. These represent different structures as they may be used in real-world applications.
 The heating-sphere and exploding-liquid scenarios are identical to the ones given by Newcome et al., the configuration files have been adapted and parametrized for use in this thesis \cite{Newcome2025}.
 The other scenarios are are taken from the AutoPas \texttt{md-flexible} example. %TODO: citation
+
+
+\pgfplotsset{
+	colormap={fast}{
+			rgb255(0cm)=(14,14,119);
+			rgb255(0.17159223942480895cm)=(61,117,206);
+			rgb255(0.2984914818394138cm)=(90,189,243);
+			rgb255(0.4321287371255907cm)=(175,237,234);
+			rgb255(0.5cm)=(229,240,196);
+			rgb255(0.5882260353170073cm)=(244,212,129);
+			rgb255(0.7061412605695164cm)=(236,158,80);
+			rgb255(0.8476395308725272cm)=(204,89,40);
+			rgb255(1cm)=(150,19,30);
+		}
+}
+
+\newcommand{\fastcolorbar}{%
+	\centering
+	\begin{tikzpicture}
+		\pgfplotscolorbardrawstandalone[
+			colorbar,
+			colormap name=fast,
+			point meta min=0,
+			point meta max=50,
+			colorbar style={
+					height=3cm,
+					ytick={0,10,...,50},
+					tick align=outside,
+					tick pos=right,
+				},
+		]
+	\end{tikzpicture}
+
+	\begin{tikzpicture}
+		\node[anchor=north, align=center] at (0,0) {\si{F^{*}}};
+	\end{tikzpicture}
+}
+
+\newcommand{\fastcolorbarhor}{%
+	\centering
+	\begin{tikzpicture}
+		\node[anchor=east, align=center] at (-0.25cm,-0.25cm) {\si{F^{*}}};
+		\pgfplotscolorbardrawstandalone[
+			colorbar horizontal,
+			colormap name=fast,
+			point meta min=0,
+			point meta max=50,
+			colorbar style={
+					width=3cm,
+					xtick={0,10,...,50},
+					tick align=outside,
+					tick pos=top,
+					xticklabel pos=top,
+				},
+		]
+	\end{tikzpicture}
+}
 
 
 \subsection{Equilibrium}
@@ -27,39 +84,18 @@ In the equilibrium scenario, particles with initial velocity $0$ are packed tigh
 	\centering
 	\begin{subfigure}[c]{.3\textwidth}
 		\includegraphics[width=\textwidth]{equilibrium/render/t0.png}
-		\subcaption{State at $t=\qty{0}{s}$} % 0
+		\subcaption{Iteration \num{0}} % 0, 0
 	\end{subfigure}%
 	\begin{subfigure}[c]{.3\textwidth}
 		\includegraphics[width=\textwidth]{equilibrium/render/t10000.png}
-		\subcaption{State at $t=\qty{10}{s}$} % 10000
+		\subcaption{Iteration \num{10000}} % 10000, 10
 	\end{subfigure}%
 	\begin{subfigure}[c]{.3\textwidth}
 		\includegraphics[width=\textwidth]{equilibrium/render/t50000.png}
-		\subcaption{State at $t=\qty{50}{s}$} % 50000
+		\subcaption{Iteration \num{50000}} % 50000, 50
 	\end{subfigure}%
 	\hfill\begin{subfigure}[c]{.08\textwidth}
-		\resizebox{\textwidth}{!}{
-			\begin{tikzpicture}
-				\def\minval{0}
-				\def\maxval{50}
-				\definecolor{startcolor}{RGB}{14,14,120}
-				\definecolor{midcolor}{RGB}{229,241,196}
-				\definecolor{endcolor}{RGB}{150,20,30}
-				\def\height{2.5}
-				\def\width{0.4}
-				\def\nsteps{5}
-
-				\shade[top color=endcolor, color=midcolor, bottom color=startcolor] (0,0) rectangle (-\width,\height);
-
-				\foreach \i in {0,...,\nsteps}{
-						\pgfmathsetmacro{\val}{\minval + (\maxval-\minval)*\i/\nsteps}
-						\pgfmathsetmacro{\y}{\height * (\val-\minval)/(\maxval-\minval)}
-						\draw (0.1,\y) -- (0,\y);
-						\node[right, align=left] at (0.125,\y) {\scriptsize\pgfmathprintnumber[fixed,precision=2]{\val}};
-					}
-				% TODO: add unit for scale
-			\end{tikzpicture}
-		}
+		\fastcolorbar
 	\end{subfigure}
 	\label{fig:evolution_equil}
 	\caption{Evolution of the simulation state in the equilibrium scenario.}
@@ -72,51 +108,29 @@ Similarly to the equilibrium scenario, the exploding liquid scenario starts of w
 \label{subsec:expl}
 \begin{figure}[htpb]
 	\centering
-	\begin{subfigure}[c]{.3\textwidth}
+	\begin{subfigure}[c]{.25\textwidth}
+		\newsavebox{\colorbarbox}
+		\savebox{\colorbarbox}{
+			\fastcolorbarhor
+		}
+		\usebox{\colorbarbox}%
+		\vspace*{-\ht\colorbarbox} %
 		\includegraphics[width=\textwidth]{exploding-liquid/render/t0.png}
-		\subcaption{State at $t=\qty{0}{s}$} % 0 
+		\subcaption{Iteration \num{0}} % 0 
 	\end{subfigure}%
-	\begin{subfigure}[c]{.3\textwidth}
+	\begin{subfigure}[c]{.25\textwidth}
 		\includegraphics[width=\textwidth]{exploding-liquid/render/t3000.png}
-		\subcaption{State at $t=\qty{5.5}{s}$} % 3000
+		\subcaption{Iteration \num{3000}} % 3000, 5.5
 	\end{subfigure}%
-	\begin{subfigure}[c]{.3\textwidth}
+	\begin{subfigure}[c]{.25\textwidth}
 		\centering
 		\includegraphics[width=\textwidth]{exploding-liquid/render/t11000.png}
-		\subcaption{State at $t=\qty{20}{s}$} % 11000
-	\end{subfigure}
-	\hspace*{.15\textwidth}
-	\begin{subfigure}[c]{.3\textwidth}
-		\includegraphics[width=\textwidth]{exploding-liquid/render/t22000.png}
-		\subcaption{State at $t=\qty{40}{s}$} % 22000
+		\subcaption{Iteration \num{11000}} % 11000, 20
 	\end{subfigure}%
-	\begin{subfigure}[c]{.3\textwidth}
-		\includegraphics[width=\textwidth]{exploding-liquid/render/t51000.png}
-		\subcaption{State at $t=\qty{93}{s}$} % 51000
-	\end{subfigure}%
-	\hfill\begin{subfigure}[c]{.08\textwidth}
-		\resizebox{\textwidth}{!}{
-			\begin{tikzpicture}
-				\def\minval{0}
-				\def\maxval{50}
-				\definecolor{startcolor}{RGB}{14,14,120}
-				\definecolor{midcolor}{RGB}{229,241,196}
-				\definecolor{endcolor}{RGB}{150,20,30}
-				\def\height{2.5}
-				\def\width{0.4}
-				\def\nsteps{5}
-
-				\shade[top color=endcolor, color=midcolor, bottom color=startcolor] (0,0) rectangle (-\width,\height);
-
-				\foreach \i in {0,...,\nsteps}{
-						\pgfmathsetmacro{\val}{\minval + (\maxval-\minval)*\i/\nsteps}
-						\pgfmathsetmacro{\y}{\height * (\val-\minval)/(\maxval-\minval)}
-						\draw (0.1,\y) -- (0,\y);
-						\node[right, align=left] at (0.125,\y) {\scriptsize\pgfmathprintnumber[fixed,precision=2]{\val}};
-					}
-				% TODO: add unit for scale
-			\end{tikzpicture}
-		}
+	\begin{subfigure}[c]{.25\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{exploding-liquid/render/t31000.png}
+		\subcaption{Iteration \num{31000}} % 31000, ?? 
 	\end{subfigure}
 	\label{fig:evolution_expl}
 	\caption{Evolution of the simulation state in the exploding liquid scenario.}
@@ -124,59 +138,37 @@ Similarly to the equilibrium scenario, the exploding liquid scenario starts of w
 
 \subsection{Heating Sphere}
 \label{subsec:hs}
-The heating sphere scenario consists of a dense, small sphere of particles. Reflective boundary conditions apply as in the previous scenarios. In the course of the simulation, the temperature rises from $0.1$ to $100$ with a $\Delta T=0.1$ every 100 iterations. Additionaly, brownian motion, i.e. random fluctuations in particle positions are applied \cite{Moerters2010}. The sphere expands with the inrcease in temperature and particles are radiating out from the sphere center.
+The heating sphere scenario consists of a dense, small sphere of particles. Reflective boundary conditions apply as in the previous scenarios. In the course of the simulation, the temperature rises from $0.1$ to $100$ with a $\Delta \si{T^{*}}=0.1$ every 100 iterations. Additionaly, brownian motion, i.e. random fluctuations in particle positions are applied \cite{Moerters2010}. The sphere expands with the inrcease in temperature and particles are radiating out from the sphere center.
 
 \begin{figure}[htpb]
 	\centering
-	\begin{subfigure}[c]{.3\textwidth}
+	\fastcolorbarhor
+	
+	\begin{subfigure}[c]{.25\textwidth} 
 		\includegraphics[width=\textwidth]{heating-sphere/render/t0.png}
-		\subcaption{State at $t=\qty{0}{s}$} % 0
+		\subcaption{Iteration \num{0}} % 0
 	\end{subfigure}%
-	\begin{subfigure}[c]{.3\textwidth}
+	\begin{subfigure}[c]{.25\textwidth}
 		\includegraphics[width=\textwidth]{heating-sphere/render/t4000.png}
-		\subcaption{State at $t=\qty{0.40}{s}$} % 4000
+		\subcaption{Iteration \num{4000}} % 4000, 0.4
 	\end{subfigure}%
-	\begin{subfigure}[c]{.3\textwidth}
-		\centering
-		\includegraphics[width=\textwidth]{heating-sphere/render/t12000.png}
-		\subcaption{State at $t=\qty{1.2}{s}$} % 12000
-	\end{subfigure}
-	\hspace*{.15\textwidth}
-	\begin{subfigure}[c]{.3\textwidth}
+%		\begin{subfigure}[c]{.25\textwidth}
+%			\centering
+%			\includegraphics[width=\textwidth]{heating-sphere/render/t12000.png}
+%			\subcaption{Iteration \num{12000}} % 12000, 1.2
+%		\end{subfigure}%
+	%	\hspace*{.15\textwidth} 
+	\begin{subfigure}[c]{.25\textwidth}
 		\includegraphics[width=\textwidth]{heating-sphere/render/t23000.png}
-		\subcaption{State at $t=\qty{2.3}{s}$} % 23000
+		\subcaption{Iteration \num{23000}} % 23000, 2.3
 	\end{subfigure}%
-	\begin{subfigure}[c]{.3\textwidth}
+	\begin{subfigure}[c]{.25\textwidth}
 		\vspace*{0.1\textwidth}
 		\centering
 		\includegraphics[width=0.8\textwidth]{heating-sphere/render/t60000.png}
 		\vspace*{0.1\textwidth}
-		\subcaption{State at $t=\qty{6}{s}$} % 60000
+		\subcaption{Iteration \num{60000}} % 60000, 6
 	\end{subfigure}%
-	\hfill\begin{subfigure}[c]{.08\textwidth}
-		\resizebox{\textwidth}{!}{
-			\begin{tikzpicture}
-				\def\minval{0}
-				\def\maxval{50}
-				\definecolor{startcolor}{RGB}{14,14,120}
-				\definecolor{midcolor}{RGB}{229,241,196}
-				\definecolor{endcolor}{RGB}{150,20,30}
-				\def\height{2.5}
-				\def\width{0.4}
-				\def\nsteps{5}
-
-				\shade[top color=endcolor, color=midcolor, bottom color=startcolor] (0,0) rectangle (-\width,\height);
-
-				\foreach \i in {0,...,\nsteps}{
-						\pgfmathsetmacro{\val}{\minval + (\maxval-\minval)*\i/\nsteps}
-						\pgfmathsetmacro{\y}{\height * (\val-\minval)/(\maxval-\minval)}
-						\draw (0.1,\y) -- (0,\y);
-						\node[right, align=left] at (0.125,\y) {\scriptsize\pgfmathprintnumber[fixed,precision=2]{\val}};
-					}
-				% TODO: add unit for scale
-			\end{tikzpicture}
-		}
-	\end{subfigure}
 	\label{fig:evolution_hs}
 	\caption{Evolution of the simulation state in the heating sphere scenario.}
 \end{figure}
