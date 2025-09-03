@@ -3,102 +3,257 @@
 
 {
 	\parindent0pt
-	This chapter examines the particle simulation library AutoPas and provides an overview of its architecture and features. In \autoref{sec:background}, the concept of autotuning is introduced, as well as the  introduces the \texttt{md-flexible} application.
+	This chapter examines the particle simulation library AutoPas and provides an overview of its architecture and features. In \autoref{sec:background}, AutoPas' concept of autotuning is introduced, together with the \texttt{md-flexible} application. %TODO ?
 	The various configuration parameters available for the simulation are introduced thereafter in \autoref{sec:config_params}. Additionally, \autoref{sec:tuning_strategies} shortly outlines the different tuning strategies for the selection of the optimal combination of these parameters.
-	
-	The contents of this chapter are mainly drawn from the works introducing AutoPas, specifically the publications by Gratl et al. \cite{Gratl2019, Gratl2021} and Seckler et al. \cite{Seckler2021}, as well as the AutoPas documentation \cite{AutoPas2025}.
+
+	The contents of this chapter are mainly drawn from the works introducing AutoPas, specifically the publications by Gratl et al. \cite{Gratl2019, Gratl2021, GratlGassner2025} and Seckler et al. \cite{Seckler2021}, as well as the AutoPas documentation \cite{AutoPas2025}.
 }
 
 
 \section{Background}
 \label{sec:background}
-% LJ functor
+%TODO: possible duplication from intro?
+AutoPas is an open-source \CC{} library that facilitates MD simulations. The feature that sets AutoPas apart from other particle simulation software such as LAMMPS\footnote{\href{https://www.lammps.org/}{https://www.lammps.org/}}, ls1-mardyn\footnote{\href{https://www.ls1-mardyn.de/}{https://www.ls1-mardyn.de/}} or GROMACS\footnote{\href{https://www.gromacs.org/}{https://www.gromacs.org/}}, is the autotuning algorithm.
+
+The aforementioned programs are highly specialized on specific applications and therefore focus on optimizing the algorithms used in these contexts.
+AutoPas on the other hand tries to provide optimal algorithms for a broader range of scenarios by dynamically switching between different configurations at runtime.
+% TODO
+
+As AutoPas is only a library, we require an application that interacts with AutoPas and provides a front end to allow for our particle simulations. In this work, we will use the \texttt{md-flexible} application provided by AutoPas as an example. The program facilitates molecular dynamics simulations based on the LJ potential.
 % Autotuning
-% md flexible
-% Simulation Loop? \cite{Hospital2015}
+
 
 \section{Configuration Parameters}
 \label{sec:config_params}
+
+As outlined in \autoref{sec:background}, AutoPas is designed to allow for dynamic adaptation of the algorithmic configuration used in computing the actual simulation steps. Such a configuration refers to a distinct combination of different algorithmic parameters. The relevant parameters are categorized and described in the following.
+
 \subsection{Containers}
+
+Containers in AutoPas are classes responsible for particle management and neighbor identification. They store the actual particle data in a specific memory layout and allow for the efficient lookup of neighbors, i.e. particles inside the cutoff radius $r_c$. Grouped by the neighbor identification algorithm, there are currently four different types of containers.
+
 % only a selection of all containers
-\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Verlet Cluster List }}]
-	\item[\textbf{Direct Sum}] TODO
-	\item[\textbf{Linked Cells}] TODO
-	\item[\textbf{Verlet Lists}] TODO % TODO
-	\item[\textbf{Verlet Cluster Lists}] TODO % TODO
+\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Verlet Cluster Lists}}]
+	\item[\textbf{Direct Sum}] The simplest algorithm is the direct sum: It calculates the distances between the current particle and all other particles, discards those which lie outside of $r_c$ and proceeds with the force calculations on the remaining particles. As this method has complexity $\mathcal{O}\left(n^2\right)$, it is only suitable for small scenarios.
+	\item[\textbf{Linked Cells}] The linked cell approach divides the simulation space up into a regular grid, consisting of so-called cells. Each particle is then assigned to a cell corresponding to its location in space. Considering a cell size greater or equal to $r_c$, only neighboring cells have to be considered in the force calculations. For homogeneous particle distributions, this reduces the complexity to $\mathcal{O}\left(n\right)$. Additionally, particles close to each other in the simulation space are close in memory, which results in good caching behavior and allows for vectorization.
+	\item[\textbf{Verlet Lists}] One drawback of the linked cells algorithm is the high number of particles that lie inside neighboring cells but outside the cutoff radius. They are discarded in the force computation, but still require the distance computations. The Verlet list algorithm solves this issue by introducing a neighbor list of interaction partners for each particle. As rebuilding these lists is expensive, not only neighbors inside the cutoff radius are stored, but also particles that might come into interaction range. This is achieved by extending the radius by a so-called Verlet skin. As particles move, these neighbor lists have to be rebuilt periodically, relying on other neighbor identification algorithms such as linked cells. Furthermore, Verlet lists have a large memory footprint (one list per particle) and do not provide the advantageous memory properties of linked cells.
+	\item[\textbf{Verlet Cluster Lists}] To reduce the overall number of lists in the Verlet list approach, multiple particles can be clustered together, effectively combining their individual neighbor lists to a single one for the whole cluster. This is possible due to the fact that neighboring particles are likely to share multiple of their neighbors. The clustering is based on a subdivision of the simulation domain into a Cartesian grid ($x/y$) which, extruded along the third dimension ($z$), form towers. Inside each of these towers, particles are grouped into clusters of size $M$, ordered by their position along the $z$-axis. Instead of an exact combination of all cutoff radii, a simple bounding box is constructed around each cluster. Verlet cluster lists not only reduce the total number of neighbor lists, but also allow for vectorization, as clusters are groupings of spatially close particles. On the other hand, the number of particles for which distance calculations have to be performed increases.
 \end{description}
 \subsection{Traversals}
+
 \subsection{Additional Parameters}
 Additionally, there are a number of additional configuration parameters that do not fall into the aforementioned classes. They are given below.
 
-\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Cell size factor }}]
+\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Cell Size Factor}}]
 	\item[\textbf{Data Layout}] This option concerns the memory layout of the particle structures. As each particle has multiple attributes associated to it, all particles together can be laid out either as an Array of Structures (AoS) or a Structure of Arrays (SoA). In the AoS layout, all particles are laid out after each other, in the SoA layout, each attribute type is grouped into an array, where each entry corresponds to the value of this attribute for a specific particle. \autoref{fig:aos_soa} illustrates both principles.
 	\item[\textbf{Newton3}] As mentioned in \autoref{sec:newton}, Newton's third law states that $F_a = -F_b$ for two bodies $a, b$ exerting forces on each other. This allows for optimizing pairwise interactions, as only one force has to be computed. However, this approach is not always beneficial as it may limit parallelization -- once the force is evaluated, both particles must be updated at once.
-	\item[\textbf{Cell Size Factor}] TODO % TODO
+	\item[\textbf{Cell Size Factor}] The cell size factor (CSF) parameter specifies the side length of the cells in relation to the interaction cutoff radius ($r_c$). It can reduce the number of particles for which distances have to be calculated, as a smaller cell side length better approximates the spherical nature of the cutoff radius. This behavior is illustrated in  \autoref{fig:lc_csf}.
 \end{description}
+
+
+\begin{figure}
+
+	\def\sz{2em}
+	\def\rc{4em}
+	\def\psz{0.4em}
+	\tikzset{
+		mgrid/.style = {matrix of nodes, ampersand replacement=\&, nodes={draw, minimum width=\sz, minimum height=\sz, anchor=center}, column sep=-\pgflinewidth, row sep=-\pgflinewidth},
+		particle/.style={draw=black, circle, minimum size=\psz, inner sep=0pt, outer sep = 0pt},
+		particleOutside/.style={particle, fill=violet, pattern={Lines[angle=45,distance=1pt]}},
+		particleInside/.style={particle, fill=green, pattern=dots},
+		checked/.style={draw=none, fill=tumblueaccverylight, inner sep=0pt},
+		checkedborder/.style={draw=chaptertumblue, very thick, inner sep = 0pt},
+		cutoff/.style={draw=chaptertumblue, circle, very thick, dashed, minimum size=\rc, inner sep=0pt, outer sep=0pt},
+		arrow/.style={-latex},
+	}
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\begin{tikzpicture}
+			\draw[step=\sz] (0,0) grid (5*\sz,5*\sz);
+
+
+			\begin{scope}[on background layer]
+				\node[checked, fit={(1*\sz,1*\sz) (4*\sz,4*\sz)}] {};
+			\end{scope}
+
+			\node[checkedborder, fit={(1*\sz,1*\sz) (4*\sz,4*\sz)}] {};
+
+
+			\node[particle, fill=lightred] (pact) at (2.5*\sz+0.2em,2.5*\sz-0.2em) {};
+			\node[cutoff] (cr) at (pact) {};
+
+			\node[particle]        (p1)  at (1.5*\sz+0.3em,4.5*\sz-0.3em) {};
+			\node[particle]        (p2)  at (4.5*\sz-0.6em,2.5*\sz-0.4em) {};
+			\node[particle]        (p3)  at (0.5*\sz+0.6em,3.5*\sz-0.6em) {};
+			\node[particleInside]  (p4)  at (2.5*\sz+0.1em,1.5*\sz+0.4em) {};
+			\node[particle]        (p5)  at (3.5*\sz-0.5em,0.5*\sz+0.5em) {};
+			\node[particle]        (p6)  at (4.5*\sz-0.3em,4.5*\sz-0.4em) {};
+			\node[particleOutside] (p7)  at (3.5*\sz-0.7em,3.5*\sz+0.6em) {};
+			\node[particleInside]  (p8)  at (1.5*\sz+0.5em,2.5*\sz-0.67em) {};
+			\node[particle]        (p9)  at (0.5*\sz-0.2em,0.5*\sz+0.3em) {};
+			\node[particle]        (p10) at (4.5*\sz+0.7em,1.5*\sz-0.7em) {};
+			\node[particleOutside] (p11) at (1.5*\sz+0.5em,3.5*\sz+0.4em) {};
+			\node[particle]        (p12) at (2.5*\sz-0.6em,0.5*\sz+0.7em) {};
+			\node[particle]        (p13) at (3.5*\sz+0.7em,4.5*\sz-0.1em) {};
+			\node[particle]        (p14) at (0.5*\sz+0.4em,2.5*\sz-0.2em) {};
+			\node[particleOutside] (p15) at (1.5*\sz+0.2em,1.5*\sz-0.5em) {};
+			\node[particleInside]  (p16) at (2.5*\sz+0.4em,3.5*\sz-0.5em) {};
+			\node[particleOutside] (p17) at (1.5*\sz-0.6em,2.5*\sz+0.5em) {};
+			\node[particleOutside] (p18) at (3.5*\sz+0.7em,1.5*\sz+0.2em) {};
+			\node[particleInside]  (p19) at (3.5*\sz-0.5em,2.5*\sz+0.7em) {};
+			\node[particleOutside] (p20) at (3.5*\sz-0.4em,1.5*\sz-0.7em) {};
+
+
+
+
+			\draw[arrow] (pact) -- (p11);
+			\draw[arrow] (pact) -- (p16);
+			\draw[arrow] (pact) -- (p7);
+			\draw[arrow] (pact) -- (p8);
+			\draw[arrow] (pact) -- (p17);
+			\draw[arrow] (pact) -- (p19);
+			\draw[arrow] (pact) -- (p15);
+			\draw[arrow] (pact) -- (p4);
+			\draw[arrow] (pact) -- (p18);
+			\draw[arrow] (pact) -- (p20);
+
+
+		\end{tikzpicture}
+	\end{subfigure}%
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\begin{tikzpicture}
+			\def\sz{2em}
+			\matrix[mgrid] (mat) at (0,0) {
+			{}\&{}\&{}\&{}\&{}\\
+			{}\&{}\&{}\&{}\&{}\\
+			{}\&{}\&{}\&{}\&{}\\
+			{}\&{}\&{}\&{}\&{}\\
+			{}\&{}\&{}\&{}\&{}\\
+			};
+			%			\def\sz{1em}
+			%			\matrix[mgrid] (mat) {
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\&{}\\
+			%			};
+
+			\begin{scope}[on background layer]
+				\node[checked, fit={(mat-2-2) (mat-4-4)}] {};
+			\end{scope}
+			\node[checkedborder, fit={(mat-2-2) (mat-4-4)}] {};
+
+			\node[particle, fill=lightred] (pact) at ([shift={(0.2em,-0.2em)}]mat-3-3) {};
+			\node[cutoff] (cr) at (pact) {};
+
+			\node[particle] (p1)  at ([shift={(0.3em,0.7em)}]mat-1-2) {};
+			\node[particle] (p2)  at ([shift={(-0.6em,-0.4em)}]mat-3-5) {};
+			\node[particle] (p3)  at ([shift={(0.6em,-0.6em)}]mat-2-1) {};
+			\node[particleInside] (p4)  at ([shift={(0.1em,0.4em)}]mat-4-3) {};
+			\node[particle] (p5)  at ([shift={(-0.5em,0.5em)}]mat-5-4) {};
+			\node[particle] (p6)  at ([shift={(-0.3em,-0.4em)}]mat-1-5) {};
+			\node[particleOutside] (p7)  at ([shift={(-0.7em,0.6em)}]mat-2-4) {};
+			\node[particleInside] (p8)  at ([shift={(0.5em,-0.67em)}]mat-3-2) {};
+			\node[particle] (p9)  at ([shift={(-0.2em,0.3em)}]mat-5-1) {};
+			\node[particle] (p10) at ([shift={(0.7em,-0.7em)}]mat-4-5) {};
+			\node[particleOutside] (p11) at ([shift={(0.5em,0.4em)}]mat-2-2) {};
+			\node[particle] (p12) at ([shift={(-0.6em,0.7em)}]mat-5-3) {};
+			\node[particle] (p13) at ([shift={(0.7em,-0.1em)}]mat-1-4) {};
+			\node[particle] (p14) at ([shift={(0.4em,-0.2em)}]mat-3-1) {};
+			\node[particleOutside] (p15) at ([shift={(0.2em,-0.5em)}]mat-4-2) {};
+			\node[particleInside] (p16) at ([shift={(0.4em,-0.5em)}]mat-2-3) {};
+			\node[particleOutside] (p17) at ([shift={(-0.6em,0.5em)}]mat-3-2) {};
+			\node[particleOutside] (p18) at ([shift={(0.7em,0.2em)}]mat-4-4) {};
+			\node[particleInside] (p19) at ([shift={(-0.5em,0.7em)}]mat-3-4) {};
+			\node[particleOutside] (p20) at ([shift={(-0.4em,-0.7em)}]mat-4-4) {};
+
+
+			\draw[arrow] (pact) -- (p11);
+			\draw[arrow] (pact) -- (p16);
+			\draw[arrow] (pact) -- (p7);
+			\draw[arrow] (pact) -- (p8);
+			\draw[arrow] (pact) -- (p17);
+			\draw[arrow] (pact) -- (p19);
+			\draw[arrow] (pact) -- (p15);
+			\draw[arrow] (pact) -- (p4);
+			\draw[arrow] (pact) -- (p18);
+			\draw[arrow] (pact) -- (p20);
+
+
+		\end{tikzpicture}
+	\end{subfigure}
+	\caption{asdf}
+	\label{fig:lc_csf}
+\end{figure}
 
 \begin{figure}[htpb]
 	% TODO: color scheme
-	\begin{center}
-		\begin{tikzpicture}
-			\def\sz{2em}
-			\def\pad{0.125em}
-			\def\brpad{3.25ex}
-			\def\lblspc{2em}
-			\def\rowspc{8ex}
-			\tikzset{
-				lbl/.style={draw=none, minimum width=\sz, minimum height=\sz, text depth=1pt},
-				attr/.style={draw, minimum width=\sz, minimum height=\sz, anchor=west, text depth=1pt},
-				br/.style={decorate,decoration={brace, amplitude=1ex, raise=0.5ex}},
-				p1/.style={draw=black, fill=lightblue},
-				p2/.style={draw=black, fill=lightviolet},
-				p3/.style={draw=black, fill=lightred},
-			}
+	\centering
+	\begin{tikzpicture}
+		\def\sz{2em}
+		\def\pad{0.125em}
+		\def\brpad{3.25ex}
+		\def\lblspc{2em}
+		\def\rowspc{8ex}
+		\tikzset{
+			lbl/.style={draw=none, minimum width=\sz, minimum height=\sz, text depth=1pt},
+			attr/.style={draw, minimum width=\sz, minimum height=\sz, anchor=west, text depth=1pt},
+			br/.style={decorate,decoration={brace, amplitude=1ex, raise=0.5ex}},
+			p1/.style={draw=black, fill=lightblue},
+			p2/.style={draw=black, fill=lightviolet},
+			p3/.style={draw=black, fill=lightred},
+		}
 
-			\node[lbl] (aos) {\textbf{AoS}};
+		\node[lbl] (aos) {\textbf{AoS}};
 
-			\node[attr, p1, right=\lblspc of aos] (x1) {$r_x^{(1)}$};
-			\node[attr, p1, right=-\pgflinewidth of x1] (y1) {$r_y^{(1)}$};
-			\node[attr, p1, right=-\pgflinewidth of y1] (z1) {$r_z^{(1)}$};
-			\node[attr, p1, right=-\pgflinewidth of z1] (a1) {\textellipsis};
-			\draw [br] ([xshift=\pad]x1.north west) -- ([xshift=-\pad]a1.north east) node[midway, yshift=\brpad]{Particle 1};
+		\node[attr, p1, right=\lblspc of aos] (x1) {$r_x^{(1)}$};
+		\node[attr, p1, right=-\pgflinewidth of x1] (y1) {$r_y^{(1)}$};
+		\node[attr, p1, right=-\pgflinewidth of y1] (z1) {$r_z^{(1)}$};
+		\node[attr, p1, right=-\pgflinewidth of z1] (a1) {\textellipsis};
+		\draw [br] ([xshift=\pad]x1.north west) -- ([xshift=-\pad]a1.north east) node[midway, yshift=\brpad]{Particle 1};
 
-			\node[attr, p2, right=-\pgflinewidth of a1] (x2) {$r_x^{(2)}$};
-			\node[attr, p2, right=-\pgflinewidth of x2] (y2) {$r_y^{(2)}$};
-			\node[attr, p2, right=-\pgflinewidth of y2] (z2) {$r_z^{(2)}$};
-			\node[attr, p2, right=-\pgflinewidth of z2] (a2) {\textellipsis};
-			\draw [br] ([xshift=\pad]x2.north west) -- ([xshift=-\pad]a2.north east) node[midway, yshift=\brpad]{Particle 2};
+		\node[attr, p2, right=-\pgflinewidth of a1] (x2) {$r_x^{(2)}$};
+		\node[attr, p2, right=-\pgflinewidth of x2] (y2) {$r_y^{(2)}$};
+		\node[attr, p2, right=-\pgflinewidth of y2] (z2) {$r_z^{(2)}$};
+		\node[attr, p2, right=-\pgflinewidth of z2] (a2) {\textellipsis};
+		\draw [br] ([xshift=\pad]x2.north west) -- ([xshift=-\pad]a2.north east) node[midway, yshift=\brpad]{Particle 2};
 
-			\node[attr, p3, right=-\pgflinewidth of a2] (x3) {$r_x^{(3)}$};
-			\node[attr, p3, right=-\pgflinewidth of x3] (y3) {$r_y^{(3)}$};
-			\node[attr, p3, right=-\pgflinewidth of y3] (z3) {$r_z^{(3)}$};
-			\node[attr, p3, right=-\pgflinewidth of z3] (a3) {\textellipsis};
-			\draw [br] ([xshift=\pad]x3.north west) -- ([xshift=-\pad]a3.north east) node[midway, yshift=\brpad]{Particle 3};
-			\node[attr,right=-\pgflinewidth of a3] {\textellipsis};
+		\node[attr, p3, right=-\pgflinewidth of a2] (x3) {$r_x^{(3)}$};
+		\node[attr, p3, right=-\pgflinewidth of x3] (y3) {$r_y^{(3)}$};
+		\node[attr, p3, right=-\pgflinewidth of y3] (z3) {$r_z^{(3)}$};
+		\node[attr, p3, right=-\pgflinewidth of z3] (a3) {\textellipsis};
+		\draw [br] ([xshift=\pad]x3.north west) -- ([xshift=-\pad]a3.north east) node[midway, yshift=\brpad]{Particle 3};
+		\node[attr,right=-\pgflinewidth of a3] {\textellipsis};
 
-			\node[lbl, below=\rowspc of aos] (soa) {\textbf{SoA}};
+		\node[lbl, below=\rowspc of aos] (soa) {\textbf{SoA}};
 
-			\node[attr, p1, right=\lblspc of soa] (x1d) {$r_x^{(1)}$};
-			\node[attr, p2, right=-\pgflinewidth of x1d] (x2d) {$r_x^{(2)}$};
-			\node[attr, p3, right=-\pgflinewidth of x2d] (x3d) {$r_x^{(3)}$};
-			\node[attr, right=-\pgflinewidth of x3d] (a1d) {\textellipsis};
-			\draw [br] ([xshift=\pad]x1d.north west) -- ([xshift=-\pad]a1d.north east) node[midway, yshift=\brpad]{$r_x^{(i)}$};
+		\node[attr, p1, right=\lblspc of soa] (x1d) {$r_x^{(1)}$};
+		\node[attr, p2, right=-\pgflinewidth of x1d] (x2d) {$r_x^{(2)}$};
+		\node[attr, p3, right=-\pgflinewidth of x2d] (x3d) {$r_x^{(3)}$};
+		\node[attr, right=-\pgflinewidth of x3d] (a1d) {\textellipsis};
+		\draw [br] ([xshift=\pad]x1d.north west) -- ([xshift=-\pad]a1d.north east) node[midway, yshift=\brpad]{$r_x^{(i)}$};
 
-			\node[attr, p1, right=-\pgflinewidth of a1d] (y1d) {$r_y^{(1)}$};
-			\node[attr, p2, right=-\pgflinewidth of y1d] (y2d) {$r_y^{(2)}$};
-			\node[attr, p3, right=-\pgflinewidth of y2d] (y3d) {$r_y^{(3)}$};
-			\node[attr, right=-\pgflinewidth of y3d] (a2d) {\textellipsis};
-			\draw [br] ([xshift=\pad]y1d.north west) -- ([xshift=-\pad]a2d.north east) node[midway, yshift=\brpad]{$r_y^{(i)}$};
+		\node[attr, p1, right=-\pgflinewidth of a1d] (y1d) {$r_y^{(1)}$};
+		\node[attr, p2, right=-\pgflinewidth of y1d] (y2d) {$r_y^{(2)}$};
+		\node[attr, p3, right=-\pgflinewidth of y2d] (y3d) {$r_y^{(3)}$};
+		\node[attr, right=-\pgflinewidth of y3d] (a2d) {\textellipsis};
+		\draw [br] ([xshift=\pad]y1d.north west) -- ([xshift=-\pad]a2d.north east) node[midway, yshift=\brpad]{$r_y^{(i)}$};
 
-			\node[attr, p1, right=-\pgflinewidth of a2d] (z1d) {$r_z^{(1)}$};
-			\node[attr, p2, right=-\pgflinewidth of z1d] (z2d) {$r_z^{(2)}$};
-			\node[attr, p3, right=-\pgflinewidth of z2d] (z3d) {$r_z^{(3)}$};
-			\node[attr, right=-\pgflinewidth of z3d] (a3d) {\textellipsis};
-			\draw [br] ([xshift=\pad]z1d.north west) -- ([xshift=-\pad]a3d.north east) node[midway, yshift=\brpad]{$r_z^{(i)}$};
-			\node[attr,right=-\pgflinewidth of a3d] {\textellipsis};
+		\node[attr, p1, right=-\pgflinewidth of a2d] (z1d) {$r_z^{(1)}$};
+		\node[attr, p2, right=-\pgflinewidth of z1d] (z2d) {$r_z^{(2)}$};
+		\node[attr, p3, right=-\pgflinewidth of z2d] (z3d) {$r_z^{(3)}$};
+		\node[attr, right=-\pgflinewidth of z3d] (a3d) {\textellipsis};
+		\draw [br] ([xshift=\pad]z1d.north west) -- ([xshift=-\pad]a3d.north east) node[midway, yshift=\brpad]{$r_z^{(i)}$};
+		\node[attr,right=-\pgflinewidth of a3d] {\textellipsis};
 
-		\end{tikzpicture}
-	\end{center}
+	\end{tikzpicture}
 	\caption{Comparison between the Array of Structures (AoS) and Structure of Arrays (SoA) memory layouts. The $r^{(i)}$'s correspond to the position vector of the $i$th particle.}
 	\label{fig:aos_soa}
 \end{figure}
@@ -107,11 +262,12 @@ Additionally, there are a number of additional configuration parameters that do 
 \label{sec:tuning_strategies}
 % keep this rather short
 
-AutoPas provides a variety of different tuning strategies. These are used in the sampling and selection of the new optimal configuration in the tuning phases of the autotuner. As they are not particularly relevant to the topics discussed in this paper, only selected strategies are presented.
+AutoPas provides a variety of different tuning strategies. These are used in sampling and selecting the new optimal configuration in the tuning phases of the autotuner. As they are not particularly relevant to the topics discussed in this paper, only selected strategies are presented.
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{PredictiveTuning }}]
 	\item[\textbf{FullSearch}] The default tuning strategy is an exhaustive search over all possible configurations, i.e. all combinations of parameters. The optimal configuration is thereby guaranteed to be trialed at some point. However, the space of all possible configurations grows exponentially in the number of parameters, of which many configurations may be highly suboptimal. Other tuning strategies are therefore more suitable for most scenarios.
-	\item[\textbf{PredictiveTuning}] TODO
-	\item[\textbf{FuzzyTuning}] TODO \cite{Lerchner2024}
-	\item[\textbf{SlowConfigFilter}] TODO
+	\item[\textbf{RandomSearch}] The random search tuning strategy randomly selects a given number of configurations which are then sampled. This can greatly reduce the number of configurations to test, but may not select the optimal configuration.
+	\item[\textbf{PredictiveTuning}] The predictive tuning strategy reduces the number of configurations that are sampled during tuning phases by only testing configurations that are expected to perform well. To select which configurations might perform well, the results from previous tuning iterations are used to extrapolate a configurations performance in the current tuning phase. The strategy allows to specify the degree of the interpolation, i.e. how many \texttt{full-search} tuning phases are required before the extrapolation takes place. Predictive tuning is typically used with the \texttt{slow-config-filter} which blocks configurations that show extremely poor performance from all successive tuning phases. \cite{Pelloth2020}
 \end{description}
+
+% TODO: Simulation parameters? Nice graphic for boundary conditions: https://fenicsproject.discourse.group/t/problems-with-periodic-bcs-in-3d/12247/2
 

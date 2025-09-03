@@ -22,12 +22,6 @@
 %\tikzexternalize[prefix=tikzcache/]
 %\tikzset{external/force remake}
 
-%\includeonly{ {Chapters/01-Introduction} }
-%\includeonly{ {Chapters/02-Background} }
-%\includeonly{ {Chapters/03-Implementation} }
-\includeonly{ {Chapters/04-Evaluation} }
-%\includeonly{ {Chapters/05-Results} }
-
 \usepackage{microtype}
 \usepackage{parskip}
 \usepackage{adjustbox}
@@ -36,12 +30,38 @@
 \usepackage[htt]{hyphenat}
 \usepackage{mleftright}
 \usepackage{ifthen}
+\usepackage{textcomp}
+\usepackage{latexsym}
+\usepackage[shortcuts]{extdash}
+\usepackage{mathtools}
+\usepackage[dvipsnames]{xcolor}
+\usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc, patterns, patterns.meta, calligraphy, matrix, positioning, fit, backgrounds}
 
-\usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc, patterns, calligraphy, matrix, positioning, fit}
+
+%\includeonly{ {Chapters/01-Introduction} }
+%\includeonly{ {Chapters/02-Background} }
+%\includeonly{ {Chapters/03-Implementation} }
+%\includeonly{ {Chapters/04-Evaluation} }
+\includeonly{ {Chapters/05-Results} }
+%\includeonly{ Chapters/05-Results, Chapters/04-Evaluation}
+
+% TODO: depending on Contents-section lenght, even spread may be misaligned -> manually remove blank page
+% TODO: check figure layouting
+% TODO: align title cover and frontpage
+% TODO: optimal vs omptimum configuration
+
+\newif\ifdropfigures
+\dropfigurestrue
+%\dropfiguresfalse
+\ifdropfigures
+\renewcommand{\includegraphics}[2][]{}
+\fi
 
 % physics-package style bold vectors
 \newcommand{\vb}[1]{\ensuremath{\mathbf{#1}}}
 
+% typesetting C++, courtesy of https://isocpp.org/wiki/faq/misc-environmental-issues#latex-macros
+\def\CC{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
 % redefines \left and \right
 \mleftright
 
@@ -50,12 +70,6 @@
  
 \graphicspath{ {./Figures} {./Figures/scenarios}}
 
-\newif\ifdropfigures
-%\dropfigurestrue
-\dropfiguresfalse
-\ifdropfigures
-\renewcommand{\includegraphics}[2][]{}
-\fi
 
 %%% Loading of Glossary and Acronyms %%%
 \makeglossaries

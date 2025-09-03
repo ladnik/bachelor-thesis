@@ -102,11 +102,16 @@ In this equation, $r$ is the distance between the two particles, $\varepsilon$ t
 			\draw[black!80] (axis cs:0.75,0) -- (axis cs:3.25,0);
 			\draw[black!80] (axis cs:{2^(1/6)},2.25) -- (axis cs:{2^(1/6)},-1.25);
 			\draw[black!80, dashed] (axis cs:0.75,-1) -- (axis cs:{2^(1/6)},-1);
-			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:0.75,2.25) -- (axis cs:{2^(1/6)-0.0125},2.25) node[midway, yshift=2.5ex]{Attraction\vphantom{p}};
-			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:{2^(1/6)+0.0125},2.25) -- (axis cs:3.25,2.25) node[midway, yshift=2.5ex]{Repulsion};
+			
+			\draw[black!80, dashed] (axis cs:2.5,-1.25) -- (axis cs:2.5,2.25);
+			\node[anchor=west, align=left] at (axis cs:2.5, 1) {$r_c$};
+			
+			
+			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:0.75,2.25) -- (axis cs:{2^(1/6)-0.0125},2.25) node[midway, yshift=2.5ex, , text depth=0.5em]{Repulsion};
+			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:{2^(1/6)+0.0125},2.25) -- (axis cs:3.25,2.25) node[midway, yshift=2.5ex, text depth=0.5em]{Attraction};
 		\end{axis}
 	\end{tikzpicture}
-	\caption{An illustration of the potential well of the 12-6 LJ potential, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$ and zero-crossing at $\sigma$. The figure is based on Lenhard et al. \cite{Lenhard2024}}
+	\caption{An illustration of the potential well of the 12-6 LJ potential, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$, zero-crossing at $\sigma$ and cutoff radius $r_c$. The figure is based on Lenhard et al. \cite{Lenhard2024}}
 	\label{fig:lj_graph}
 \end{figure}
 
@@ -137,7 +142,7 @@ As the second derivative of the position $\vb p_i(t)$ is the acceleration $\vb a
 	\vb p_i(t+\delta t) = 2\vb p_i(t) - \vb p_i(t-\delta t) + \delta t^2{\vb a}_i(t) + \mathcal{O}(\delta t^4)\label{eq:acc_verlet}
 \end{equation}
 
-By this formulation we could already calculate the velocities of the particles, however, there are some drawbacks -- e.g. high error propagation. A more exact and efficient approach, sometimes referred to as the Velocity-Verlet algorithm, can be derived similarly.
+By this formulation we could already calculate the velocities of the particles, however, there are some drawbacks -- e.g. high error propagation \cite{Fulst2013}. A more exact and efficient approach, sometimes referred to as the Velocity-Verlet algorithm, can be derived similarly.
 For that, considering \eqref{eq:velocity}, we can rearrange and substitute into \eqref{eq:pos_verlet} to conclude \eqref{eq:verlet_pos2} and finally \eqref{eq:verlet_vel}.
 \begin{equation}
 	\vb v_i(t) = \frac{\vb p_i(t+\delta t) -\vb p_i(t-\delta t)}{2\delta t} \rightsquigarrow \vb p_i(t-\delta t)= \vb p_i(t+\delta t)-2\delta t \vb v_i(t) \label{eq:velocity}
@@ -153,6 +158,8 @@ Because of the aforementioned improved properties of this method, it is often pr
 
 % TODO: refer to experiments done in md-flexible
 % md-flexible is a simple molecular dynamics simulation built around AutoPas. It simulates the Lennard-Jones 12-6 potential on single-site particles with Störmer- Verlet time integration. 
+
+% TODO: Simulation Loop? \cite{Hospital2015}
 
 
 

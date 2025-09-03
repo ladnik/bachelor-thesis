@@ -6,16 +6,85 @@
 	\textellipsis
 }
 
-% How do results differ based on tuning strategy? Full-search vs. others
-%TODO: make capitalization in titles consistent?
+% TODO: How do results differ based on tuning strategy? Full-search vs. others
+\section{Experimental Setup}
+The data analyzed in this chapter was collected on the Linux-Cluster of the Leibniz\-/Rechenzentrum\footnote{\href{https://www.lrz.de/}{https://www.lrz.de/}}. The nodes in the \texttt{cm4} cluster consist of processors in the Sapphire Rapids family (Intel\textsuperscript{\textregistered} Xeon\textsuperscript{\textregistered} Platinum 8480+)  with \qty{2.1}{\gibi \byte} of memory per logical CPU and \qty{488}{\gibi \byte} per node \cite{LSC2025}. For benchmarking purposes, the AutoPas library and \texttt{md-flexible} were compiled with  Spack GCC 13.2.0 and Intel MPI 2021.12.0 on commit \texttt{46bb925c8c5827faee8691afefd9f714630f20f1}.
 
-\section{Trigger Parameters}
-% TODO: compare trigger factors and intervals
-All presented trigger strategies are based on a trigger factor $\lambda$. The averaging, split and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, sensible default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
+The scripts used to generate the Slurm jobs and configuration files can be found in the repository of this thesis\footnote{\href{https://github.com/ladnik/bachelor-thesis}{https://github.com/ladnik/bachelor-thesis}}.
 
-Therefore, we first inspect the relation between these parameters and the total simulation runtime for a range of combinations to find suitable default parameters for further evaluation.
+% TODO: add version compiler/mpi version, add commit hash
 
-% TODO: longer intervals -> slower reaction?
+% Refer to Appendix for additional data
+% Refer to Input files
+\section{Choice of Simulation Statistics}
+As referred to before in \autoref{sec:avail_sim_stats}, there are several simulation statistics available upon which we could base our trigger strategies. Even iteration runtimes themselves are subdivided into the time spent on computing interactions, traversing remainders and rebuilding neighbor lists. % TODO: explain remainder traversal?
+In this thesis, we will consider the sum of these times with the exception of the rebuilding measurements. This choice can be justified by inspecting runtime data we collected. As shown in \autoref{fig:rebuild_times}, the rebuild times smooth out the overall measurements and thus decrease the effectivity at which a scenario change can be detected.
+Moreover, the rebuilding of neighbor lists happens at a fixed \texttt{rebuildFrequency}, which leads to problems in trigger strategies with a low number of samples, as the rebuild iterations greatly outweigh all non-rebuild iterations.
+
+\begin{figure}[htpb]
+	\centering
+%	\input{./plots/configs_rebuild.tex}
+	\caption{asdf}
+	\label{fig:rebuild_times}
+\end{figure}
+
+
+
+\section{Computational Overhead}
+% TODO: integrate this
+To exemplify the importance of optimizing the trigger routines, \autoref{fig:optimization_speedup} illustrates the runtime differences between naive and optimized triggers in the equilibrium scenario. The naive version recalculates the average over all samples each iteration, whereas the optimized version uses a ring buffer and running summation to reduce computational cost.
+The speedup experienced is not only due to a lowering of computational overhead, but also due to less tuning iterations. This fact can be explained by the aforementioned self influence of the triggers: higher overhead might lead to higher fluctuation in iteration runtime which in turn leads to unstable trigger behavior, especially in the averaging trigger.
+
+% TODO: real overhead hard to quantify?
+% TODO: check if this makes any sense
+
+\begin{figure}[htpb]
+	\centering
+	\begin{tikzpicture}
+		\tikzset{
+			barstyle1/.style={fill=tumblueaccmedium, draw=chaptertumblue},
+			barstyle2/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=north east lines},
+		}
+		\def\barwidth{15pt}
+		\begin{axis}[
+			height=0.4\textwidth,
+			xlabel={Trigger Strategy},
+			ylabel={Total Runtime in \unit{ns}},
+			enlarge x limits=0.25,
+			symbolic x coords={Avg,Split,Regression},
+			xtick=data,
+			bar width=\barwidth,
+			legend entries={Unoptimized, Optimized}
+			]
+			
+			\addlegendimage{legend image code/.code={
+					\draw[barstyle1, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+			}}
+			\addlegendentry{\scriptsize Unoptimized}
+			\addlegendimage{legend image code/.code={
+					\draw[barstyle2, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+			}}
+			\addlegendentry{\scriptsize Optimized}
+			
+			% unoptimized average
+			\addplot[ybar, bar shift=-0.5*\barwidth, barstyle1] coordinates {
+				(Avg,1694063817546)
+				(Split,1141728867654)
+				(Regression,1112338563086)
+			};
+			% optimized average
+			\addplot[ybar, bar shift=0.5*\barwidth, barstyle2] coordinates {
+				(Avg,962648240758)
+				(Split,999681150940)
+				(Regression,889891999680)
+			};
+		\end{axis}
+	\end{tikzpicture}
+	\caption{Average Speedup between unoptimized and optimized runs for the \texttt{TimeBasedAverage}, \texttt{TimeBasedSplit} and \texttt{TimeBasedRegression} strategies.}
+	\label{fig:optimization_speedup}
+\end{figure}
+%TODO: add speedup after optimization (self influence of runtime)
+
 
 \tikzset{
 	linestyleA/.style={chaptertumblue, densely dotted, thick},
@@ -41,6 +110,19 @@ Therefore, we first inspect the relation between these parameters and the total 
 			log basis y = 10,
 			log ticks with fixed point}
 }
+
+
+
+
+\section{Benchmarking Results}
+
+% TODO: text
+% Formula for deviation from static baseline:
+% ROUND((stat_val/dyn_val - 1)*100)
+% TODO: explicitly state speedup formula
+
+The blue bars in the graphs represent the runtime of that particular iteration.
+In the configuration plots, the colored background identifies the used configuration: same configurations map to the same color. The gaps in the plot are where tuning iterations have been logged -- as their runtime is not relevant for the scenario change and would distort the actual runtime plot, they are not reported here. The red vertical lines indicate the start of a tuning phase.
 
 \subsection{Equilibrium}
 
@@ -174,26 +256,34 @@ Therefore, we first inspect the relation between these parameters and the total 
 		\begin{tikzpicture}
 			\begin{axis}[
 					triggerplot,
+					legend columns=2,
 					ylabel={Speedup \%},
 				]
 				% TimeBasedRegression 2000
 				\addplot[linestyleA] coordinates{
-						(1.25,46)
-						(1.5,33)
-						(1.75,34)};
+						(1.25,-3)
+						(1.5,13)
+						(1.75,14)};
 
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
-						(1.25,46)
-						(1.5,46)
-						(1.75,31)};
+						(1.25,-4)
+						(1.5,14)
+						(1.75,15)};
+						
 				% TimeBasedRegression 1000
 				\addplot[linestyleC] coordinates{
-						(1.25,43)
-						(1.5,44)
-						(1.75,44)};
+						(1.25,7)
+						(1.5,15)
+						(1.75,14)};
+				
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+					(1.25,5)
+					(1.5,16)
+					(1.75,15)};
 
-				\legend{Reg-2000,Reg-1500,Reg-1000}
+				\legend{Reg-2000,Reg-1500,Reg-1000,Reg-500}
 			\end{axis}
 		\end{tikzpicture}
 		%		\subcaption{Regression Trigger}
@@ -203,43 +293,54 @@ Therefore, we first inspect the relation between these parameters and the total 
 		\begin{tikzpicture}
 			\begin{axis}[
 					logtriggerplot,
+					legend columns=2,
 					ylabel={Tuning Iterations \%},
-					%ymode=log,
-					ymin=0,
-					ymax=1,
-					ytick={0, 0.25, 0.75, 1.0},
+					ymode=log,
+					ymin=1,
+					ymax=100,
 				]
 				% TimeBasedRegression 2000
 				\addplot[linestyleA] coordinates{
-						(1.25,0.75)
-						(1.5,0.75)
-						(1.75,0.75)};
+						(1.25,18.72)
+						(1.5,4.32)
+						(1.75,1.44)};
 
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
-						(1.25,0.75)
-						(1.5,0.75)
-						(1.75,0.75)};
+						(1.25,19.37)
+						(1.5,1.44)
+						(1.75,1.44)};
+						
 				% TimeBasedRegression 1000
 				\addplot[linestyleC] coordinates{
-						(1.25,0.75)
-						(1.5,0.75)
-						(1.75,0.75)};
+						(1.25,7.88)
+						(1.5,1.44)
+						(1.75,1.44)};
+				
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+					(1.25,10.08)
+					(1.5,1.44)
+					(1.75,1.44)};
 
-				\legend{Reg-2000,Reg-1500,Reg-1000}
+				\legend{Reg-2000,Reg-1500,Reg-1000,Reg-500}
 			\end{axis}
 		\end{tikzpicture}
 		%		\subcaption{Regression Trigger}
 	\end{subfigure}%
-	\caption{Trigger behavior in the equilibrium scenario, the numbers in the legends refer to the number of samples $n$ considered. Note the logarithmic scale in the plots for the tuning iterations.}
+	\caption{Trigger behavior in the equilibrium scenario, the numbers in the legends refer to the number of samples $n$ considered. Note the logarithmic scale in the plots on the right hand side.}
 	\label{fig:params_equil}
 \end{figure}
 
-As can be seen in \autoref{fig:params_equil}, a trigger factor of $\lambda=1.5$ leads to increased speedup compared to $\lambda=1.25$. This is however mainly due to the nature of the equilibrium scenario: after the initial configuration selection, the optimal configuration is not expected to change.
+As can be seen in \autoref{fig:params_equil}, a trigger factor of $\lambda=1.5$ leads to increased speedup compared to $\lambda=1.25$ in nearly all triggering strategies. This is however mainly due to the nature of the equilibrium scenario: after the initial configuration selection, the optimal configuration is not expected to change.
 Therefore, not initiating any new tuning phases will lead to a decrease in total simulation runtime. That the speedup is indeed  a result of the decreased number of tuning iterations can be verified by looking at the right-hand side plots; for the simple and averaging trigger it is most noticeable.
-Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. For a too large number of samples, the speedup decreases however, computational overhead is directly proportional to the number of samples. This is best seen in the plots for the regression trigger, as the share of tuning iterations remains constant for all sample sizes, but the speedup decreases. Especially for the regression triggers, the computations required per sample and in each iteration are significant.
+Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. For a too large number of samples, the speedup decreases however, as the computational overhead is directly proportional to the number of samples.
+% TODO: rewrite
+%This is best seen in the plots for the regression trigger, as the share of tuning iterations remains constant for all sample sizes, but the speedup decreases. Especially for the regression triggers, the computations required per sample and in each iteration are significant.
+
 %The increase of th enumber of tuning iterations as seen in the split trigger with $n=250$ can be explained by \textellipsis
 % TODO: self-interaction
+% TODO: longer intervals -> slower reaction?
 
 The collected data suggests default parameters as presented in \autoref{tab:equil_defaults}.
 \begin{table}[htpb]
@@ -248,30 +349,30 @@ The collected data suggests default parameters as presented in \autoref{tab:equi
 		\toprule
 		\textbf{Trigger}                      & \textbf{Trigger factor $\lambda$} & \textbf{Number of samples $n$} \\ [0em]
 		\midrule
-		\texttt{TimeBasedSimple}     & $1.75$                   & --                     \\
+		\texttt{TimeBasedSimple}     & $1.5$                   & --                     \\
 		\texttt{TimeBasedAverage}    & $1.75$                   & 500                   \\
 		\texttt{TimeBasedSplit}      & $1.5$                    & 1000                  \\
-		\texttt{TimeBasedRegression} & $1.5$                    & 1500                  \\
+		\texttt{TimeBasedRegression} & $1.5$                    & 500                  \\
 		\bottomrule
 	\end{tabular}
 	\caption{Suggested default parameters for the equilibrium scenario.}
 	\label{tab:equil_defaults}
 \end{table}
 
+
+% TODO: equilibrium_dynamic_TimeBasedRegression_1.25_500 looks promising
+% TODO: equilibrium_dynamic_TimeBasedRegression_1.25_1000 looks even better
+
 \subsection{Exploding Liquid}
 \subsection{Heating Sphere}
 
-\section{Trigger Behavior}
-The blue bars in the graphs represent the runtime of that particular iteration.
-In the configuration plots, the colored background identifies the used configuration: same configurations map to the same color. The gaps in the plot are where tuning iterations have been logged -- as their runtime is not relevant for the scenario change and would distort the actual runtime plot, they are not reported here. The red vertical lines indicate the start of a tuning phase.
-
-\subsection{Simple Trigger}
-\subsection{Single-iteration averaging Trigger}
-\subsection{Interval averaging Trigger}
-\subsection{Linear Regression Trigger}
 
 
-\section{Optimality}
-\section{Runtime}
-\section{Share of Tuning Iterations}
+%\section{Trigger Behavior}
+
+
+\subsection{Runtime and Number of Tuning Iterations}
+\subsection{Optimality}
+
+
 
