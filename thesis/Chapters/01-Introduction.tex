@@ -4,7 +4,7 @@
 {
 	\parindent0pt
 	This chapter introduces some fundamental concepts necessary to understand Molecular Dynamics (MD) simulations. We begin with a discussion of the motivation behind the general $n$-body problem and the goals of this thesis in \autoref{sec:motivation}.
-	Afterwards, the components of a simple MD simulation loop are presented in \autoref{sec:md}. These include Newton’s laws of motion for providing the governing equations of particle trajectories, the Lennard-Jones potential as a model for pairwise interactions, and the Störmer-Verlet algorithms as a numerical scheme for integrating the equations of motion.
+	Afterwards, the components of a simple MD simulation loop are presented in \autoref{sec:md}. These include Newton’s laws of motion for providing the equations of particle trajectories, the Lennard-Jones potential as a model for pairwise interactions, and the Störmer-Verlet algorithms as numerical schemes for integrating the equations of motion.
 }
 
 
@@ -13,33 +13,34 @@
 \section{Motivation}
 \label{sec:motivation}
 
-The $n$-body problem is a foundational challenge of classical physics. It  concerns the interaction and movement of bodies, like the trajectories of masses in the solar system. At such astronomic scales, general relativity additionally introduces a high degree of complexity. Yet, even in classical Newtonian physics, the systems of equations tend to no longer be solvable by analytic means if $n>2$ bodies are involved, except for certain special cases. Hence, numerical algorithms have become essential in finding approximate solutions. \cite{Arnold1985}
+The $n$-body problem is a foundational challenge of classical physics. It  concerns the interaction and movement of bodies, for example, the trajectories of masses in the solar system. At such astronomic scales, general relativity additionally introduces a high degree of complexity. Yet, even in classical Newtonian physics, the systems of equations tend to no longer be solvable by analytic means if $n>2$ bodies are involved, except for certain special cases. Hence, numerical algorithms have become essential in finding approximate solutions. \cite{Arnold1985}
 
-With the advent of computer-based simulation, the feasibility of numerical solutions to the $n$-body problem has increased significantly.
-Over the past few decades, advances in high performance computing (HPC) have further increased both scale and efficiency of such simulations, allowing for the modeling of large systems at unprecedented resolution. For instance, the TianNu project simulated \num{2.97e12} particles in 2017 on the Tianhe-2 supercomputer \cite{Emberson2017}.
+With the advent of computer-based simulation, the feasibility of finding such numerical solutions to a $n$-body problem has increased significantly.
+Over the past few decades, advances in high performance computing (HPC) have further increased both scale and efficiency of such simulations, allowing for the modeling of large systems at unprecedented resolution. In 2017, for instance, the TianNu project simulated \num{2.97e12} particles on the Tianhe-2 supercomputer \cite{Emberson2017}.
 These days, particle simulations have established themselves as indispensable tools across a wide range of scientific fields. Applications reach from drug discovery \cite{Hollingsworth2018} to plasma physics \cite{Verboncoeur2005} and materials science \cite{Parteli2016}.
 
-One example of a software framework enabling $n$-body simulations is the AutoPas library \cite{Gratl2019}. Its internal mechanisms will be discussed in detail in \autoref{cp:autopas}; for the motivation of this thesis it suffices to know, that AutoPas seeks to dynamically select optimal simulation configurations without requiring expert knowledge during setup (\enquote{autotuning}).
+One example of a software framework enabling $n$-body simulations is the AutoPas library \cite{Gratl2019}. Its internal mechanisms will be discussed in detail in \autoref{cp:autopas}; for the motivation of this thesis it suffices to know, that AutoPas seeks to dynamically select optimal algorithmic configurations without requiring expert knowledge during setup (\enquote{autotuning}).
 
 To achieve this, so-called tuning phases are initiated at fixed intervals. During each tuning phase, different configurations are sampled for a predetermined number of iterations, after which the best performing configuration is selected to simulate the remaining iterations until the next tuning phase. Naturally, these static intervals do not necessarily align with the points at which it would be most advantageous to switch configurations. Consider a scenario, in which the optimal configuration changes rapidly in the beginning, but stabilizes and settles into an equilibrium later on. Having one uniform static interval, it would be either too short --- resulting in unnecessary tuning phases during equilibrium, or too long --- resulting in suboptimal performance in the early phase.
 This thesis proposes a method to resolve this problem by dynamically initiating tuning phases based on live simulation data.
 
 % TODO: dynamic intervals figure?
 
+% TODO: example figures for particle simulation
+
 \section{Molecular Dynamics}
 \label{sec:md}
 % quantum behaviour
 Molecular Dynamics (MD) simulation is one method of solving the classical $n$-body problem on the molecular level. At that level, the interactions between atoms are subject to the of laws quantum mechanics, in particular the Schrödinger equation. That equation however is unsuitable for the simulation of larger systems due to its complexity by nature of being a partial differential equation.
 
-Therefore, simplifications such as the Born-Oppenheimer approximation have to be employed. This approximation is based on the fact that the nuclei of atoms have much greater mass than the electrons surrounding them. Under the additional assumption, that the nuclei can be considered static relative to the movements of the electrons, we can separate the Schrödinger equation into two parts coupled by an interaction potential. Using further simplifications, we obtain \eqref{eq:born_oppenheimer}, which directly corresponds to the classical laws of motion as stated by Newton (cf. \autoref{sec:newton}). In this equation, $\vb p_i(t), \vb a_i(t), m_i, V\left(\vb p_i(t)\right)$ are the position, acceleration, mass and potential acting on a particle $i$ at time $t$. \cite{Born1927, Voorhis2005, Griebel2007} 
+Therefore, simplifications such as the Born-Oppenheimer approximation have to be employed. This approximation is based on the fact that the nuclei of atoms have much greater mass than the electrons surrounding them. Under the additional assumption, that the nuclei can be considered as static, relative to the movements of the electrons, we can separate the Schrödinger equation into two parts coupled by an interaction potential. Using further simplifications, we obtain \eqref{eq:born_oppenheimer}, which directly corresponds to the classical laws of motion as stated by Newton (cf. \autoref{sec:newton}). In this equation, $\vb p_i(t), \vb a_i(t), m_i, V\left(\vb p_i(t)\right)$ are the position, acceleration, mass and potential acting on a particle $i$ at time $t$. \cite{Born1927, Voorhis2005, Griebel2007} 
 
 \begin{equation}
 	m_i\vb a_i(t) = -\nabla_{\vb p_i} V\left(\vb p(t)\right)\label{eq:born_oppenheimer}
 \end{equation}
 
-The simplest interatomic potentials one could apply here describe the interactions between only two particles, such as the Gravitational, Lennard-Jones or Coloumb potentials. \cite{Griebel2007}
-
-Considering the formula presented in \eqref{eq:born_oppenheimer}, the main MD simulation loop is rather simple. It consists of calculating the forces between particles or atoms and integrating the equations of motion. These two steps are repeated until an equilibrium is reached, at which point the desired measurements can be taken. \cite{Frenkel2002}
+The simplest interatomic potentials one could apply here describe the interactions between only two particles, such as the Gravitational, Lennard-Jones or Coloumb potentials \cite{Griebel2007}.
+Considering the formula presented in \eqref{eq:born_oppenheimer}, the main MD simulation loop is rather simple. One iteration of said loop consists of calculating the forces between particles and integrating the equations of motion. These two steps are repeated until an equilibrium is reached, at which point any desired measurements can be taken. \cite{Frenkel2002}
 
 
 
@@ -57,18 +58,18 @@ As referred to before, Newton's laws of motion can be applied to MD simulation i
 	      In other words, $F=m\cdot a$.
 	\item \textit{To every action there is always opposed an equal reaction: or, the mutual actions of two bodies upon each other are always equal, and directed to contrary parts.}
 
-	      In other words, if one body exerts force $F_a$ on another body, than the second body exerts force $F_b=-F_a$ on the first body.
+	      In other words, if one body exerts force $F_a$ on another body, than the latter exerts force $F_b=-F_a$ on the first body.
 \end{enumerate}
 
-The second law is of utmost importance, as it allows to compute trajectories of particles based on the force acting upon them. The third law, while secondary in dynamics, is useful especially regarding optimizations: for pairwise interactions, the force needs to be evaluated only once, since the second particle experiences a force of the same magnitude in opposed direction. \cite{Gratl2021}
+The second law is particularly significant, as it allows to compute the trajectories of particles based on the forces acting upon them. The third law, while secondary in dynamics, is useful especially regarding optimizations: for pairwise interactions, any force needs to be evaluated only once, since the second particle experiences a force of the same magnitude in opposed direction. \cite{Gratl2021}
 
 % TODO: ref to Newton3 optimization
 
 \subsection{Lennard-Jones Potential}
 \label{sec:lj_potential}
-Simulating all pairwise interactions between atoms has complexity $\mathcal{O}\left(n^2\right)$. To reduce this complexity, most MD simulations restrict themselves to short-range interactions. As the forces of these interactions are negligible if the interacting particles are far apart, a cutoff-radius can be introduced after which the forces can be assumed to be close to zero. This significantly reduces the computational complexity, as only the interactions between close neighbors have to be computed. \cite{Gratl2021}
+Simulating all pairwise interactions between atoms has complexity $\mathcal{O}\left(n^2\right)$. To reduce this complexity, most MD simulations restrict themselves to short-range interactions. As the forces of these interactions are negligible if the interacting particles are far apart, a cutoff-radius $r_c$ can be introduced, beyond which the forces can be assumed negligible. This significantly reduces the computational complexity, as only the interactions between close neighbors have to be computed. Under optimal conditions, the number of interaction computations can be reduced to $\mathcal{O}\left(n\right)$. \cite{Gratl2021}
 
-The Lennard-Jones (LJ) potential is one such short-range interaction potential that acts on pairs of particles. It is based on empirical data and a sufficiently good approximation such that macroscopic effects can be derived from simulating the interactions at an atomic level.
+The Lennard-Jones (LJ) potential is one such short-range interaction potential that acts on pairs of particles. It is based on empirical data and provides a sufficiently good approximation, such that macroscopic effects can be derived from simulating interactions at a molecular level.
 It is most frequently used in the form of the 12-6 potential as defined in \eqref{eq:lj_12_6}.
 
 \begin{equation}
@@ -104,14 +105,14 @@ In this equation, $r$ is the distance between the two particles, $\varepsilon$ t
 			\draw[black!80, dashed] (axis cs:0.75,-1) -- (axis cs:{2^(1/6)},-1);
 			
 			\draw[black!80, dashed] (axis cs:2.5,-1.25) -- (axis cs:2.5,2.25);
-			\node[anchor=west, align=left] at (axis cs:2.5, 1) {$r_c$};
+			\node[anchor=south west, align=left] at (axis cs:2.5, 0) {$r_c$};
 			
 			
 			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:0.75,2.25) -- (axis cs:{2^(1/6)-0.0125},2.25) node[midway, yshift=2.5ex, , text depth=0.5em]{Repulsion};
 			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:{2^(1/6)+0.0125},2.25) -- (axis cs:3.25,2.25) node[midway, yshift=2.5ex, text depth=0.5em]{Attraction};
 		\end{axis}
 	\end{tikzpicture}
-	\caption{An illustration of the potential well of the 12-6 LJ potential, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$, zero-crossing at $\sigma$ and cutoff radius $r_c$. The figure is based on Lenhard et al. \cite{Lenhard2024}}
+	\caption{An illustration of the 12-6 LJ potential well, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$, zero-crossing at $\sigma$ and cutoff radius $r_c$. The figure is based on Lenhard et al. \cite{Lenhard2024}}
 	\label{fig:lj_graph}
 \end{figure}
 
@@ -142,7 +143,7 @@ As the second derivative of the position $\vb p_i(t)$ is the acceleration $\vb a
 	\vb p_i(t+\delta t) = 2\vb p_i(t) - \vb p_i(t-\delta t) + \delta t^2{\vb a}_i(t) + \mathcal{O}(\delta t^4)\label{eq:acc_verlet}
 \end{equation}
 
-By this formulation we could already calculate the velocities of the particles, however, there are some drawbacks -- e.g. high error propagation \cite{Fulst2013}. A more exact and efficient approach, sometimes referred to as the Velocity-Verlet algorithm, can be derived similarly.
+By this formulation we could already calculate the velocities of the particles, however, there are some drawbacks --- e.g. high error propagation \cite{Fulst2013}. A more exact and efficient approach, sometimes referred to as the Velocity-Verlet algorithm, can be derived similarly.
 For that, considering \eqref{eq:velocity}, we can rearrange and substitute into \eqref{eq:pos_verlet} to conclude \eqref{eq:verlet_pos2} and finally \eqref{eq:verlet_vel}.
 \begin{equation}
 	\vb v_i(t) = \frac{\vb p_i(t+\delta t) -\vb p_i(t-\delta t)}{2\delta t} \rightsquigarrow \vb p_i(t-\delta t)= \vb p_i(t+\delta t)-2\delta t \vb v_i(t) \label{eq:velocity}

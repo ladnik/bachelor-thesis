@@ -38,12 +38,27 @@
 \usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc, patterns, patterns.meta, calligraphy, matrix, positioning, fit, backgrounds}
 
 
+%\usepackage{pgf}
+%%\usepackage{lmodern}
+%\usepackage{import}
+%
+%\def\mathdefault#1{#1}
+%%   \everymath=\expandafter{\the\everymath\displaystyle}
+%%   \IfFileExists{scrextend.sty}{
+%%	     \usepackage[fontsize=10.000000pt]{scrextend}
+%%	   }{
+%%	     \renewcommand{\normalsize}{\fontsize{10.000000}{12.000000}\selectfont}
+%%	     \normalsize
+%%	   }
+
 %\includeonly{ {Chapters/01-Introduction} }
 %\includeonly{ {Chapters/02-Background} }
 %\includeonly{ {Chapters/03-Implementation} }
 %\includeonly{ {Chapters/04-Evaluation} }
-\includeonly{ {Chapters/05-Results} }
+%\includeonly{ {Chapters/05-Results} } 
 %\includeonly{ Chapters/05-Results, Chapters/04-Evaluation}
+\includeonly{ Chapters/05-Results, Chapters/06-Conclusion}
+%\includeonly{ Chapters/06-Conclusion}
 
 % TODO: depending on Contents-section lenght, even spread may be misaligned -> manually remove blank page
 % TODO: check figure layouting
@@ -51,8 +66,8 @@
 % TODO: optimal vs omptimum configuration
 
 \newif\ifdropfigures
-\dropfigurestrue
-%\dropfiguresfalse
+%\dropfigurestrue
+\dropfiguresfalse
 \ifdropfigures
 \renewcommand{\includegraphics}[2][]{}
 \fi

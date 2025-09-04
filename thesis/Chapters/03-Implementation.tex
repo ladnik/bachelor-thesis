@@ -111,7 +111,7 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 
 				\draw[draw=tumblueaccverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 0.9*\lambdaval) -- ([xshift=0.5*\barwidth]5, 0.9*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{Tuning Phase};
 
 
 			\end{axis}
@@ -170,7 +170,7 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 				% avg is 1,004
 				\draw[draw=tumblueaccverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 1.004*\lambdaval) -- ([xshift=0.5*\barwidth]5, 1.004*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{Tuning Phase};
 
 
 			\end{axis}
@@ -315,7 +315,7 @@ In particular, we have:
 
 				\draw[thick, customdash, chaptertumblue] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:12,2) -- (axis cs:15.75,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:12,2) -- (axis cs:15.75,2) node[midway, yshift=2.5ex]{Tuning Phase};
 
 
 			\end{axis}
@@ -400,19 +400,14 @@ In particular, we have:
 
 				%				\draw[thick, densely dashed, chaptertumblue] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:12,2) -- ([xshift=0.5*\barwidth]axis cs:23,2) node[midway, yshift=2.5ex]{new Tuning Phase};
+				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:12,2) -- ([xshift=0.5*\barwidth]axis cs:23,2) node[midway, yshift=2.5ex]{Tuning Phase};
 
 			\end{axis}
 		\end{tikzpicture}
 	\end{subfigure}
-	\caption{Comparison for $\lambda=1.5$ and $n=11$ between the \texttt{TimeBasedSplitTrigger} (left) and \texttt{TimeBasedRegressionTrigger} (right) strategies.}
+	\caption{Comparison for $\lambda=1.5$ and $n=11$ between the \texttt{TimeBasedSplitTrigger} (left) and \texttt{TimeBasedRegressionTrigger} (right) strategies. [TODO]}
 	\label{fig:split_vs_regression}
 \end{figure}
 
-\section{Hybrid Triggers}
-% TODO: move to results?
-%TODO: cite liveinfo paper
-As will be discussed later, time-based approaches are not suitable for all scenarios. In these scenarios, iteration runtimes alone might not be a good enough indicator for scenario change. As AutoPas provides additional live simulation statistics through its \texttt{liveinfo} interface, these can be used in combination with iteration runtimes to find better strategies in detecting scenario change.
 
-% TODO: possible duplication of \enquote{Considerations}
 

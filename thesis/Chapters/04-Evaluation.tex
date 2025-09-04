@@ -3,17 +3,16 @@
 
 {
 	\parindent0pt
-	This chapter presents the scenarios and criteria employed in the evaluation of our implementation. \autoref{sec:benchmark_scenarios} introduces a series of benchmarking scenarios, which have been chosen to reflect distinct simulation characteristics appearing in real-world applications. Subsequently, \autoref{sec:metrics} defines the evaluation metrics applied to these benchmarks. These metrics are intended to provide comparability between simulation runs with dynamically initiated tuning intervals and to the baseline runs with static tuning.
+	This chapter presents the scenarios and criteria employed in the evaluation of our implementation. \autoref{sec:benchmark_scenarios} introduces a series of benchmarking scenarios, which have been chosen to reflect distinct simulation characteristics that may appear in real-world applications. Subsequently, \autoref{sec:metrics} defines the evaluation metrics applied to the benchmarks. These metrics are intended to provide comparability between simulation runs with dynamically initiated tuning intervals and to the baseline runs with tuning at fixed frequency.
 	Finally, \autoref{sec:default_params} will shortly outline how default values for the newly introduced trigger parameters can be found.
-	%	Together, the benchmarking scenarios and evaluation metrics provide a framework for assessing the performance and reliability of the proposed strategies.
 }
 
 
 \section{Benchmarking Scenarios}
 \label{sec:benchmark_scenarios}
-As to not limit our analysis to one specific simulation setting, we use a selection of benchmarking scenarios. These represent different structures as they may appear in real-world applications. % TODO: duplication with chapter introduction?
-The heating-sphere and exploding-liquid scenarios are based on the ones given by Newcome et al., the configuration files have been adapted and parametrized for use in this thesis \cite{Newcome2025}.
-The other scenarios are are taken from the AutoPas \texttt{md-flexible} application\footnote{\href{https://github.com/AutoPas/AutoPas/tree/master/examples/md-flexible}{https://github.com/AutoPas/AutoPas/tree/master/examples/md-flexible}}.
+As to not limit our analysis to one specific simulation setting, we use a selection of benchmarking scenarios that represent different basic particle structures.
+The heating-sphere and exploding-liquid scenarios are based on the configuration files given by Newcome et al., adapted and parametrized for use in this thesis \cite{Newcome2025}.
+The other scenarios are are taken from the AutoPas \texttt{md-flexible} application\footnote{\href{https://github.com/AutoPas/AutoPas/tree/master/examples/md-flexible/input}{https://github.com/AutoPas/AutoPas/tree/master/examples/md-flexible/input}}.
 
 
 \pgfplotsset{
@@ -75,7 +74,7 @@ The other scenarios are are taken from the AutoPas \texttt{md-flexible} applicat
 
 \subsection{Equilibrium}
 \label{subsec:equil}
-In the equilibrium scenario (\autoref{fig:evolution_equil}), particles are packed tightly into a cube, periodic boundary conditions are imposed on the simulation space. Periodic boundary conditions ensure that particles exiting the simulation domain are reinserted on the opposite side. The particles interact with each other and the grid structure loosens up, but ultimately an equilibrium is reached in which no rapid changes in velocity occur anymore. After that initial relaxation of the grid structure, no further scenario change expected. Therefore, no additional tuning phases should be needed, as the optimal configuration is not expected to change.
+In the equilibrium scenario (\autoref{fig:evolution_equil}), particles are packed tightly into a cube, with periodic boundary conditions imposed on the simulation space. Periodic boundary conditions ensure that particles exiting the simulation domain on one side are reinserted on the opposite side. First, the particles interactions with each other loosens up the grid structure, but ultimately an equilibrium is reached in which no significant changes in particle positions occur anymore. After that initial relaxation, no further scenario change expected. Therefore, no additional tuning phases should be needed in the equilibrium phase, as the optimal configuration is not expected to change.
 
 \begin{figure}[htpb]
 	\centering
@@ -100,7 +99,7 @@ In the equilibrium scenario (\autoref{fig:evolution_equil}), particles are packe
 
 
 \subsection{Exploding Liquid}
-Similarly to the equilibrium scenario, the exploding liquid scenario (\autoref{fig:evolution_expl}) starts of with the particles packed into a cuboid, with periodic boundaries applied to the simulation space. The cuboid explodes in $y$-direction and collides with the boundary. This leads to multiple waves of particles with decreasing intensity, until the simulation finally settles into an equilibrium state, with particles spread out over the whole domain. If a single autotuning instance is used for the whole domain, the rapid changes in particle positions and heterogeneous particle distribution make finding an optimal configuration very hard. However, if the domain is split up into multiple independent AutoPas instances on different MPI nodes, each AutoTuning instance can independently find an optimal configuration for its part of the domain. Using this, the simulation domain can be split up into regions with high particle density and velocities, and regions with little to no particles.
+Similarly to the equilibrium scenario, the exploding liquid scenario (\autoref{fig:evolution_expl}) starts off with the particles packed into a cuboid, with periodic boundaries imposed on the simulation space. The cuboid explodes in $y$-direction and collides with the boundary. This leads to multiple waves of particles with decreasing intensity, until the simulation finally settles into an equilibrium state, with particles spread out over the whole domain. If a single autotuning instance is used for the whole domain, the rapid changes in particle positions and heterogeneous particle distribution make finding an optimal configuration very hard. However, if the domain is split up into multiple independent AutoPas instances on different MPI nodes, each autotuning instance can independently find an optimal configuration for its part of the domain. Using this, the simulation domain can be split up into regions with high particle density and velocities, and regions with little to no particles.
 
 \label{subsec:expl}
 \begin{figure}[htpb]
@@ -135,7 +134,7 @@ Similarly to the equilibrium scenario, the exploding liquid scenario (\autoref{f
 
 \subsection{Heating Sphere}
 \label{subsec:hs}
-The heating sphere scenario (\autoref{fig:evolution_hs}) starts off with a dense, small sphere of particles. In contrast to the previously introduced scenarios, reflective boundary conditions are applied. Over the course of the simulation, the temperature rises from $0.1$ to $100$ with a $\Delta \si{T^{*}}=0.1$ every 100 iterations. Additionaly, brownian motion, i.e. random fluctuations in particle positions, is applied \cite{Moerters2010}. The sphere expands with the increasing temperature and particles slowly radiate outwards. In the late phase of the simulation, particles are spread out across the whole domain.
+The heating sphere scenario (\autoref{fig:evolution_hs}) starts off with a dense, small sphere of particles. In contrast to the previously introduced scenarios, reflective boundary conditions are applied. Over the course of the simulation, the temperature rises from \num{0.1} to \num{100} with a change of $\Delta \si{T^{*}}=0.1$ every \num{100} iterations. Additionally, Brownian motion is applied, i.e. random fluctuations in particle positions \cite{Moerters2010}. The sphere expands with the increasing temperature and particles slowly radiate outwards. In the late phase of the simulation, particles are spread out across the whole domain.
 Between the initial, compacted state and the equilibrated state, the optimal configuration changes.
 
 \begin{figure}[htpb]
@@ -178,19 +177,20 @@ Between the initial, compacted state and the equilibrated state, the optimal con
 
 \section{Evaluation Metrics}
 \label{sec:metrics}
-To compare results between dynamic and static tuning intervals, we use multiple metrics.
-The primary goal is to reduce the total simulation runtime for a range of typical scenarios; it is therefore our primary metric. As tuning phases spend time in quite suboptimal configurations, a reduction in total runtime is the expected result if our approach reduces the number of tuning phases without spending too many iterations using a suboptimal configuration outside tuning phases.
+To compare results between our dynamic initiation of tuning phases and the currently implemented static approach, we use multiple metrics.
+The primary goal is to reduce the total simulation runtime for a range of typical scenarios; it is therefore our first metric. As tuning phases spend time in quite suboptimal configurations, a reduction in total runtime is the expected result if our approach reduces the number of tuning phases without computing too many iterations using a suboptimal configuration.
 
 % TODO: check this:
-The metric of total runtime is not particularly fine-grained however, as it only takes into account entire simulation runs. To achieve a more detailed benchmark, we also consider the number of iterations that were computed under the optimal configuration. As an approximation to the optimal configuration in each iteration, we use simulation runs with tuning phases at fixed frequency, a high number of tuning samples and short tuning intervals. Based on this approximation we can then rank the configuration our dynamic run chose in terms of optimality.
+The metric of total runtime is not particularly fine-grained however, as it only takes into account entire simulation runs. To achieve a more detailed benchmark, we also consider the number of iterations that were computed under the optimal configuration. As an approximation to the optimal configuration in each iteration, we use simulation runs with tuning phases at fixed frequency, a high number of tuning samples and short tuning intervals. Based on this approximation we can then rank the configuration our implementation chose in terms of optimality.
 
 Finally, we also consider the number of tuning phases initiated or, more precisely, the number of tuning iterations over the course of the whole simulation. Otherwise, we could not differentiate wether any achieved speedup is due to our trigger strategies or the fact that not triggering any tuning phases at all was more efficient for a given scenario.
 
 \section{Default Trigger Parameters}
 \label{sec:default_params}
 % TODO: move to results?
-All presented trigger strategies are based on a \texttt{trigger-factor} $\lambda$. The averaging, split and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, reasonable default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
+All presented trigger strategies are based on a user-set trigger factor $\lambda$. The averaging, split and regression triggers additionally take into account the number of samples to inspect, denoted as $n$. For any dynamic tuning trigger to be useful, reasonable default values for these parameters are needed, as the performance of the whole simulation is dependent on the trigger's behavior.
 Furthermore, optimal values for these parameters may depend on the scenario, trigger strategy or both.
-These default values can be found by comparing a range of combinations $\left(\lambda_i, n_j\right)$ for any given scenario and trigger strategy.
+Reasonable default values can be found by comparing a range of combinations $\left(\lambda_i, n_j\right)$ for any given scenario and trigger strategy.
+
 
 

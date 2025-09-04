@@ -3,8 +3,8 @@
 
 {
 	\parindent0pt
-	This chapter examines the particle simulation library AutoPas and provides an overview of its architecture and features. In \autoref{sec:background}, AutoPas' concept of autotuning is introduced, together with the \texttt{md-flexible} application. %TODO ?
-	The various configuration parameters available for the simulation are introduced thereafter in \autoref{sec:config_params}. Additionally, \autoref{sec:tuning_strategies} shortly outlines the different tuning strategies for the selection of the optimal combination of these parameters.
+	This chapter examines the particle simulation library AutoPas and provides an overview of its architecture and features. In \autoref{sec:background}, the concept of autotuning is introduced, as well as the \texttt{md-flexible} application. %TODO ?
+	The various algorithmic configuration parameters available  are introduced thereafter in \autoref{sec:config_params}. Additionally, \autoref{sec:tuning_strategies} shortly outlines the different tuning strategies for the selection of the optimal combination of these parameters.
 
 	The contents of this chapter are mainly drawn from the works introducing AutoPas, specifically the publications by Gratl et al. \cite{Gratl2019, Gratl2021, GratlGassner2025} and Seckler et al. \cite{Seckler2021}, as well as the AutoPas documentation \cite{AutoPas2025}.
 }
@@ -12,42 +12,62 @@
 
 \section{Background}
 \label{sec:background}
-%TODO: possible duplication from intro?
-AutoPas is an open-source \CC{} library that facilitates MD simulations. The feature that sets AutoPas apart from other particle simulation software such as LAMMPS\footnote{\href{https://www.lammps.org/}{https://www.lammps.org/}}, ls1-mardyn\footnote{\href{https://www.ls1-mardyn.de/}{https://www.ls1-mardyn.de/}} or GROMACS\footnote{\href{https://www.gromacs.org/}{https://www.gromacs.org/}}, is the autotuning algorithm.
+AutoPas is an open-source \CC{} library that facilitates short-range MD simulations. The feature that sets AutoPas apart from other particle simulation software such as LAMMPS\footnote{\href{https://www.lammps.org/}{https://www.lammps.org/}}, ls1-mardyn\footnote{\href{https://www.ls1-mardyn.de/}{https://www.ls1-mardyn.de/}} or GROMACS\footnote{\href{https://www.gromacs.org/}{https://www.gromacs.org/}}, is the autotuning algorithm.
 
-The aforementioned programs are highly specialized on specific applications and therefore focus on optimizing the algorithms used in these contexts.
-AutoPas on the other hand tries to provide optimal algorithms for a broader range of scenarios by dynamically switching between different configurations at runtime.
-% TODO
+The aforementioned programs are highly specialized on specific applications and therefore focus on optimizing the algorithms used in these environments.
+AutoPas, on the other hand, tries to provide optimal simulation conditions for a broader range of scenarios by implementing a wide selection of algorithms and switching between them at runtime.
+This removes the need for expert knowledge in simulation setup and allows for a simple interface through which the AutoPas library can be viewed as a black-box.
 
-As AutoPas is only a library, we require an application that interacts with AutoPas and provides a front end to allow for our particle simulations. In this work, we will use the \texttt{md-flexible} application provided by AutoPas as an example. The program facilitates molecular dynamics simulations based on the LJ potential.
+As referred to earlier, this autotuning approach is currently implemented as follows: In each iteration that is a multiple of a predefined \texttt{tuning-interval}, a tuning phase is initiated. In these tuning phases, a number of configurations are selected to be sampled. These configurations each represent a distinct combination of algorithmic settings (c.f. \autoref{sec:config_params}). Each configuration is sampled, i.e. executed for a set number of iterations, after which the measurements are condensed into a single value, referred to as \enquote{evidence}. This evidence is used to rank the sampled configurations based on a tuning metric; either run time or energy consumption. The best configuration is selected to compute the subsequent iterations until the beginning of the next tuning phase.
+
+%TODO: Duplication of Motivation
+
+As AutoPas is only a library, we require an application that interacts with it and provides a front end to allow for our particle simulations. In this work, we will use the \texttt{md-flexible} application, provided together with AutoPas. Based on the LJ potential, \texttt{md-flexible} facilitates MD simulations with integrated parallelization, shared memory computation, load balancing, and highly configurable scenario generators.
 % Autotuning
 
+
+% TODO: explain configs in Background, remove duplications in other sections?
 
 \section{Configuration Parameters}
 \label{sec:config_params}
 
-As outlined in \autoref{sec:background}, AutoPas is designed to allow for dynamic adaptation of the algorithmic configuration used in computing the actual simulation steps. Such a configuration refers to a distinct combination of different algorithmic parameters. The relevant parameters are categorized and described in the following.
+As outlined in \autoref{sec:background}, AutoPas is designed to allow for dynamic adaptation of the algorithmic configuration used in computing the actual simulation steps. The relevant parameters are categorized and described in the following.
 
 \subsection{Containers}
 
-Containers in AutoPas are classes responsible for particle management and neighbor identification. They store the actual particle data in a specific memory layout and allow for the efficient lookup of neighbors, i.e. particles inside the cutoff radius $r_c$. Grouped by the neighbor identification algorithm, there are currently four different types of containers.
+Containers in AutoPas are classes responsible for particle management and neighbor identification. They store the actual particle data in a specific memory layout and allow for the efficient lookup of neighbors, i.e. particles inside the cutoff radius $r_c$. Grouped by neighbor identification algorithm, there are currently four different types of containers.
 
-% only a selection of all containers
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Verlet Cluster Lists}}]
-	\item[\textbf{Direct Sum}] The simplest algorithm is the direct sum: It calculates the distances between the current particle and all other particles, discards those which lie outside of $r_c$ and proceeds with the force calculations on the remaining particles. As this method has complexity $\mathcal{O}\left(n^2\right)$, it is only suitable for small scenarios.
-	\item[\textbf{Linked Cells}] The linked cell approach divides the simulation space up into a regular grid, consisting of so-called cells. Each particle is then assigned to a cell corresponding to its location in space. Considering a cell size greater or equal to $r_c$, only neighboring cells have to be considered in the force calculations. For homogeneous particle distributions, this reduces the complexity to $\mathcal{O}\left(n\right)$. Additionally, particles close to each other in the simulation space are close in memory, which results in good caching behavior and allows for vectorization.
-	\item[\textbf{Verlet Lists}] One drawback of the linked cells algorithm is the high number of particles that lie inside neighboring cells but outside the cutoff radius. They are discarded in the force computation, but still require the distance computations. The Verlet list algorithm solves this issue by introducing a neighbor list of interaction partners for each particle. As rebuilding these lists is expensive, not only neighbors inside the cutoff radius are stored, but also particles that might come into interaction range. This is achieved by extending the radius by a so-called Verlet skin. As particles move, these neighbor lists have to be rebuilt periodically, relying on other neighbor identification algorithms such as linked cells. Furthermore, Verlet lists have a large memory footprint (one list per particle) and do not provide the advantageous memory properties of linked cells.
-	\item[\textbf{Verlet Cluster Lists}] To reduce the overall number of lists in the Verlet list approach, multiple particles can be clustered together, effectively combining their individual neighbor lists to a single one for the whole cluster. This is possible due to the fact that neighboring particles are likely to share multiple of their neighbors. The clustering is based on a subdivision of the simulation domain into a Cartesian grid ($x/y$) which, extruded along the third dimension ($z$), form towers. Inside each of these towers, particles are grouped into clusters of size $M$, ordered by their position along the $z$-axis. Instead of an exact combination of all cutoff radii, a simple bounding box is constructed around each cluster. Verlet cluster lists not only reduce the total number of neighbor lists, but also allow for vectorization, as clusters are groupings of spatially close particles. On the other hand, the number of particles for which distance calculations have to be performed increases.
+	\item[\textbf{Direct Sum}] The simplest algorithm is the direct sum: It calculates the distances between the current particle and all other particles, discards those which lie outside of $r_c$, and proceeds with the force calculations on the remaining particles. As this method has complexity $\mathcal{O}\left(n^2\right)$, it is only suitable for small scenarios.
+	\item[\textbf{Linked Cells}] The linked cell approach divides the simulation space up into cells along a regular grid. Each particle is then assigned to the cell corresponding to its location in space. Considering a cell size greater or equal to $r_c$, only neighboring cells have to be considered in the force calculations. For homogeneous particle distributions, this reduces the complexity to $\mathcal{O}\left(n\right)$. Additionally, particles close to each other in simulation space are close in memory, which results in cache-friendly behavior and allows for vectorization.
+	\item[\textbf{Verlet Lists}] One drawback of the linked cells algorithm is the high number of particles that lie inside neighboring cells, but outside the cutoff radius. They are discarded in the force computation, but still require the distance computations. The Verlet list algorithm solves this issue by introducing a neighbor list of interaction partners for each particle. As rebuilding these lists is expensive, not only neighbors inside the cutoff radius are stored, but also particles that might come into interaction range. This is achieved by extending the radius by a so-called Verlet skin. As particles move, these neighbor lists have to be rebuilt periodically, relying on other neighbor identification algorithms such as linked cells. Furthermore, Verlet lists have a large memory footprint (one list per particle) and do not provide the advantageous memory properties of linked cells.
+	\item[\textbf{Verlet Cluster Lists}] To reduce the overall number of lists in the Verlet list approach, multiple particles can be clustered together, effectively combining their individual neighbor lists to a single one for the whole cluster. This is possible due to the fact that neighboring particles are likely to share multiple of their neighbors. The clustering is based on a subdivision of the simulation domain into a Cartesian grid ($x/y$) which, extruded along the third dimension ($z$), forms several towers. Inside each of these towers, particles are grouped into clusters of size $M$, ordered by their position along the $z$-axis. Instead of an exact combination of all cutoff radii, a simple bounding box is constructed around each cluster. Thus, Verlet cluster lists not only reduce the total number of neighbor lists, but also allow for vectorization, as clusters are groupings of spatially close particles. On the other hand, the number of particles for which distance calculations have to be performed increases.
 \end{description}
+
+\begin{figure}
+	\centering
+	\caption{A comparison of the different Containers implemented in AutoPas [TODO]}
+	\label{fig:containers}
+\end{figure}
+
 \subsection{Traversals}
+\label{sec:traversals}
+Containers provide an efficient way to identify neighbors of a particle --- to efficiently compute the interactions themselves however, the traversal, i.e. the order in which particles are iterated over, is equally important. Traversals are relevant for the performance mostly due to memory and cache access patterns. Different container types require traversals, tailored to the data structures used in storing the neighbors. A small selection of these traversals will be explained hereafter.
+
+%TODO:
+\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{VL List Iteration}}]
+\item[\textbf{C01}] TODO
+\item[\textbf{VL List Iteration}] TODO
+\item[\textbf{LC C04}] TODO
+\end{description}
 
 \subsection{Additional Parameters}
-Additionally, there are a number of additional configuration parameters that do not fall into the aforementioned classes. They are given below.
+Moreover, there are a number of additional configuration parameters that do not fall into the aforementioned groups. They are given below.
 
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Cell Size Factor}}]
-	\item[\textbf{Data Layout}] This option concerns the memory layout of the particle structures. As each particle has multiple attributes associated to it, all particles together can be laid out either as an Array of Structures (AoS) or a Structure of Arrays (SoA). In the AoS layout, all particles are laid out after each other, in the SoA layout, each attribute type is grouped into an array, where each entry corresponds to the value of this attribute for a specific particle. \autoref{fig:aos_soa} illustrates both principles.
-	\item[\textbf{Newton3}] As mentioned in \autoref{sec:newton}, Newton's third law states that $F_a = -F_b$ for two bodies $a, b$ exerting forces on each other. This allows for optimizing pairwise interactions, as only one force has to be computed. However, this approach is not always beneficial as it may limit parallelization -- once the force is evaluated, both particles must be updated at once.
-	\item[\textbf{Cell Size Factor}] The cell size factor (CSF) parameter specifies the side length of the cells in relation to the interaction cutoff radius ($r_c$). It can reduce the number of particles for which distances have to be calculated, as a smaller cell side length better approximates the spherical nature of the cutoff radius. This behavior is illustrated in  \autoref{fig:lc_csf}.
+	\item[\textbf{Data Layout}] The data layout option concerns the layout of the particle structures in memory. As each particle has multiple attributes associated to it, all particles together can be laid out either as an Array of Structures (AoS) or a Structure of Arrays (SoA). In the AoS layout, all particles are stored after each other; in the SoA layout, each attribute type is stored in a separate array, with each entry holding the value for a specific particle. \autoref{fig:aos_soa} illustrates both principles.
+	\item[\textbf{Newton3}] As mentioned in \autoref{sec:newton}, Newton's third law states that $F_a = -F_b$ for two bodies $a, b$ exerting forces on each other. This allows for optimizing pairwise interactions, as only one force has to be computed. However, this approach is not always beneficial as it may limit parallelization --- once the force is evaluated, both particles must be updated at once.
+	\item[\textbf{Cell Size Factor}] The cell size factor (CSF) parameter specifies the side length of the cells in relation to the interaction cutoff radius $r_c$<. It can reduce the number of particles for which distances have to be calculated, as a smaller cell side length better approximates the spherical nature of the cutoff radius. This behavior is illustrated in  \autoref{fig:lc_csf}.
 \end{description}
 
 
@@ -189,7 +209,7 @@ Additionally, there are a number of additional configuration parameters that do 
 
 		\end{tikzpicture}
 	\end{subfigure}
-	\caption{asdf}
+	\caption{Impact of the cell size factor on the number of distance calculations. [TODO]}
 	\label{fig:lc_csf}
 \end{figure}
 
@@ -266,7 +286,7 @@ AutoPas provides a variety of different tuning strategies. These are used in sam
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{PredictiveTuning }}]
 	\item[\textbf{FullSearch}] The default tuning strategy is an exhaustive search over all possible configurations, i.e. all combinations of parameters. The optimal configuration is thereby guaranteed to be trialed at some point. However, the space of all possible configurations grows exponentially in the number of parameters, of which many configurations may be highly suboptimal. Other tuning strategies are therefore more suitable for most scenarios.
 	\item[\textbf{RandomSearch}] The random search tuning strategy randomly selects a given number of configurations which are then sampled. This can greatly reduce the number of configurations to test, but may not select the optimal configuration.
-	\item[\textbf{PredictiveTuning}] The predictive tuning strategy reduces the number of configurations that are sampled during tuning phases by only testing configurations that are expected to perform well. To select which configurations might perform well, the results from previous tuning iterations are used to extrapolate a configurations performance in the current tuning phase. The strategy allows to specify the degree of the interpolation, i.e. how many \texttt{full-search} tuning phases are required before the extrapolation takes place. Predictive tuning is typically used with the \texttt{slow-config-filter} which blocks configurations that show extremely poor performance from all successive tuning phases. \cite{Pelloth2020}
+	\item[\textbf{PredictiveTuning}] The predictive tuning strategy reduces the number of configurations that are sampled during tuning phases by only testing configurations that are expected to perform well. To predict which configurations might be optimal, the results from previous tuning iterations are used to extrapolate performance in the current tuning phase. The strategy allows to specify the degree to which the prediction is performed, i.e. how many \texttt{full-search} tuning phases are required before the extrapolation takes place. Predictive tuning is typically used with the \texttt{slow-config-filter}, which blocks configurations that show extremely poor performance from all successive tuning phases. \cite{Pelloth2020}
 \end{description}
 
 % TODO: Simulation parameters? Nice graphic for boundary conditions: https://fenicsproject.discourse.group/t/problems-with-periodic-bcs-in-3d/12247/2

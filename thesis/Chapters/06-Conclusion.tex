@@ -1,13 +1,20 @@
 \chapter[Conclusion]{Conclusion}
 \label{cp:conclusion}
 
-{
-\parindent0pt
-This chapter will \textellipsis
-}
+%{
+%\parindent0pt
+%This chapter will shortly summarize the results which were discussed in \autoref{cp:results}. Additionally, an outlook concerning tuning strategies is given. %TODO
+%}
+%
+%\section{Summary of Findings and Outlook}
 
-\section{Dynamic Initiation of Tuning Intervals}
+In this thesis, four new methods of dynamically initiating new tuning phases in AutoPas were introduced. \textellipsis
 
-\section{Future Work}
-% outlook
-% ML strategies have cheap tuning phases -> dynamic tuning intervals still useful?
+As shown in \autoref{cp:results}, our approach is successful in specific scenarios.
+Especially in settings in which the optimal configuration does not change rapidly, our method reduces the amount of spent in tuning phases without any significant decrease in the optimality of the chosen configurations. %TODO: check this
+
+As we focused on runtime based strategies, scenarios with high variability in iteration runtimes are \textellipsis
+
+However, as new tuning strategies are introduced, the dynamic initiation of tuning intervals will likely become irrelevant for single-node applications. For example, the use of tuning strategies based on machine learning leads to very cheap tuning phases \cite{Newcome2025}, which in turn significantly diminishes the speedups observed when comparing to tuning with \texttt{full-search}. One application in which a dynamic approach as ours might still be useful is in shared memory setups: As each node runs their own autotuner instance, they can trigger tuning phases independent from each other. In scenarios like exploding-liquid this could still be advantageous.
+
+Possible future work could explore the analysis of \texttt{LiveInfo} parameters, the introduction of novel trigger strategies providing more stability, \textellipsis
