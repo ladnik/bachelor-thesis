@@ -19,6 +19,12 @@ With the advent of computer-based simulation, the feasibility of finding such nu
 Over the past few decades, advances in high performance computing (HPC) have further increased both scale and efficiency of such simulations, allowing for the modeling of large systems at unprecedented resolution. In 2017, for instance, the TianNu project simulated \num{2.97e12} particles on the Tianhe-2 supercomputer \cite{Emberson2017}.
 These days, particle simulations have established themselves as indispensable tools across a wide range of scientific fields. Applications reach from drug discovery \cite{Hollingsworth2018} to plasma physics \cite{Verboncoeur2005} and materials science \cite{Parteli2016}.
 
+\begin{figure}
+	\centering
+	\caption{Various real-world applications of particle simulations. [TODO]}
+	\label{fig:particle_simulation_usecases}
+\end{figure}
+
 One example of a software framework enabling $n$-body simulations is the AutoPas library \cite{Gratl2019}. Its internal mechanisms will be discussed in detail in \autoref{cp:autopas}; for the motivation of this thesis it suffices to know, that AutoPas seeks to dynamically select optimal algorithmic configurations without requiring expert knowledge during setup (\enquote{autotuning}).
 
 To achieve this, so-called tuning phases are initiated at fixed intervals. During each tuning phase, different configurations are sampled for a predetermined number of iterations, after which the best performing configuration is selected to simulate the remaining iterations until the next tuning phase. Naturally, these static intervals do not necessarily align with the points at which it would be most advantageous to switch configurations. Consider a scenario, in which the optimal configuration changes rapidly in the beginning, but stabilizes and settles into an equilibrium later on. Having one uniform static interval, it would be either too short --- resulting in unnecessary tuning phases during equilibrium, or too long --- resulting in suboptimal performance in the early phase.

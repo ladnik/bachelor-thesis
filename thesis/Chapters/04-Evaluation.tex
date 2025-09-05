@@ -73,7 +73,7 @@ The other scenarios are are taken from the AutoPas \texttt{md-flexible} applicat
 
 
 \subsection{Equilibrium}
-\label{subsec:equil}
+\label{subsec:scenario_equil}
 In the equilibrium scenario (\autoref{fig:evolution_equil}), particles are packed tightly into a cube, with periodic boundary conditions imposed on the simulation space. Periodic boundary conditions ensure that particles exiting the simulation domain on one side are reinserted on the opposite side. First, the particles interactions with each other loosens up the grid structure, but ultimately an equilibrium is reached in which no significant changes in particle positions occur anymore. After that initial relaxation, no further scenario change expected. Therefore, no additional tuning phases should be needed in the equilibrium phase, as the optimal configuration is not expected to change.
 
 \begin{figure}[htpb]
@@ -99,9 +99,9 @@ In the equilibrium scenario (\autoref{fig:evolution_equil}), particles are packe
 
 
 \subsection{Exploding Liquid}
+\label{subsec:scenario_expl}
 Similarly to the equilibrium scenario, the exploding liquid scenario (\autoref{fig:evolution_expl}) starts off with the particles packed into a cuboid, with periodic boundaries imposed on the simulation space. The cuboid explodes in $y$-direction and collides with the boundary. This leads to multiple waves of particles with decreasing intensity, until the simulation finally settles into an equilibrium state, with particles spread out over the whole domain. If a single autotuning instance is used for the whole domain, the rapid changes in particle positions and heterogeneous particle distribution make finding an optimal configuration very hard. However, if the domain is split up into multiple independent AutoPas instances on different MPI nodes, each autotuning instance can independently find an optimal configuration for its part of the domain. Using this, the simulation domain can be split up into regions with high particle density and velocities, and regions with little to no particles.
 
-\label{subsec:expl}
 \begin{figure}[htpb]
 	\centering
 	\begin{subfigure}[c]{.25\textwidth}
@@ -133,7 +133,7 @@ Similarly to the equilibrium scenario, the exploding liquid scenario (\autoref{f
 \end{figure}
 
 \subsection{Heating Sphere}
-\label{subsec:hs}
+\label{subsec:scenario_hs}
 The heating sphere scenario (\autoref{fig:evolution_hs}) starts off with a dense, small sphere of particles. In contrast to the previously introduced scenarios, reflective boundary conditions are applied. Over the course of the simulation, the temperature rises from \num{0.1} to \num{100} with a change of $\Delta \si{T^{*}}=0.1$ every \num{100} iterations. Additionally, Brownian motion is applied, i.e. random fluctuations in particle positions \cite{Moerters2010}. The sphere expands with the increasing temperature and particles slowly radiate outwards. In the late phase of the simulation, particles are spread out across the whole domain.
 Between the initial, compacted state and the equilibrated state, the optimal configuration changes.
 
@@ -180,7 +180,6 @@ Between the initial, compacted state and the equilibrated state, the optimal con
 To compare results between our dynamic initiation of tuning phases and the currently implemented static approach, we use multiple metrics.
 The primary goal is to reduce the total simulation runtime for a range of typical scenarios; it is therefore our first metric. As tuning phases spend time in quite suboptimal configurations, a reduction in total runtime is the expected result if our approach reduces the number of tuning phases without computing too many iterations using a suboptimal configuration.
 
-% TODO: check this:
 The metric of total runtime is not particularly fine-grained however, as it only takes into account entire simulation runs. To achieve a more detailed benchmark, we also consider the number of iterations that were computed under the optimal configuration. As an approximation to the optimal configuration in each iteration, we use simulation runs with tuning phases at fixed frequency, a high number of tuning samples and short tuning intervals. Based on this approximation we can then rank the configuration our implementation chose in terms of optimality.
 
 Finally, we also consider the number of tuning phases initiated or, more precisely, the number of tuning iterations over the course of the whole simulation. Otherwise, we could not differentiate wether any achieved speedup is due to our trigger strategies or the fact that not triggering any tuning phases at all was more efficient for a given scenario.

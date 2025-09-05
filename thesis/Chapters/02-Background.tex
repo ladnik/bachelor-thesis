@@ -23,10 +23,7 @@ As referred to earlier, this autotuning approach is currently implemented as fol
 %TODO: Duplication of Motivation
 
 As AutoPas is only a library, we require an application that interacts with it and provides a front end to allow for our particle simulations. In this work, we will use the \texttt{md-flexible} application, provided together with AutoPas. Based on the LJ potential, \texttt{md-flexible} facilitates MD simulations with integrated parallelization, shared memory computation, load balancing, and highly configurable scenario generators.
-% Autotuning
 
-
-% TODO: explain configs in Background, remove duplications in other sections?
 
 \section{Configuration Parameters}
 \label{sec:config_params}
@@ -52,14 +49,20 @@ Containers in AutoPas are classes responsible for particle management and neighb
 
 \subsection{Traversals}
 \label{sec:traversals}
-Containers provide an efficient way to identify neighbors of a particle --- to efficiently compute the interactions themselves however, the traversal, i.e. the order in which particles are iterated over, is equally important. Traversals are relevant for the performance mostly due to memory and cache access patterns. Different container types require traversals, tailored to the data structures used in storing the neighbors. A small selection of these traversals will be explained hereafter.
+Containers provide an efficient way to identify neighbors of a particle --- to efficiently compute the interactions themselves however, the traversal, i.e. the order in which particles are iterated over, is equally important. Traversals are relevant for the performance mostly due to memory and cache access patterns. Different container types require traversals, tailored to the data structures used in storing the neighbors. A very limited selection of these traversals will be explained hereafter.
 
 %TODO:
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{VL List Iteration}}]
-\item[\textbf{C01}] TODO
-\item[\textbf{VL List Iteration}] TODO
-\item[\textbf{LC C04}] TODO
+\item[\textbf{C01 Base Step}] The c01 base step is not a traversal strategy on its own, but defines the cells in which interaction computations must be performed for any given particle. It is implemented for the Linked Cells and Verlet List Cells containers as \texttt{lc\_c01} and \texttt{vlc\_c01} respectively. As the simplest base step, it computes all interactions with the neighboring cells of the particle’s base cell.
+\item[\textbf{C18 Base Step}] Similarly, c18 computes interactions only on its forward neighbors, potentially halving the number of calculations that have to be performed. This base step is enabled by Newton's third law (cf. \autoref{sec:newton}), where only one of the interacting particles needs to compute the interaction force. However, some form of synchronization must be employed, as to avoid race conditions on force updates. This limits the extent to which parallelization is possible. 
+\item[\textbf{VL List Iteration}] The VL List Iteration is the only traversal strategy available for Verlet lists. All lists are processed in parallel, within a given list the particles are traversed in sequential order. %TODO: is this correct? 
 \end{description}
+
+\begin{figure}
+	\centering
+	\caption{An illustration of traversals in AutoPas. [TODO]}
+	\label{fig:traversals}
+\end{figure}
 
 \subsection{Additional Parameters}
 Moreover, there are a number of additional configuration parameters that do not fall into the aforementioned groups. They are given below.
@@ -286,7 +289,7 @@ AutoPas provides a variety of different tuning strategies. These are used in sam
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{PredictiveTuning }}]
 	\item[\textbf{FullSearch}] The default tuning strategy is an exhaustive search over all possible configurations, i.e. all combinations of parameters. The optimal configuration is thereby guaranteed to be trialed at some point. However, the space of all possible configurations grows exponentially in the number of parameters, of which many configurations may be highly suboptimal. Other tuning strategies are therefore more suitable for most scenarios.
 	\item[\textbf{RandomSearch}] The random search tuning strategy randomly selects a given number of configurations which are then sampled. This can greatly reduce the number of configurations to test, but may not select the optimal configuration.
-	\item[\textbf{PredictiveTuning}] The predictive tuning strategy reduces the number of configurations that are sampled during tuning phases by only testing configurations that are expected to perform well. To predict which configurations might be optimal, the results from previous tuning iterations are used to extrapolate performance in the current tuning phase. The strategy allows to specify the degree to which the prediction is performed, i.e. how many \texttt{full-search} tuning phases are required before the extrapolation takes place. Predictive tuning is typically used with the \texttt{slow-config-filter}, which blocks configurations that show extremely poor performance from all successive tuning phases. \cite{Pelloth2020}
+	\item[\textbf{PredictiveTuning}] The predictive tuning strategy reduces the number of configurations that are sampled during tuning phases by only testing configurations that are expected to perform well. To predict which configurations might be optimal, the results from previous tuning iterations are used to extrapolate performance in the current tuning phase. The strategy allows to specify the degree of accuracy, i.e. how many \texttt{full-search} tuning phases are required before the extrapolation takes place. Predictive tuning is typically used with the \texttt{slow-config-filter}, which blocks configurations that show extremely poor performance from all successive tuning phases. \cite{Pelloth2020}
 \end{description}
 
 % TODO: Simulation parameters? Nice graphic for boundary conditions: https://fenicsproject.discourse.group/t/problems-with-periodic-bcs-in-3d/12247/2
