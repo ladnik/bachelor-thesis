@@ -23,7 +23,7 @@ $root_filename = 'IPleiriaMain.tex';
 set_tex_cmds("--shell-escape --synctex=1 --file-line-error --halt-on-error %O %S");
 
 # Extra extensions of files to remove in a clean-up.
-$clean_ext = 'aux bbl blg brf idx ilg ind lof log lot out toc fdb_latexmk fls synctex.gz';
+$clean_ext = 'aux bak bbl blg brf idx ilg ind lof log lot out toc fdb_latexmk fls synctex.gz';
 
 # Modify the default 'biber' call to improve error detection and clarity.
 $biber = "biber --validate-datamodel %O %S";

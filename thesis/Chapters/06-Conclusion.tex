@@ -1,24 +1,17 @@
 \chapter[Conclusion]{Conclusion}
 \label{cp:conclusion}
 
-%{
-%\parindent0pt
-%This chapter will shortly summarize the results which were discussed in \autoref{cp:results}. Additionally, an outlook concerning tuning strategies is given. %TODO
-%}
-%
-%\section{Summary of Findings and Outlook}
+\vspace*{-2ex} % TODO: check alignment
+In this thesis, four new methods to dynamically initiate new tuning phases in AutoPas were introduced. Additionally, reasonable default values for the corresponding control parameters were derived empirically.
+It was shown that our trigger strategies decrease simulation runtime across almost all tested scenarios when using \texttt{full-search} as the tuning strategy. % TODO: average speedup across all
+Especially in settings with low variance in iteration runtime, all strategies reduce the number of iterations spent in tuning phases without any significant decrease in the optimality of the used configurations. %TODO: check this
+The most promising candidate was shown to be the comparison of averaged intervals, due to its resilience to noise in the live input data, leading to speedups of up to \qty{76}{\percent} under optimal conditions.
+The other strategies investigated are more susceptible to the aforementioned fluctuations in the input data. Nonetheless, these triggers still perform well in scenarios with low variance between iterations. % TODO
 
-In this thesis, four new methods to dynamically initiate new tuning phases in AutoPas were introduced.
-As shown in \autoref{cp:results}, our trigger strategies decrease the simulation run time across almost all tested scenarios when using \texttt{full-search} as the tuning strategy. 
-Especially in settings in which the optimal configuration does not change rapidly, our method reduces the amount of iterations spent in tuning phases without any significant decrease in the optimality of the chosen configurations. %TODO: check this
+However, as new tuning strategies are introduced, the dynamic initiation of tuning intervals will likely become less relevant for single-node applications. In particular, tuning strategies based on machine learning lead to cheap tuning phases \cite{Newcome2025}, which in turn significantly diminishes the achievable speedups. One application in which a dynamic approach as ours might still be of use, is in distributed memory setups: As each node runs its own AutoPas instance, it can trigger tuning phases independently from other nodes. In scenarios with heterogeneous particle distribution over the whole domain, the best configuration on a specific node is likely to change separate from other parts of the domain. Thus, our proposed method may still be advantageous.
 
+Possible future work may explore the analysis of additional live simulation statistics, either as single parameter or hybrid strategies. The introduction of novel triggering algorithms providing more stability, such as linear regression using the Theil-Sen estimator, should be considered. More advanced methods such as digital filters have to be implemented efficiently, as not to inflate per-iteration overhead.
+Another interesting subject for further research could be the combination of static and dynamic tuning intervals; at fixed, but much shorter intervals, a dynamic trigger would evaluate whether to start a new tuning phase or not.
 
-The \texttt{TimeBasedSplitTrigger} strategy was shown to be the most promising candidate, which is due to its resilience against high variability in iteration run time. Using this trigger with optimal parameters led to speedups of up to \qty{76}{\percent}. Other strategies also perform well in scenarios \textellipsis %TODO
-
-%TODO
-TODO
-
-However, as new tuning strategies are introduced, the dynamic initiation of tuning intervals will likely become less relevant for single-node applications. For example, the use of tuning strategies based on machine learning leads to very cheap tuning phases \cite{Newcome2025}, which in turn significantly diminishes the achievable speedups observed when comparing to tuning with \texttt{full-search}. One application in which a dynamic approach as ours might still be useful, is in shared memory setups: As each node runs its own autotuner instance, it can trigger tuning phases independently from other nodes. In scenarios like exploding-liquid this could still be advantageous.
-
-Possible future work could explore the analysis of \texttt{LiveInfo} parameters, either as single parameter strategies or as hybrid triggers. The introduction of novel trigger methods providing more stability, such as using the Theil-Sen estimator, should be considered.
-% TODO: polynomial functions?
+% TODO: check if lightweight
+In summary, the dynamic initiation of tuning phases has been shown to be lightweight method of decreasing unnecessary tuning phases, whilst still ensuring good configuration fit. Using more efficient tuning strategies reduces the performance gains in single-node applications, but some benefits remain in multi-node settings.

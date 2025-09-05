@@ -26,6 +26,7 @@
 \usepackage{parskip}
 \usepackage{adjustbox}
 \usepackage{subcaption}
+\captionsetup[subfigure]{margin=5pt}
 \usepackage{siunitx}
 \usepackage[htt]{hyphenat}
 \usepackage{mleftright}
@@ -37,19 +38,6 @@
 \usepackage[dvipsnames]{xcolor}
 \usetikzlibrary{decorations.pathreplacing,positioning, arrows.meta, calc, patterns, patterns.meta, calligraphy, matrix, positioning, fit, backgrounds}
 
-
-%\usepackage{pgf}
-%%\usepackage{lmodern}
-%\usepackage{import}
-%
-%\def\mathdefault#1{#1}
-%%   \everymath=\expandafter{\the\everymath\displaystyle}
-%%   \IfFileExists{scrextend.sty}{
-%%	     \usepackage[fontsize=10.000000pt]{scrextend}
-%%	   }{
-%%	     \renewcommand{\normalsize}{\fontsize{10.000000}{12.000000}\selectfont}
-%%	     \normalsize
-%%	   }
 
 %\includeonly{ {Chapters/01-Introduction} }
 %\includeonly{ {Chapters/02-Background} }
@@ -141,8 +129,8 @@
 
 %%% Appendices: Work that *YOU* Developed %%%
 %\appendix
-%\input{Matter/08-Appendices}
-%\input{Chapters/Appendices/00-AppendixA}
+\input{Matter/08-Appendices}
+\input{Chapters/Appendices/00-AppendixA}
 %\input{Chapters/Appendices/01-AppendixB}
 
 %%% Annexes: Work that *YOU DID NOT* Develop %%%
