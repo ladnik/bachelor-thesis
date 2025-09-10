@@ -11,20 +11,22 @@
 When developing trigger strategies, several aspects must be taken into account. These include the additional computational costs introduced, the types of simulation statistics used, and the criteria by which relevant changes in the simulation scenario are detected. Moreover, the chosen trigger mechanisms do not operate in isolation but interact with tuning strategies. This section outlines these considerations in more detail.
 
 \subsection{Computational Overhead}
-Our trigger strategies introduce additional computations, as we have to make decisions based on data that can only be collected at runtime. Therefore, the overhead must be kept as small as possible, otherwise gains made by triggering less tuning phases might easily be dwarfed by the additional computations in each iteration. Furthermore, this can lead to feedback of our method to itself, as our strategies may affect iteration runtime which in turn alters the trigger behavior.
+Our trigger strategies introduce additional computations, as we have to make decisions based on data that can only be collected at runtime. Therefore, the overhead must be kept as small as possible, otherwise gains made by triggering less tuning phases might easily be outweighed by the additional computations in each iteration. Furthermore, it may lead to feedback of our method to itself, as our strategies may affect iteration runtime which in turn alters the trigger behavior.
 
 \subsection{Available Simulation Statistics}
 \label{sec:avail_sim_stats}
-% TODO: justify not tracking rebuild times: plot iteration runtime - rebuildtimes vs rebuildtimes, rebuildtimes should experience no significant changes whilst iteration runtimes increase
 
-AutoPas tracks a number of live simulation statistics. This thesis primarily focuses on runtimes of the current iteration, which include e.g. time spent computing interactions, tuning or rebuilding neighbor lists.
-In addition to these runtime statistics, the \texttt{liveInfo} system reports parameters such as the estimated number of neighbor interactions, the number of empty cells or the standard deviation of the number of particles in cells. \cite{Newcome2025}
+AutoPas tracks a number of live simulation statistics; this thesis primarily focuses on runtime measurements of the individual iterations.
+In addition to these runtime statistics, the \texttt{LiveInfo} system reports parameters such as the estimated number of neighbor interactions, the number of empty cells or the standard deviation of the number of particles in cells. \cite{Newcome2025}
+
+The iteration runtimes themselves are again differentiated into multiple parameters: the time spent on computing interactions, traversing remainders and rebuilding neighbor lists.
+In this work, we will consider the sum of all these times with the exception of the rebuilding measurements. This choice will be justified by collected data in \autoref{sec:justification_rebuild}.
 
 \subsection{Detecting Scenario Change}
-After deciding on which simulation statistic to base the triggering strategies on, one needs to define a notion of \enquote{scenario change}. We consider two categories in which to classify this change:
+After deciding on which simulation statistic to base the triggering strategies on, one needs to define a notion of \enquote{scenario change.} We consider two categories in which to classify this change:
 
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Type of variation }}]
-	\item[\textbf{Parameter Space}] Change can occur either in a single parameter or combination of multiple ones (hybrid). The hybrid approach has higher complexity and computational cost, but could be better in scenarios which do not indicate change in the single observed parameter. E.g., a configuration might become suboptimal without any increase in iteration runtime --- but a different configuration might be even better suited after e.g. a change in density of the particle distribution.
+	\item[\textbf{Parameter Space}] Change can occur either in a single or combination of multiple parameters (hybrid). The hybrid approach has higher complexity and computational cost, but could be better in scenarios which do not indicate change in the single observed parameter. E.g., a configuration might become suboptimal without any increase in iteration runtime --- but a different configuration might be even better suited after, e.g., a change in density of the particle distribution.
 	\item[\textbf{Type of Variation}] Depending on the parameters used, change can be indicated by two forms of variation. The first is an increase in the parameter value, the second a change in magnitude: I.e., if the parameter value deviates to much from its starting point in either direction.
 \end{description}
 
@@ -32,10 +34,10 @@ In this work, we will investigate strategies which are based on a single paramet
 
 
 \subsection{Interaction with Tuning Strategies}
-As introduced in \autoref{sec:tuning_strategies}, AutoPas offers various tuning strategies. Depending on the specific simulation scenario, one strategy might be more efficient --- e.g. the \texttt{slow-config-filter} setting in the heating-sphere example. To keep results comparable between scenarios therefore, all experiments were executed using the \texttt{full-search} strategy. As this strategy is expected to sample more suboptimal configurations than others, the effect of tuning iterations on the whole simulation runtime is higher. Using more tailored tuning strategies, the improvements as presented in this thesis might not be as visible.
+As introduced in \autoref{sec:tuning_strategies}, AutoPas offers various tuning strategies. Depending on the specific simulation scenario, one strategy might be more efficient. Therefore, to keep results comparable between scenarios, all experiments were executed using the \texttt{full-search} strategy. As this strategy is expected to sample more suboptimal configurations than others, the effect of tuning iterations on the whole simulation runtime is higher. Using more tailored tuning strategies, the improvements as presented in this thesis might not be as visible.
 
 
-\section{Time-based Triggers}
+\section{Time-Based Triggers}
 \label{sec:time_base_triggers}
 The simplest approach in detecting whether the current configuration might have become suboptimal, is to observe changes in iteration runtime. As a specific configuration becomes less suitable due to changes in simulation state, one would expect the runtime to increase, as e.g. suboptimal containers lead to unfavorable access patterns. Therefore, the primary focus of this thesis lies on runtime-based strategies in finding trigger points.
 
@@ -45,19 +47,15 @@ The frequency at which new tuning phases are initiated, is indirectly determined
 \label{subsec:simple_trigger}
 The most simplistic implementation of a time-based trigger considers only the runtimes of the current and immediately preceding iteration. In other words, if $t_i \ge \lambda\cdot t_{i-1}$, a new tuning phase is triggered. This trigger is implemented as the \texttt{TimeBasedSimpleTrigger}.
 
+In scenarios with a low average number of neighbors, the rebuilding of neighbor lists takes longer than the interaction computations. Considering that the rebuilding only happens in iterations that are a multiple of \texttt{rebuildFrequency}, this would lead to the initiation of a new tuning phase in each rebuild iteration, as the rebuild iteration greatly outweighs the non-rebuild iteration. This is one of the reasons why we do not consider rebuild times in the input of our trigger strategies.
 
-\subsection{Single-iteration averaging Trigger}
-The simple strategy described in \autoref{subsec:simple_trigger} is quite unstable. Because of external factors such as hardware heterogeneity, the iteration runtimes are subject to noise. This leads to variability between two successive iterations that is not due to any transformation in the scenario, which is detrimental to the idea of runtime-based detection of scenario change. To diminish the effects of random noise, we extend our sampling interval and average the runtime over multiple samples. This is implemented as the \texttt{TimeBasedAverageTrigger}, which differs from the \texttt{TimeBasedSimpleTrigger} in that the comparison is performed with respect to the  moving average of the last $n$ runtime samples, as in \eqref{eq:time_based_average_formula}.
+
+\subsection{Single-Iteration Averaging Trigger}
+The simple strategy described in \autoref{subsec:simple_trigger} is quite unstable. Because of external factors such as hardware heterogeneity, the iteration runtimes are subject to noise. This leads to variability between two successive iterations that is not due to any transformation in the scenario, which is detrimental to the idea of runtime-based detection of scenario change. To diminish the effects of random noise, we extend our sampling interval and average the runtime over multiple samples. This is implemented as the \texttt{TimeBasedAverageTrigger}, which differs from the \texttt{TimeBasedSimpleTrigger} in that the comparison is performed with respect to the  moving average of the last $n$ runtime samples, as in \eqref{eq:time_based_average_formula}. \autoref{fig:simple_vs_averaging} illustrates a comparison between the \texttt{TimeBasedSimpleTrigger} and \texttt{TimeBasedAverageTrigger}.
 \begin{equation}
 	t_i \ge \frac{\lambda}{n}\cdot \sum_{k=i-n}^{i-1}t_{k}\label{eq:time_based_average_formula}
 \end{equation}
 
-\tikzset{
-	customdash/.style={dash pattern=on 2pt off 1pt},
-	accColorA/.style={draw=chapterdarkred},
-	accColorB/.style={draw=violet},
-	accColorC/.style={draw=ForestGreen},
-}
 \begin{figure}[htpb]
 	\centering
 	\def\barwidth{12pt}
@@ -83,15 +81,15 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 				]
 
 				\addlegendimage{legend image code/.code={
-							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+							\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
 						}}
 				\addlegendentry{\scriptsize$t_k$}
 				\addlegendimage{legend image code/.code={
-							\draw[fill=none, draw=chaptertumblue, customdash, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+							\draw[barfilldashed, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
 						}}
 				\addlegendentry{\scriptsize$\lambda t_{k-1}$}
 
-				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates{
+				\addplot[ybar, barfillverylight] coordinates{
 						(0,0.9)
 						(1,1.17)
 						(2,0.95)
@@ -100,18 +98,18 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 						(7,1.33)
 						(8,0.55)
 					};
-				\addplot[ybar, fill=none, draw=chaptertumblue, customdash] coordinates{
+				\addplot[ybar, barfilldashed] coordinates{
 						(1,0.9*\lambdaval)
 						(2,1.17*\lambdaval)
 						(3,0.95*\lambdaval)
 						(4,1.1*\lambdaval)
 					};
-				\addplot[ybar, fill=tumblueaccmedium, draw=chaptertumblue] coordinates {(4,0.9)};
-				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue] coordinates {(5,1.7)};
+				\addplot[ybar, barfillmedium] coordinates {(4,0.9)};
+				\addplot[ybar, barfilldark] coordinates {(5,1.7)};
 
-				\draw[draw=tumblueaccverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 0.9*\lambdaval) -- ([xshift=0.5*\barwidth]5, 0.9*\lambdaval);
+				\draw[blueverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 0.9*\lambdaval) -- ([xshift=0.5*\barwidth]5, 0.9*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{Tuning Phase};
+				\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{New Tuning Phase};
 
 
 			\end{axis}
@@ -138,21 +136,21 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 				]
 
 				\addlegendimage{legend image code/.code={
-							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+							\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
 						}}
 				\addlegendentry{\scriptsize$t_k$}
 
 				\addlegendimage{legend image code/.code={
-							\draw[fill=none, accColorA, thick, anchor=center] (0cm, 0cm) -- (0.3cm,0cm);
+							\draw[fill=none, accentRed, thick, anchor=center] (0cm, 0cm) -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\phantom{\lambda}\text{avg}\left[t_{i-n}, t_{i-1}\right]$}
 
 				\addlegendimage{legend image code/.code={
-							\draw[fill=none, draw=chaptertumblue, customdash, thick, anchor=center] (0cm, 0cm) -- (0.3cm,0cm);
+							\draw[barfilldashed, thick, anchor=center] (0cm, 0cm) -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\lambda \text{avg}\left[t_{i-n}, t_{i-1}\right]$}
 
-				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates{
+				\addplot[ybar, barfillverylight] coordinates{
 						(0,0.9)
 						(1,1.17)
 						(2,0.95)
@@ -162,15 +160,14 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 						(7,1.33)
 						(8,0.55)
 					};
-				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue] coordinates {(5,1.7)};
+				\addplot[ybar, barfilldark] coordinates {(5,1.7)};
 
-				\draw[thick, accColorA] ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) -- ([xshift=0.5*\barwidth]axis cs: 4, 1.004);
-				%				\node[chapterdarkred, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) {\scriptsize$\text{avg}$};
+				\draw[thick, accentRed] ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) -- ([xshift=0.5*\barwidth]axis cs: 4, 1.004);
 
 				% avg is 1,004
-				\draw[draw=tumblueaccverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 1.004*\lambdaval) -- ([xshift=0.5*\barwidth]5, 1.004*\lambdaval);
+				\draw[draw=blueverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 1.004*\lambdaval) -- ([xshift=0.5*\barwidth]5, 1.004*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{Tuning Phase};
+				\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{New Tuning Phase};
 
 
 			\end{axis}
@@ -180,7 +177,7 @@ The simple strategy described in \autoref{subsec:simple_trigger} is quite unstab
 	\label{fig:simple_vs_averaging}
 \end{figure}
 
-\subsection{Interval averaging Trigger}
+\subsection{Interval Averaging Trigger}
 Considering that we expect scenario changes to happen gradually, the runtime might not increase drastically in a single iteration, but rather across a series of subsequent iterations. As the previous two triggers only compare to the current iteration's runtime, they are suboptimal under such circumstances. Taking this effect into account, the \texttt{TimeBasedSplitTrigger} splits the measurements of the last $n$ iterations and the current iteration into two intervals $A, B$ as defined in \eqref{eq:split_intervals}. A new tuning phase is then initiated if $\text{avg}(B)\ge \lambda\cdot \text{avg}(A)$.
 
 \begin{equation}
@@ -190,7 +187,7 @@ Considering that we expect scenario changes to happen gradually, the runtime mig
 
 
 \subsection{Linear Regression Trigger}
-The \texttt{TimeBasedRegressionTrigger} is conceptually similar to the \texttt{TimeBasedSplitTrigger}, although with one major difference. Instead of comparing the current interval of runtimes to a previous one, the comparison is based on an estimate of the future runtime based on data of the current interval.
+The \texttt{TimeBasedRegressionTrigger} is conceptually similar to the \texttt{TimeBasedSplitTrigger}, although with one major difference. Instead of comparing the current interval of runtimes to a previous one, the comparison is based on an estimate of the future runtime based on data of the current interval. This difference is shown in \autoref{fig:split_vs_regression}.
 
 The general idea is to fit a simple linear regression, adapted to our use case, on the last $n$ runtime samples and the current iteration's runtime. Using simple linear regression we obtain a slope estimator $\hat{\beta}_1$, by which we can predict the runtime of the next interval.
 
@@ -205,7 +202,7 @@ where
 	t_{\text{avg}}=\frac{1}{n+1}\sum_{k=i-n}^it_k, \quad k_{\text{avg}} = \frac{1}{n+1}\sum_{k=i-n}^ik\label{eq:lin_rev_avgs}
 \end{equation}
 
-The value of the estimator $\hat\beta_0$, i.e. the intercept at $y=0$, is not of interest. Similarly, as the samples are taken in discrete steps of one iteration, the values of $k$ can be shifted to the interval $\left[0, n+1\right]$. Considering this, the model can be transformed to \eqref{eq:lin_reg_simpl}.
+The value of the estimator $\hat\beta_0$, i.e., the intercept at $y=0$, is not of interest. Similarly, as the samples are taken in discrete steps of one iteration, the values of $k$ can be shifted to the interval $\left[0, n+1\right]$. Considering this, the model can be transformed to \eqref{eq:lin_reg_simpl}.
 
 \begin{equation}
 	\hat{\beta}_1\propto\hat{\beta}_1' =\frac{\sum_{k=0}^{n}\left(k-\frac{n(n+1)}{2(n+1)}\right)(t_{i-n+k}-t_{\text{avg}})}{\sum_{k=0}^{n}\left(k-\frac{n(n+1)}{2(n+1)}\right)^2}= \frac{1}{C_2}\sum_{k=0}^{n}\left(k-C_1\right)(t_{i-n+k}-t_{\text{avg}})\label{eq:lin_reg_simpl}
@@ -216,7 +213,7 @@ where
 \end{equation}
 
 
-The transformed estimator $\hat\beta_1'$ can thus be interpreted as the projected increase in runtime per iteration. This, however, is not a practical metric to compare with a user-set configuration parameter, as it heavily depends on the scenario and would require advance knowledge of the range of iteration runtimes. Therefore, we use a normalization function, such that a slope of $\hat\beta_{\text{norm}}=1.0$ is equal to \enquote{no runtime increase}. Additionally, the normalization should ensure that $\hat\beta_{\text{norm}}$ can be compared to a factor $\lambda$ that matches the other triggering methods.
+The transformed estimator $\hat\beta_1'$ can thus be interpreted as the projected increase in runtime per iteration. This, however, is not a practical metric to compare with a user-set configuration parameter, as it heavily depends on the scenario and would require advance knowledge of the range of iteration runtimes. Therefore, we use a normalization function, such that a slope of $\hat\beta_{\text{norm}}=1.0$ is equal to \enquote{no runtime increase.} Additionally, the normalization should ensure that $\hat\beta_{\text{norm}}$ can be compared to a factor $\lambda$ that matches the other triggering methods.
 Given these restrictions, we can derive one such normalization in the following manner: Starting off $t_i$, we extrapolate the iteration runtimes for the next interval based on $\hat\beta_1'$. With that, we compute the area of the triangle representing the additional runtime we expect in the next interval \eqref{eq:reg_triangle}.
 
 \begin{equation}
@@ -269,15 +266,15 @@ In particular, we have:
 				]
 
 				\addlegendimage{legend image code/.code={
-							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+							\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
 						}}
 				\addlegendentry{\scriptsize$t_k$}
 				\addlegendimage{legend image code/.code={
-							\draw[accColorA, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+							\draw[accentRed, thick] (0cm, 0cm)  -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\phantom{\lambda}\text{avg}(A)$}
 				\addlegendimage{legend image code/.code={
-							\draw[accColorB, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+							\draw[accentViolet, thick] (0cm, 0cm)  -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\phantom{\lambda}\text{avg}(B)$}
 				\addlegendimage{legend image code/.code={
@@ -290,8 +287,8 @@ In particular, we have:
 				\pgfmathsetmacro{\yoff}{0.5}
 				\pgfmathsetmacro{\yscale}{1.25}
 
-				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue, samples at={0,...,10,12,13,14,15}, domain=0:15] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
-				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue, samples at={11}, domain=0:15] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
+				\addplot[ybar, barfillverylight, samples at={0,...,10,12,13,14,15}] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
+				\addplot[ybar, barfilldark, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
 
 				\pgfmathsetmacro{\tmpsum}{0}
 				\foreach \x in {0,...,5}{%
@@ -307,15 +304,13 @@ In particular, we have:
 					}
 				\pgfmathsetmacro{\avgB}{\tmpsum/6}
 
-				\draw[thick, accColorA] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 5, \avgA);
-				%				\node[accColorA, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) {\scriptsize$\text{avg}(A)$};
+				\draw[thick, accentRed] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 5, \avgA);
 
-				\draw[thick, accColorB] ([xshift=-0.5*\barwidth]axis cs: 6, \avgB) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgB);
-				%				\node[violet, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 6, \avgB) {\scriptsize$\text{avg}(B)$};
+				\draw[thick, accentViolet] ([xshift=-0.5*\barwidth]axis cs: 6, \avgB) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgB);
 
-				\draw[thick, customdash, chaptertumblue] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
+				\draw[thick, customdash, bluedarkoutline] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:12,2) -- (axis cs:15.75,2) node[midway, yshift=2.5ex]{Tuning Phase};
+				\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:12,2) -- (axis cs:15.75,2) node[midway, yshift=2.5ex]{New Tuning Phase};
 
 
 			\end{axis}
@@ -343,21 +338,21 @@ In particular, we have:
 				]
 
 				\addlegendimage{legend image code/.code={
-							\draw[fill=tumblueaccverylight, draw=chaptertumblue, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+							\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
 						}}
 				\addlegendentry{\scriptsize$t_k$}
 
 				\addlegendimage{legend image code/.code={
-							\draw[accColorA, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+							\draw[accentRed, thick] (0cm, 0cm)  -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\phantom{\lambda}t_\text{avg}$}
 				\addlegendimage{legend image code/.code={
-							\draw[accColorB, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+							\draw[accentViolet, thick] (0cm, 0cm)  -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\phantom{\lambda}t_\text{avg}^\text{proj}$}
 
 				\addlegendimage{legend image code/.code={
-							\draw[draw=chaptertumblue, thick, customdash, anchor=center] (0cm, 0cm)  -- (0.3cm,0cm);
+							\draw[draw=bluedarkoutline, thick, customdash, anchor=center] (0cm, 0cm)  -- (0.3cm,0cm);
 						}}
 				\addlegendentry{\scriptsize$\lambda t_{\text{avg}}$}
 
@@ -366,22 +361,22 @@ In particular, we have:
 				\pgfmathsetmacro{\xzero}{5}
 				\pgfmathsetmacro{\yoff}{0.25}
 				\pgfmathsetmacro{\yscale}{0.9}
-				
-				\draw[accColorC, fill=ForestGreen!20, line join=round] ([xshift=-0.5*\barwidth]axis cs:12,1.08) -- ([xshift=0.5*\barwidth]axis cs: 23,1.98) -- ([xshift=0.5*\barwidth]axis cs: 23,1.08) -- cycle;
-				\node[color=ForestGreen, align=center] at (axis cs: 19, 1.3) {\scriptsize$A_\triangle$};
-				
-				\draw[Orange, fill=Orange!20] ([shift={(-0.5*\barwidth,-\pgflinewidth)}]axis cs:12,1.08) rectangle ([shift={(0.5*\barwidth,\pgflinewidth)}]axis cs: 23,0);
-				\node[color=Orange, align=center] at (axis cs: 15, 0.75) {\scriptsize$(n+1)t_i$};
-				
 
-				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue, samples at={0,...,10}] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
-				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
-				\addplot[ybar, fill=tumblueaccverylight, draw=chaptertumblue] coordinates {
+				\draw[fill=none, draw=black, dotted, line join=round] ([xshift=-0.5*\barwidth]axis cs:12,1.08) -- ([xshift=0.5*\barwidth]axis cs: 23,1.98) -- ([xshift=0.5*\barwidth]axis cs: 23,1.08) -- cycle;
+%				\node[color=black, align=center] at (axis cs: 19, 1.3) {\scriptsize$A_\triangle$};
+%
+%				\draw[Orange, fill=Orange!20] ([shift={(-0.5*\barwidth,-\pgflinewidth)}]axis cs:12,1.08) rectangle ([shift={(0.5*\barwidth,\pgflinewidth)}]axis cs: 23,0);
+%				\node[color=Orange, align=center] at (axis cs: 15, 0.75) {\scriptsize$(n+1)t_i$};
+
+
+				\addplot[ybar, barfillverylight, samples at={0,...,10}] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
+				\addplot[ybar,  barfilldark, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
+				\addplot[ybar, barfillverylight] coordinates {
 						(12,0.39) (13,0.51) (14,0.31) (15,0.34) (16,0.40)
 						(17,0.28) (18,0.64) (19,0.28) (20,0.29) (21,0.63)
 						(22,0.67) (23,0.69)};
-				c
-				\addplot[ybar, fill=tumblueaccdark, draw=chaptertumblue, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
+
+				\addplot[ybar, barfilldark, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
 
 				\pgfmathsetmacro{\tmpsum}{0}
 				\foreach \x in {0,...,11}{%
@@ -390,22 +385,23 @@ In particular, we have:
 					}
 				\pgfmathsetmacro{\avgA}{\tmpsum/12}
 
-				\draw[thick, accColorA] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA);
-				%				\node[chapterdarkred, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) {\scriptsize$t_{\text{avg}}$};
-				\draw[thick, accColorB] ([xshift=-0.5*\barwidth]axis cs: 12, 1.53) -- ([xshift=0.5*\barwidth]axis cs: 23, 1.53);
-				%				\node[violet, anchor=south west, align=left, inner sep=0pt, yshift=-0.125em] at ([xshift=-0.5*\barwidth]axis cs: 12, 1.53) {\scriptsize$t_{\text{avg}}$ (proj.)};
+				\draw[thick, accentRed] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA);
 
-				\draw[thick, customdash, chaptertumblue] ([xshift=-0.5*\barwidth]axis cs: 11, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 23, \avgA*\lambdaval);
+				\draw[thick, accentViolet] ([xshift=-0.5*\barwidth]axis cs: 12, 1.53) -- ([xshift=0.5*\barwidth]axis cs: 23, 1.53);
+
+				\draw[thick, customdash, bluedarkoutline] ([xshift=-0.5*\barwidth]axis cs: 11, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 23, \avgA*\lambdaval);
 
 
-				%				\draw[thick, densely dashed, chaptertumblue] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
+				\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:12,2) -- ([xshift=0.5*\barwidth]axis cs:23,2) node[midway, yshift=2.5ex]{New Tuning Phase};
 
-				\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] ([xshift=-0.5*\barwidth]axis cs:12,2) -- ([xshift=0.5*\barwidth]axis cs:23,2) node[midway, yshift=2.5ex]{Tuning Phase};
+				\draw [custombrace] ([yshift=-\pgflinewidth]axis cs:24,1.08) -- (axis cs:24,0) node[midway, align=left, anchor=west, xshift=1ex]{$t_i$};
+				
+				\draw [custombrace]  (axis cs:24,1.98) -- ([yshift=\pgflinewidth]axis cs:24,1.08) node[midway, align=left, anchor=west, xshift=1ex]{$\hat{\beta}_1't_i$};
 
 			\end{axis}
 		\end{tikzpicture}
 	\end{subfigure}
-	\caption{Comparison for $\lambda=1.5$ and $n=11$ between the \texttt{TimeBasedSplitTrigger} (left) and \texttt{TimeBasedRegressionTrigger} (right) strategies. [TODO]}
+	\caption{Comparison for $\lambda=1.5$ and $n=11$ between the \texttt{TimeBasedSplitTrigger} (left) and \texttt{TimeBasedRegressionTrigger} (right) strategies.}
 	\label{fig:split_vs_regression}
 \end{figure}
 

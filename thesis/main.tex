@@ -25,7 +25,7 @@
 \usepackage{microtype}
 \usepackage{parskip}
 \usepackage{adjustbox}
-\usepackage{subcaption}
+\usepackage{subcaption}[justification=centering]
 \captionsetup[subfigure]{margin=5pt}
 \usepackage{siunitx}
 \usepackage[htt]{hyphenat}
@@ -43,15 +43,16 @@
 %\includeonly{ {Chapters/02-Background} }
 %\includeonly{ {Chapters/03-Implementation} }
 %\includeonly{ {Chapters/04-Evaluation} }
-%\includeonly{ {Chapters/05-Results} } 
+\includeonly{ {Chapters/05-Results} } 
 %\includeonly{ Chapters/05-Results, Chapters/04-Evaluation}
 %\includeonly{ Chapters/05-Results, Chapters/06-Conclusion}
 %\includeonly{ Chapters/06-Conclusion}
 
 % TODO: depending on Contents-section lenght, even spread may be misaligned -> manually remove blank page
-% TODO: check figure layouting
-% TODO: align title cover and frontpage
+% TODO: check figure layout
+% TODO: title align together with subtitle or title only on cover?
 % TODO: optimal vs omptimum configuration
+% TODO: heating-sphere vs heating sphere, exploding-liquid vs exploding liquid
 
 \newif\ifdropfigures
 %\dropfigurestrue
@@ -63,10 +64,30 @@
 % physics-package style bold vectors
 \newcommand{\vb}[1]{\ensuremath{\mathbf{#1}}}
 
-% typesetting C++, courtesy of https://isocpp.org/wiki/faq/misc-environmental-issues#latex-macros
+% typesets C++, courtesy of https://isocpp.org/wiki/faq/misc-environmental-issues#latex-macros
 \def\CC{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
 % redefines \left and \right
 \mleftright
+
+% disable thousands separator
+\pgfkeys{/pgf/number format/.cd,1000 sep={}}
+
+% siunitx range settings
+\sisetup{range-phrase=\,to\,,,range-units=single} 
+
+%  unified tikz styling
+\tikzset{
+	barfilldark/.style={fill=bluedark, draw=bluedarkoutline},
+	barfillmedium/.style={fill=bluemedium, draw=bluedarkoutline},
+	barfillight/.style={fill=bluelight, draw=bluedarkoutline},
+	barfillverylight/.style={fill=blueverylight, draw=bluedarkoutline},
+	barfilldashed/.style={fill=none, draw=bluedarkoutline, customdash},
+	accentRed/.style={draw=reddark},
+	accentOrange/.style={draw=orangedark},
+	accentViolet/.style={draw=violetdark},
+	customdash/.style={dash pattern=on 2pt off 1pt},
+	custombrace/.style={decorate,decoration={brace, amplitude=1ex, raise=0.5ex}},
+}
 
 %%% Document Metadata %%%
 \input{Metadata/Metadata}
@@ -100,7 +121,7 @@
 \include{Chapters/00-Abstract}
 
 %%% AI Acknowledgement %%%
-\include{Matter/04-AI}
+%\include{Matter/04-AI}
 
 %%% Table of Contents, List of Figures and List of Tables %%%
 \bookmarktocentry\tableofcontents
@@ -129,8 +150,8 @@
 
 %%% Appendices: Work that *YOU* Developed %%%
 %\appendix
-\input{Matter/08-Appendices}
-\input{Chapters/Appendices/00-AppendixA}
+%\input{Matter/08-Appendices}
+%\input{Chapters/Appendices/00-AppendixA}
 %\input{Chapters/Appendices/01-AppendixB}
 
 %%% Annexes: Work that *YOU DID NOT* Develop %%%
