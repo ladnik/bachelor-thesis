@@ -89,7 +89,7 @@
         }{}
     }
 
-    \vspace{5.5\baselineskip}
+    \vspace*{3.5\baselineskip}
 
     % Title.
 	\noindent
@@ -102,15 +102,15 @@
 
     \vspace{0.8\baselineskip}
 
-    % Subtitle.
-%    \noindent
-%    \makebox[\textwidth][l]{%
-%        \parbox{\dimexpr\textwidth-7cm\relax}{
-%            \setstretch{1.03}
-%            \raggedright\fontsize{14}{19}\selectfont\GetSubtitle
-%        }
-%    }
 
+	\newsavebox{\subtitlebox}
+	\sbox{\subtitlebox}{\parbox{\dimexpr\textwidth-7cm\relax}{
+			\setstretch{1.03}
+			\raggedright\fontsize{14}{19}\selectfont\GetSubtitle
+	}}
+
+	\vspace{\ht\subtitlebox}
+	
     \vspace{35pt}  
 
     % Thesis option.

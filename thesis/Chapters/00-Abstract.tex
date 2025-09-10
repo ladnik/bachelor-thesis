@@ -3,15 +3,24 @@
 \pdfbookmark[1]{Abstract}{abstract}
 \chapter*{Abstract}
 
-Particle simulations have become an indispensable tool in research and are used across a wide range of applications. Depending on the specific scenario, different simulation configurations may be more suitable. AutoPas is a particle simulation library that offers a simple black-box interface for researchers. To achieve this, AutoPas reevaluates the optimal configuration at fixed intervals. This thesis proposes a dynamic approach to determine ideal points for the initiation of new tuning phases.
+Particle simulations have established themselves as an indispensable tool in scientific research, and are used across a wide range of applications ranging from biophysics to materials science. The efficiency of such simulations is strongly influenced by the choice of computational strategies and their corresponding parameters. However, determining the optimal algorithmic configuration often requires expert knowledge and is highly dependent on the specific scenario studied.
 
-% TODO: add results and rewrite
-TODO
+AutoPas is a particle simulation library that addresses this issue by dynamically adjusting the algorithms employed in the simulation at runtime, based on live simulation data. This enables researchers to interact with AutoPas through a simple black-box interface, without requiring extensive knowledge in setting up optimal simulation parameters. To achieve this dynamic reconfiguration, AutoPas reevaluates the optimal algorithmic settings in tuning phases, initiated at fixed intervals. This thesis proposes four novel methods for determining ideal points for the dynamic initiation of tuning phases, based on data collected during the simulation itself.
+
+Experimental results demonstrate that our approach reduces simulation runtime by up to \qty{47}{\percent} compared to fixed tuning intervals with exhaustive search, whilst still selecting suitable configurations. Moreover, our implementation is lightweight, introducing on average only \qty{0.9}{\percent} overhead per iteration. The newly introduced methods are shown to be particularly well suited for multi-node applications.
+
+% TODO: add results
 
 \MediaOptionLogicBlank
 
 \chapter*{Zusammenfassung}
 
-TODO
+Partikelsimulation hat sich längst als unverzichtbares Hilfsmittel in der Wissenschaft etabliert und werden in einer Vielzahl von Anwendungsbereichen eingesetzt, von der Biophysik bis hin zu den Materialwissenschaften. Die Effizienz solcher Simulationen wird stark von der Wahl der verwendeten Simulationsmethoden und den entsprechenden Parametern beeinflusst. Die Bestimmung der optimalen algorithmischen Konfiguration erfordert jedoch oft Expertenwissen und hängt vom jeweiligen untersuchten Szenario ab.
+
+AutoPas ist eine Programmbibliothek für Partikelsimulationen, die dieses Problem löst, indem die in der Simulation verwendeten Algorithmen zur Laufzeit auf Grundlage von Live-Simulationsdaten dynamisch angepasst werden. Dadurch können Endanwender über eine einfache Black-Box-Schnittstelle mit AutoPas interagieren, ohne über umfangreiche Kenntnisse zur Einrichtung optimaler Simulationsparameter verfügen zu müssen. Um diese dynamische Neukonfiguration zu erzielen, ermittelt AutoPas in festgelegten Intervallen die beste algorithmische Konfiguration erneut. Diese Arbeit führt vier neuartige Methoden zur Bestimmung idealer Auslösungszeitpunkte von Tuning-Phasen ein, die auf im Verlauf der Simulation gesammelten Daten basieren.
+
+Die gesammelten Performanzergebnisse zeigen, dass unser Ansatz die Simulations\-/laufzeit im Vergleich zu statischen Tuning-Intervallen mit vollständiger Suche des Parameterraums um bis zu \qty{47}{\percent} reduziert, wobei dennoch geeignete Konfigurationen aus\-/gewählt werden. Darüber hinaus verursacht unsere Implementierung nur einen zusätzlichen Laufzeit-Overhead von  durchschnittlich \qty{0.9}{\percent} pro Iteration. Die neu entwickelten Strategien zeigen sich als besonders effektiv in Multi-Node-Anwendungen.
+
+% TODO: add results
 
 \MediaOptionLogicBlank
