@@ -122,7 +122,7 @@
 \ExplSyntaxOff
 
 %%% Load Master Class %%%
-\LoadClass[a4paper,11pt,twoside]{report}
+\LoadClass[a4paper,11pt,twoside,openright]{report}
 
 %%% Load Babel Package (Language) %%%
 \expandafter\RequirePackage\expandafter[\LanguageOption]{babel}

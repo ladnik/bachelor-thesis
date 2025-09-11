@@ -6,6 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.lines import Line2D
+from matplotlib.transforms import Bbox
 from matplotlib.ticker import ScalarFormatter
 from matplot2tikz import save as tikzsave
 
@@ -20,11 +21,11 @@ pgf_with_latex = {
     "font.serif": [],
     "font.sans-serif": [],  # onherit fonts
     "font.monospace": [],
-    "axes.labelsize": 22,  # default 10pt
-    "font.size": 16,
-    "legend.fontsize": 8,  # default 8pt
-    "xtick.labelsize": 16,  # default 8pt
-    "ytick.labelsize": 16,
+    "axes.labelsize": 24,  # default 10pt
+    "font.size": 18,
+    "legend.fontsize": 18,  # default 8pt
+    "xtick.labelsize": 18,  # default 8pt
+    "ytick.labelsize": 18,
 }
 mpl.rcParams.update(pgf_with_latex)
 
@@ -81,6 +82,20 @@ def remove_tuning_its(elems, tune):
     return [el for i, el in enumerate(elems) if not tune[i]]
 
 
+# as in https://stackoverflow.com/a/44971177
+def set_size(w, h, ax=None):
+    """w, h: width, height in inches"""
+    if not ax:
+        ax = plt.gca()
+    l = ax.figure.subplotpars.left
+    r = ax.figure.subplotpars.right
+    t = ax.figure.subplotpars.top
+    b = ax.figure.subplotpars.bottom
+    figw = float(w) / (r - l)
+    figh = float(h) / (t - b)
+    ax.figure.set_size_inches(figw, figh)
+
+
 scenario_name_map = {
     "equilibrium": "Equilibrium",
     "exploding-liquid": "Exploding Liquid",
@@ -93,18 +108,27 @@ scenario_iterations = {
     "heating-sphere": 60000,
 }
 
+liveinfo_param_map = {
+    "avgParticlesPerCell": "Avg. Number of Particles per Cell",
+    "estimatedNumNeighborInteractions": "Est. Number of Neighbor Interactions",
+    "maxDensity": "Maximum Particle Density",
+    "particlesPerCellStdDev": "Std. Dev. of Particles per Cell",
+    "numEmptyCells": "Number of Empty Cells",
+}
+
 
 def generate_plot_title(job_str, rank):
     tokens = job_str.split("_")
     triggerstr = ""
     lambdastr = ""
     nstr = ""
-    rank_str = f" ({rank})" if "exploding-liquid" in job_str else ""
+    rank_str = f" Rank {rank}" if "exploding-liquid" in job_str else ""
 
-    if tokens[1] == "dynamic":
+    if not "static" in job_str.lower():
         triggerstr = f" with {tokens[2]}"
         lambdastr = f"\n$\\lambda = {tokens[3]}$"
         nstr = f", $n = {tokens[4]}$" if tokens[2] != "TimeBasedSimple" else ""
+        rank_str=","+rank_str  if "exploding-liquid" in job_str else ""
 
     return scenario_name_map[tokens[0]] + triggerstr + lambdastr + nstr + rank_str
 
@@ -133,7 +157,9 @@ class PlotData:
         self.job_name = job_name
         self.rank = rank
         self.config_col_map = {}
-        self.avail_cols = AVAIL_COLS
+        self.avail_cols = AVAIL_COLS[:]
+        self.xmin = range_start
+        self.xmax = range_end
 
         with open(liveinfo_file, newline="") as lfile, open(
             iteration_file, newline=""
@@ -186,16 +212,23 @@ class PlotData:
             # read in all liveinfo params we may plot later on
             self.liveinfo = {}
             for liveinfo_param_name in LIVEINFO_PARAMS:
-                self.liveinfo[liveinfo_param_name] = [
-                    float(row[liveinfo_param_name]) for row in lrows
-                ]
-                self.liveinfo[liveinfo_param_name] = remove_tuning_its(
-                    self.liveinfo[liveinfo_param_name], self.tune
-                )
+                try:
+                    self.liveinfo[liveinfo_param_name] = [
+                        float(row[liveinfo_param_name]) for row in lrows
+                    ]
+                    self.liveinfo[liveinfo_param_name] = remove_tuning_its(
+                        self.liveinfo[liveinfo_param_name], self.tune
+                    )
+                except:
+                    print(f"Could not read {liveinfo_param_name} statistics")
 
             # set scenario for scenario-specific settings
             self.scenario = job_name.split("_")[0]
-            self.plot_title = generate_plot_title(job_name, self.rank)
+            
+            if not "n3l" in job_name:
+                self.plot_title = generate_plot_title(job_name, self.rank)
+            else:
+                self.plot_title=scenario_name_map[self.scenario]
 
             # read in selected configurations
             trows = [
@@ -275,7 +308,10 @@ class PlotData:
             print(f"Plotting liveInfo for {param_name}")
             fig, ax = plt.subplots()
             ax.yaxis.set_major_formatter(exp_formatter)
-            # ax.set_ylim(top=scenario_ylims[self.scenario])
+            
+            if param_name == "maxDensity":
+                ax.set_ylim(top=0.05)
+                ax.set_yticks([0.0075, 0.0175, 0.0275, 0.0375, 0.0475])
 
             if mark_configs:
                 for unique_config in set(self.stringified_configs):
@@ -296,25 +332,32 @@ class PlotData:
                 ax.scatter(
                     self.iteration,
                     self.liveinfo[param_name],
-                    marker="x",
+                    marker=".",
+                    color=axis_cols[0],
                     s=10,
                     rasterized=True,
                 )
 
-            ax.set(xlabel=r"iteration", ylabel=rf"{param_name}")
-            # ax.grid()
+            
+
+            set_size(6.4, 4.8, ax)
+            fig.canvas.draw()
+            bbox = fig.get_tightbbox(fig.canvas.get_renderer())
+            bbox = Bbox.from_extents( bbox.x0 - 0.6, bbox.y0 - 1.75, bbox.x1 + 0.6, bbox.y1 + 0.5)
+            # print(f"liveinfo bbox: x0={bbox.x0}, y0={bbox.y0}, x1={bbox.x1}, y1={bbox.y1}")
+            # fig.set_layout_engine("none")
+            ax.grid(visible=False)
+            ax.set(xlabel=r"Iteration", ylabel=rf"{liveinfo_param_map[param_name]}")
             ax.set_title(
-                f"{self.job_name}\n{param_name}",
+                f"{scenario_name_map[self.scenario]}",
                 loc="center",
             )
-            fig.savefig(
-                f"{output_prefix}{param_name}.png", dpi=300, bbox_inches="tight"
-            )
+            fig.savefig(f"{output_prefix}{param_name}.png", dpi=300, bbox_inches=bbox)
             fig.savefig(
                 f"{output_prefix}{param_name}.pdf",
                 format="pdf",
-                dpi=600,
-                bbox_inches="tight",
+                dpi=150,
+                bbox_inches=bbox,
             )
             plt.close(fig)
 
@@ -335,8 +378,8 @@ class PlotData:
         print(f"Plotting runtime vs. iteration")
 
         scenario_ylims = {
-            "equilibrium": 800000,
-            "exploding-liquid": 2000000,
+            "equilibrium": 1500000,
+            "exploding-liquid": 20000000,
             "heating-sphere": 22000000,
         }
 
@@ -345,6 +388,17 @@ class PlotData:
         ax.set_ylim(top=scenario_ylims[self.scenario])
 
         # mark distinct configurations
+        
+        def get_config_segments(arr):
+            arr = np.array(arr)
+            breaks = np.where(np.diff(arr)!=1)[0]+1
+            indices = np.split(np.arange(len(arr)), breaks)
+            return [[i[0], i[-1]] for i in indices]
+        
+        # for seg in get_config_segments(np.array(self.iteration)):
+        #     print(f"Config at {seg[0]} is {self.stringified_configs[seg[0]]}")
+        
+        
         if mark_configs:
             custom_lines = []
             custom_descriptors = []
@@ -362,7 +416,7 @@ class PlotData:
                         facecolor=self.map_cfg_to_col(unique_config),
                         alpha=0.5,
                     )
-                custom_lines += [
+                custom_lines = [
                     Line2D(
                         [0],
                         [0],
@@ -371,19 +425,25 @@ class PlotData:
                         markerfacecolor=self.map_cfg_to_col(unique_config),
                         markersize=10,
                     )
-                ]
+                ] + custom_lines
                 custom_descriptors = [unique_config] + custom_descriptors
-            ax.legend(
-                custom_lines,
-                custom_descriptors,
-                loc="upper left",
-                bbox_to_anchor=(0, -0.3, 1, 0.2),
-                mode="expand",
-                ncols=2,
-            )
+            
+        leg = ax.legend(
+            custom_lines,
+            custom_descriptors,
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.15),
+            frameon=False,
+            ncols=2,
+            labelspacing=0.25,
+            handlelength=0.5,
+        )
+        leg.set_in_layout(False)
 
         if mark_tuning_phases:
             for i in self.first_tuning_its:
+                if i < self.xmin or i > self.xmax:
+                    continue
                 ax.axvline(
                     x=i + 1,
                     color="gray",
@@ -403,16 +463,31 @@ class PlotData:
             zorder=1,
         )
 
-        ax.set(xlabel=r"Iteration", ylabel=r"Iteration Run Time in ns")
+        
+        # fig.set_size_inches(6.4, 6.0)
+        set_size(6.4, 4.8, ax)
+        # fig.canvas.draw()
+        # leg.set_in_layout(True)
+        # fig.set_layout_engine('none')
+        fig.canvas.draw()
+        bbox = fig.get_tightbbox(fig.canvas.get_renderer())
+        bbox = Bbox.from_extents(
+            bbox.x0 - 0.6, bbox.y0 - 1.75, bbox.x1 + 0.6, bbox.y1 + 0.5
+        )
+        # print(f"runtime bbox: x0={bb  ox.x0}, y0={bbox.y0}, x1={bbox.x1}, y1={bbox.y1}")
+        ax.set(xlabel=r"Iteration", ylabel=r"Iteration Runtime in ns")
         ax.grid(visible=False)
         ax.set_title(
             f"{self.plot_title}",
             loc="center",
         )
-        # fig.set_size_inches(plot_width, plot_height)
-        fig.savefig(f"{output_prefix}.png", dpi=300, bbox_inches="tight")
-        fig.savefig(f"{output_prefix}.pdf", format="pdf", dpi=600, bbox_inches="tight")
-        # fig.savefig(f"{output_prefix}.pgf", format="pgf")
+        leg.set_in_layout(True)
+        # fig.set_layout_engine("none")
+
+        # fig.subplots_adjust(bottom=0.2)
+        # fig.set_size_inches(6.4, 5.5)
+        fig.savefig(f"{output_prefix}.png", dpi=300, bbox_inches=bbox)
+        fig.savefig(f"{output_prefix}.pdf", format="pdf", dpi=150, bbox_inches=bbox)
         plt.close(fig)
 
     def plot_rebuild_times(
@@ -434,7 +509,7 @@ class PlotData:
             "exploding-liquid": 1000000,
             "heating-sphere": 8000000,
         }
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(layout="constrained")
         ax.yaxis.set_major_formatter(exp_formatter)
         ax.set_ylim(top=scenario_ylims[self.scenario])
         ax.grid(visible=False)
@@ -445,7 +520,6 @@ class PlotData:
         ax.scatter(
             self.iteration,
             self.runtime,
-            label="Run Time excl. Rebuild",
             s=0.25,
             color=axis_cols[0],
             marker=".",
@@ -455,27 +529,11 @@ class PlotData:
         ax.scatter(
             self.iteration,
             self.rebuildtime,
-            label="Rebuild Time",
             s=0.25,
             color=axis_cols[1],
             marker="^",
             rasterized=True,
         )
-
-        # ax.scatter(
-        #     self.iteration,
-        #     [sum(x) for x in zip(self.runtime, self.rebuildtime)],
-        #     label="Total Run Time",
-        #     s=0.25,
-        #     color=axis_cols[2],
-        #     marker=".",
-        #     rasterized=True,
-        # )
-
-        # ax.plot(self.iteration, reg_fun(self.iteration), "--", color=axis_cols[2])
-        # print(f"BETA: {beta}")
-        # print(f"NORM: {1+(x_end-x_start)*beta[0]/(2*np.average(self.runtime[x_start: x_end]))}")
-        # print(f"NORM: {(2*self.runtime[x_end]+(x_end-x_start)*beta[0])/(2*np.average(self.runtime))}")
 
         x = np.array(self.iteration)
         y = np.array(self.rebuildtime)
@@ -484,17 +542,48 @@ class PlotData:
         reg_fun2 = np.poly1d(beta2)
         # ax.plot(self.iteration, reg_fun2(self.iteration), "--", color=axis_cols[3])
 
-        ax.set(xlabel=r"iteration", ylabel=r"Iteration Run Time in ns")
+        ax.set(xlabel=r"Iteration", ylabel=r"Iteration Runtime in ns")
         ax.set_title(
             f"{scenario_name_map[self.scenario]}\nRebuild and Non-Rebuild Times",
             loc="center",
         )
-        # fig.set_size_inches(plot_width, plot_height)
-        # fig.legend(["Run Time excl. Rebuild", "Rebuild Time", "Total Run Time"], loc="upper left")
-        fig.legend(loc="upper left")
+        runtime_handle = Line2D(
+            [],
+            [],
+            color=axis_cols[0],
+            marker=".",
+            linestyle="None",
+            markersize=10,
+            label="Runtime excl. Rebuild",
+        )
+        rebuild_handle = Line2D(
+            [],
+            [],
+            color=axis_cols[1],
+            marker="^",
+            linestyle="None",
+            markersize=10,
+            label="Rebuild Time",
+        )
+
+        ax.legend(
+            handles=[rebuild_handle, runtime_handle],
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.15),
+            frameon=False,
+            ncols=2,
+            labelspacing=0.25,
+            handlelength=0.5,
+        )
+        fig.set_size_inches(6.4, 6.0)
         fig.savefig(f"{output_prefix}.png", dpi=300, bbox_inches="tight")
-        fig.savefig(f"{output_prefix}.pdf", format="pdf", dpi=600, bbox_inches="tight")
-        # tikzsave(f"{output_prefix}.tex", figure=fig)
+        fig.savefig(
+            f"{output_prefix}.pdf",
+            format="pdf",
+            dpi=150,
+            bbox_inches="tight",
+            pad_inches=0,
+        )
         plt.close(fig)
 
     def gather_tuning_results(self):
@@ -581,7 +670,9 @@ class PlotData:
                             if static_config[1] == selected_config:
                                 histogramm_data[rank] += 1
                                 break
-        perc_histogramm = [num / sum(histogramm_data) for num in histogramm_data]
+        perc_histogramm= [0]*10                  
+        if sum(histogramm_data) != 0:
+            perc_histogramm = [num / sum(histogramm_data) for num in histogramm_data]
         print(f"histogramm: {histogramm_data}")
         print(f"histogramm (%): {perc_histogramm}")
         with open(f"{outfile}.txt", "w", newline="") as f:

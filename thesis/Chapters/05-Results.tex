@@ -18,7 +18,7 @@ The scripts used to generate the Slurm jobs and configuration files can be found
 \label{sec:justification_rebuild}
 As referred to before in \autoref{sec:avail_sim_stats}, all trigger strategies are based on the iteration runtimes excluding rebuild times. This choice can be justified by inspecting runtime data we collected: As shown  in \autoref{fig:rebuild_times}, the rebuild times change little over all iterations simulated with a particular configuration. Their inclusion therefore does not provide any new information, but rather smooths out the overall measurements and thus decreases the effectivity at which a scenario change can be detected.
 
-Additionally, rebuild iterations only happen at \texttt{rebuildFrequency}. This can lead to stability problems in trigger strategies used with a low number of samples, as the few rebuild iterations greatly outweigh all non-rebuild iterations.
+Additionally, rebuild iterations only happen at \texttt{rebuild-frequency}. This can lead to stability problems in trigger strategies used with a low number of samples, as the few rebuild iterations greatly outweigh all non-rebuild iterations.
 
 \begin{figure}[htpb]
 	\centering
@@ -33,7 +33,6 @@ Additionally, rebuild iterations only happen at \texttt{rebuildFrequency}. This 
 		\centering
 		\includegraphics[width=\textwidth]{./Figures/plots/hs_rebuild.pdf}
 	\end{subfigure}
-	% TODO: choose different runs?
 	\caption{Rebuild and non-rebuild times in the equilibrium (left) and heating-sphere (right) scenario. The configurations used were \texttt{VLC-C08-N3L-AoS-CSF1} and \texttt{LC-C04-NoN3L-AoS-CSF1} respectively. The rebuild times do not contribute any new information regarding scenario change.}
 	\label{fig:rebuild_times}
 \end{figure}
@@ -48,8 +47,8 @@ To quantify the overhead our strategies introduce, runs without any tuning itera
 \autoref{fig:performance_comparisons} (left) shows the overhead obtained in that manner for the heating-sphere scenario using \texttt{LC-C04-N3L-AoS-CSF1} and $n=500$. To better illustrate the measurements, all values are given as relative and absolute increase in average baseline runtime per iteration.
 At most, an overhead of \qty{1.9}{\percent} per iteration is seen, which can be considered insignificant. Note however, that the overhead is an absolute increase; depending on the scenario, time spent computing interactions varies, therefore the relative values change. It should also be considered, that the absolute difference between the static baseline and the dynamic runs lay in the range of \SIrange{1}{7}{\second} over the complete run. Hardware heterogeneity might make up a significant part of this difference --- which would directly influence the measured relative and absolute overhead. Nonetheless, the results may give some indication on which strategies are more compute-intensive than others. In particular, usage of the \texttt{TimeBasedSimpleTrigger} does incur nearly no runtime penalty (\qty{0.084}{\percent}), whereas the more complex trigger strategies have a correspondingly larger impact.
 
-To exemplify the importance of optimizing the trigger routines, \autoref{fig:performance_comparisons} (right) illustrates the runtime differences between naive and optimized triggers in the equilibrium scenario. The naive version recalculates the average over all samples each iteration, whereas the optimized version uses a ring buffer and running summation to reduce computational cost.
-The speedup experienced is not only due to a lowering of computational overhead, but also due to a lower number of tuning iterations. This can be explained by self influence of the triggers: Higher overhead might lead to higher fluctuation in iteration runtime which in turn leads to unstable trigger behavior, particularly in the averaging trigger. % TODO: this is not a good argument
+To exemplify the importance of optimizing the trigger routines, \autoref{fig:performance_comparisons} (right) illustrates the runtime differences between naive and optimized triggers in the equilibrium scenario. The naive version recalculates the average over all samples each iteration, whereas the optimized version uses a ring buffer and running summation to reduce computational cost. Note that, particularly in the averaging trigger, the speedup experienced is not only due to a lowering of computational overhead, but also due to a lower number of tuning iterations. This can be explained by the feedback of the trigger strategies, as they also influence iteration runtime.
+%This can be explained by self influence of the triggers: Higher overhead might lead to higher fluctuation in iteration runtime which in turn leads to unstable trigger behavior, particularly in the averaging trigger. % TODO: this is not a good argument
 
 % TODO: colors
 \begin{figure}[htpb]
@@ -198,13 +197,11 @@ The relative speedups presented in the following line charts were computed by th
 
 For all plots showing the selected configurations for a given run, the blue scatter dots represent the runtime of that particular iteration. The colored background identifies the used configuration: same configurations map to the same color in a given plot. Gaps along the $x$-axis occur where tuning iterations have been logged --- as their runtime is not relevant for our purposes and would distort the actual runtime plot, they are not reported here. The gray dashed lines indicate the start of a new tuning phase.
 
-%Additional plots and data can be found in the Appendix, \autoref{ap:additional_data}.
-% TODO: use appendix?
 
 \subsection{Equilibrium}
 \subsubsection{Selected Runs}
 \autoref{fig:equilibrium_trigger_behavior} shows two of the experimental runs in detail.
-On the left hand side, a \texttt{TimeBasedAverageTrigger} with $\lambda=1.25$, $n=1000$ reliably detects scenario change. Two tuning phases are started in the initial phase, where overall iteration runtime increases. After the second tuning phase, a better configuration is found. As there is no further indication that the simulation state changes, the remaining iterations are performed using this configuration. As was explained in \autoref{subsec:scenario_equil}, it is indeed the case that no further configuration change is needed. In this run therefore, the presented trigger was beneficial.
+On the left hand side, a \texttt{TimeBasedAverageTrigger} with $\lambda=1.25$, $n=1000$ reliably detects scenario change. Two tuning phases are started in the initial phase, where overall iteration runtime increases. After the second tuning phase, a better configuration is found. As there is no further indication that the simulation state changes, the remaining iterations are performed using the same configuration. As was explained in \autoref{subsec:scenario_equil}, it is indeed the case that no further configuration change is needed. In this run therefore, the presented trigger was beneficial.
 
 On the right hand side, a worst-case outcome is shown. The \texttt{TimeBasedSimpleTrigger} used in that run triggered too many new tuning phases, which lead to an increase in total simulation runtime compared to the baseline run. The main reason for the overreaction lies in the implementation of the trigger: as long as the runtime of one iteration is greater than the one of its predecessor by a factor of $\lambda$ or more, a tuning phase is initiated. The few outliers in the equilibrium scenario that were averaged out in the previous example, are detrimental to this trigger strategy.
 
@@ -236,10 +233,10 @@ On the right hand side, a worst-case outcome is shown. The \texttt{TimeBasedSimp
 \subsubsection{Speedup and Default Parameters}
 
 As can be seen in \autoref{fig:params_equil}, a trigger factor of $\lambda=1.5$ leads to increased speedup compared to $\lambda=1.25$ in the majority of trigger strategies. This is however mainly due to the nature of the equilibrium scenario: After the initial relaxation, the optimal configuration is not expected to change.
-Therefore, not initiating any new tuning phases will lead to a decrease in total simulation runtime. That the speedup is indeed  a result of the decreased number of tuning iterations can be verified in the right-hand side plots; for the baseline run with static tuning intervals, \qty{22.6}{\percent} of iterations were spent in tuning phases.
+Therefore, not initiating any new tuning phases will lead to a decrease in total simulation runtime, which is why larger values for $\lambda$ perform better, as they reduce trigger sensitivity. A factor chosen too large however, diminishes this effect again, as the changes in the initial phase are not accounted for. That the speedup is indeed  a result of the decreased number of tuning iterations can be verified in the right-hand side plots; for the baseline run with static tuning intervals, \qty{22.6}{\percent} of iterations were spent in tuning phases.
 Conversely, for strategies initiating too many new tuning intervals, i.e., with more tuning iterations than the baseline run, the simulation runtime increases.
 
-Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. For a too large number of samples such as $n>1000$, the speedup may decrease, however, as the computational overhead is directly proportional to the number of samples. This is particularly noteworthy for scenarios with fewer particles, where the computation of interactions takes less time. Therefore, the relative overhead of our strategies is larger, which would explain the lower speedup seen in the regression triggers: Compared to the \texttt{TimeBasedAverageTrigger}, at roughly the same number of tuning iterations, the speedup achieved is significantly lower.
+Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. For a too large number of samples such as $n>1000$, the speedup may decrease, however, as the computational overhead is directly proportional to the number of samples. This is particularly noteworthy for scenarios with fewer particles, where the computation of interactions takes shorter time. Therefore, the relative overhead of our strategies is larger, which would explain the lower speedup seen in the regression triggers: Compared to the \texttt{TimeBasedAverageTrigger}, at roughly the same number of tuning iterations, the speedup achieved is significantly lower.
 
 Interestingly, the \texttt{TimeBasedSplitTrigger} with $n=250$ triggered significantly more tuning iterations for $\lambda=1.75$ than for $\lambda=1.5$.  The rather small sample size increases the sensitivity towards noise in the input data --- which is why outside influences by the underlying hardware could explain the difference between the two runs. Particularly if one considers that our equilibrium scenario consists of few particles with which interactions must be computed, resulting in low iteration runtimes.
 
@@ -324,6 +321,7 @@ The collected data suggests default parameters as presented in \autoref{tab:equi
 		%		\subcaption{Simple and Average Triggers}
 	\end{subfigure}
 	\begin{subfigure}{0.45\textwidth}
+				\hspace*{\widthof{--}}
 		\begin{tikzpicture}
 			\begin{axis}[
 					triggerplot,
@@ -386,6 +384,7 @@ The collected data suggests default parameters as presented in \autoref{tab:equi
 		%		\subcaption{Split Trigger}
 	\end{subfigure}
 	\begin{subfigure}{0.45\textwidth}
+				\hspace*{\widthof{-}}
 		\begin{tikzpicture}
 			\begin{axis}[
 					triggerplot,
@@ -476,7 +475,7 @@ The collected data suggests default parameters as presented in \autoref{tab:equi
 		\toprule
 		\textbf{Trigger}             & \textbf{Trigger factor $\lambda$} & \textbf{Number of samples $n$} \\ [0em]
 		\midrule
-		\texttt{TimeBasedSimple}     & not recommended                            & --                             \\
+		\texttt{TimeBasedSimple}     & not recommended                   & --                             \\
 		\texttt{TimeBasedAverage}    & $1.75$                            & 500                            \\
 		\texttt{TimeBasedSplit}      & $1.5$                             & 1000                           \\
 		\texttt{TimeBasedRegression} & $1.5$                             & 500                            \\
@@ -491,7 +490,7 @@ The collected data suggests default parameters as presented in \autoref{tab:equi
 
 
 \subsubsection{Optimality}
-Our second evaluation metric, as stated in \autoref{sec:metrics}, concerns the quality of the chosen configurations. For efficient computation, we expect the configuration at any non-tuning iteration to be one of the best choices. As can be seen in \autoref{fig:equilibrium_optimality}, this is achieved across all strategies except the simple trigger, with all configurations being one of the top three choices for that specific iteration. It should be noted, that the ranking of optimal configurations is only an approximation, as it is based on the baseline run and therefore restricted to the resolution of that run's \texttt{tuning-interval}. The best performing strategy regarding optimality seems to be  the  \texttt{TimeBasedAverageTrigger}.
+Our second evaluation metric, as stated in \autoref{sec:metrics}, concerns the quality of the chosen configurations. For efficient computation, we expect the configuration at any non-tuning iteration to be one of the best choices. As can be seen in \autoref{fig:equilibrium_optimality}, this is achieved across all strategies except the simple trigger, with all configurations being one of the top three choices for that specific iteration. It should be noted, that the ranking of optimal configurations is only an approximation, as it is based on the baseline run and therefore restricted to the resolution of that run's \texttt{tuning-interval}. The best performing strategy regarding optimality appears to be  the  \texttt{TimeBasedAverageTrigger}, for which \qty{92}{\percent} of all non-tuning iterations were computed using the same configuration as in the baseline run. Except for the \texttt{TimeBasedSimpleTrigger}, all strategies computed the full simulation length with configurations among the top 3 choices of the static run.
 
 \begin{figure}[htpb]
 	\begin{subfigure}{0.5\textwidth}
@@ -513,15 +512,11 @@ Our second evaluation metric, as stated in \autoref{sec:metrics}, concerns the q
 					symbolic x coords={Simple,Avg,Split,Reg},
 					xtick=data,
 					bar width=\barwidth,
-					%				legend cell align=left,
-					%				legend columns=1,
-					%				legend style={at={(1.03,0.5)}, anchor=west, fill=none, draw=none, align=left},
-					legend style={font=\small},
+					legend style={font=\small, nodes={yshift=0.25ex}},
 					legend cell align=center,
 					legend columns=2,
 					legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
 				]
-				% TODO: align legend labels
 
 				% Top 1
 				\addplot+[ybar, barstyle3] plot coordinates {(Simple,81) (Avg,92)
@@ -555,7 +550,12 @@ Our second evaluation metric, as stated in \autoref{sec:metrics}, concerns the q
 
 \subsection{Exploding Liquid}
 \subsubsection{Selected Runs}
-The exploding-liquid scenario was executed using 6 MPI processees, with the simulation domain split up along the $y$-axis. This has the effect, that different ranks encounter the particle \enquote{wave} at different points in time, as it spreads from the center outwards (cf. \autoref{subsec:scenario_expl}). This can be seen in \autoref{fig:expl_trigger_behavior}, where the plot showing rank 2 (in the center of the domain, plot on right hand side) experiences high iteration runtimes at the beginning of the simulation. Rank 0 (plot on the left hand side), however, shows this influx of particles beginning not until iteration \num{50000}.
+The exploding-liquid scenario was executed on 6 MPI processes, with the simulation domain subdivided along the $y$-axis. As a result, different ranks encounter the particle \enquote{wave} at different points in time, as it spreads outward from the center (cf. \autoref{subsec:scenario_expl}). This effect can be seen in \autoref{fig:expl_trigger_behavior}, where the plot showing rank 2 (in the center of the domain, plot on the right hand side) experiences high iteration runtimes at the beginning of the simulation. Rank 0 (edge of the domain, plot on the left hand side), however, shows this influx of particles not until iteration \num{50000}.
+
+The figure on the left shows an optimal response to the peak in iteration runtime by the \texttt{TimeBasedSplitTrigger}. The initial configuration remains optimal until the particles enter this part of the domain, after which two tuning phases are triggered. The first trigger at iteration \num{52814} is not needed, as due to the rapid increase in iteration runtime, a second one at iteration \num{55088} is tripped. This additional tuning phase could be prevented by using a bigger factor $\lambda$, the effect on total simulation runtime would however be limited. The second half of the simulation again has one optimal configuration, which is well reflected in the trigger's behavior.
+
+The second plot on the right does not necessarily illustrate bad trigger behavior, but rather a limitation of our approach. After the initial expansion, the subdomain of rank 2 significantly transforms at iteration \num{25000}, with a different configuration possibly being better suited. However, our triggers only consider increases in input data. A more appropriate method in such cases would be to consider changes in magnitude (cf. \autoref{sec:change_detection}), i.e., any deviation from the current average.
+
 % good: exploding-liquid_dynamic_TimeBasedSplit_1.5_1000 (Rank 0)
 % bad (shows magnitude should be considered): exploding-liquid_dynamic_TimeBasedSplit_1.5_1000 (Rank 2)
 
@@ -585,18 +585,311 @@ The exploding-liquid scenario was executed using 6 MPI processees, with the simu
 \end{figure}
 
 \subsubsection{Speedup and Default Parameters}
-\subsubsection{Optimality}
+Although the exploding-liquid scenario is more complex than the equilibrium scenario, there is still a performance gain in all trigger strategies: The highest speedup is reached by the \texttt{TimeBasedAverageTrigger}, with a reduction in total simulation time of \qty{20}{\percent}. This is less than was reached in the equilibrium scenario, but still significant.
+In general, the results look very similar to those of the previous scenario, with some notable exceptions. For example, the \texttt{TimeBasedSimpleTrigger} reaches positive speedup for larger values of $\lambda$. Considering that in most ranks, the configuration change happens at the initial inflow of particles into the subdomain, as simple trigger is sufficient. With $\lambda=1.25$ however, the trigger appears to be too sensitive, which again leads to an excessive number of tuning phases.
 
+The \texttt{TimeBasedSplitTrigger} displays opposite behavior; for larger values of $\lambda$, the speedup is greater, as triggering too few tuning phases leads to a large number of iterations being computed using a suboptimal configuration. Similarly, triggers with a larger sample size tend to smooth out the changes in iteration runtime and thus have a delayed reaction to the rapid transformation of the domain.
+The \texttt{TimeBasedRegressionTrigger} again leads to lower speedups than averaging or split triggers at optimal configuration. However, the difference is minor and can thus be attributed to the higher overhead of this strategy.
+
+
+% TODO: 1.15?
+\begin{figure}[htpb]
+	\centering
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					legend columns=2,
+					ylabel={Speedup \%},
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
+
+				% TimeBasedSimple
+				\addplot[linestyleD] coordinates{
+						(1.25,-13)
+						(1.5,9)
+						(1.75,14)};
+				% TimeBasedAverage 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,20)
+						(1.5,14)
+						(1.75,15)};
+				% TimeBasedAverage 500
+				\addplot[linestyleB] coordinates{
+						(1.25,3)
+						(1.5,16)
+						(1.75,16)};
+				% TimeBasedAverage 250
+				\addplot[linestyleC] coordinates{
+						(1.25,15)
+						(1.5,10)
+						(1.75,17)};
+				\legend{Simple,Avg-1000,Avg-500,Avg-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Simple and Average Triggers}
+	\end{subfigure}
+	\hspace{0.05\textwidth}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					logtriggerplot,
+					legend columns=2,
+					ylabel={Tuning Iterations \%},
+					%				ymode=log,
+					%				ymin=1,
+					%				ymax=100,
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
+
+				% TimeBasedSimple
+				\addplot[linestyleD] coordinates{
+						(1.25,57)
+						(1.5,10.13)
+						(1.75,5.07)};
+				% TimeBasedAverage 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,3.17)
+						(1.5,.19)
+						(1.75,2.53)};
+				% TimeBasedAverage 500
+				\addplot[linestyleB] coordinates{
+						(1.25,2.91)
+						(1.5,2.53)
+						(1.75,3.8)};
+				% TimeBasedAverage 250
+				\addplot[linestyleC] coordinates{
+						(1.25,3.8)
+						(1.5,3.66)
+						(1.75,1.9)};
+				\legend{Simple,Avg-1000,Avg-500,Avg-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Simple and Average Triggers}
+	\end{subfigure}
+	\begin{subfigure}{0.45\textwidth}
+		\hspace*{\widthof{--}}
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					ylabel={Speedup \%},
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
+
+				% TimeBasedSplit 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,14)
+						(1.5,10)
+						(1.75,5)};
+				% TimeBasedSplit 500
+				\addplot[linestyleB] coordinates{
+						(1.25,11)
+						(1.5,12)
+						(1.75,8)};
+				% TimeBasedSplit 250
+				\addplot[linestyleC] coordinates{
+						(1.25,16)
+						(1.5,10)
+						(1.75,9)};
+				\legend{Split-1000,Split-500,Split-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Split Trigger}
+	\end{subfigure}
+	\hspace{0.05\textwidth}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					logtriggerplot,
+					ylabel={Tuning Iterations \%},
+					%				ymode=log,
+					%				ymin=1,
+					ymax=25,
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
+
+				% TimeBasedSplit 1000
+				\addplot[linestyleA] coordinates{
+						(1.25,1.27)
+						(1.5,0.63)
+						(1.75,0.63)};
+				% TimeBasedSplit 500
+				\addplot[linestyleB] coordinates{
+						(1.25,1.27)
+						(1.5,0.63)
+						(1.75,0.63)};
+				% TimeBasedSplit 250
+				\addplot[linestyleC] coordinates{
+						(1.25,2.53)
+						(1.5,0.63)
+						(1.75,1.4)};
+				\legend{Split-1000,Split-500,Split-250}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Split Trigger}
+	\end{subfigure}
+	\begin{subfigure}{0.45\textwidth}
+				\hspace*{\widthof{-}}
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					legend columns=3,
+					ylabel={Speedup \%},
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
+
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+						(1.25,-1)
+						(1.5,10)
+						(1.75,16)};
+
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+						(1.25,-1)
+						(1.5,10)
+						(1.75,17)};
+
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+						(1.25,-7)
+						(1.5,10)
+						(1.75,16)};
+
+				\legend{Reg-1500,Reg-1000,Reg-500}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Regression Trigger}
+	\end{subfigure}%
+	\hspace{0.05\textwidth}
+	\begin{subfigure}{0.45\textwidth}
+		\begin{tikzpicture}
+			\begin{axis}[
+					logtriggerplot,
+					legend columns=3,
+					ylabel={Tuning Iterations \%},
+					%				ymode=log,
+					%				ymin=1,
+					%				ymax=100,
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
+
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+						(1.25,30.92)
+						(1.5,8.87)
+						(1.75,5.07)};
+
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+						(1.25,37.64)
+						(1.5,11.4)
+						(1.75,2.53)};
+
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+						(1.25,43.7)
+						(1.5,10.13)
+						(1.75,6.97)};
+
+				\legend{Reg-1500,Reg-1000,Reg-500}
+			\end{axis}
+		\end{tikzpicture}
+		%		\subcaption{Regression Trigger}
+	\end{subfigure}%
+	\caption{Trigger behavior in the exploding-liquid scenario, the numbers in the legends refer to the number of samples $n$ considered. The line in the background represents the baseline run.}
+	\label{fig:params_expl}
+\end{figure}
+
+
+The collected data suggests default parameters as presented in \autoref{tab:expl_defaults}.
+\begin{table}[htpb]
+	\centering
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Trigger}             & \textbf{Trigger factor $\lambda$} & \textbf{Number of samples $n$} \\ [0em]
+		\midrule
+		\texttt{TimeBasedSimple}     & 1.75                              & --                             \\
+		\texttt{TimeBasedAverage}    & 1.25                              & 1000                           \\
+		\texttt{TimeBasedSplit}      & 1.25                              & 250                            \\
+		\texttt{TimeBasedRegression} & 1.75                              & 1000                           \\
+		\bottomrule
+	\end{tabular}
+	\caption{Suggested default parameters for the exploding-liquid scenario.}
+	\label{tab:expl_defaults}
+\end{table}
+
+\subsubsection{Optimality}
+The configuration fit is best for the \texttt{TimeBasedSimpleTrigger}, \texttt{TimeBasedAverageTrigger} and \texttt{TimeBasedRegressionTrigger}: As shown in \autoref{fig:expl_optimality}, these strategies select, on average, the best configuration for \qty{95}{\percent} of all non-tuning iterations. The strategy that appears to have the worst fit is the \texttt{TimeBasedSplitTrigger} --- note, however, that it used the fourth best configuration in \qty{81}{\percent} of iterations.
+
+It should also be mentioned, that these statistics are based on rank 0 across all runs. Therefore, the problem of missing reconfiguration after a drop in iteration runtime, as discussed previously, is not reflected in the results.
+
+\begin{figure}[htpb]
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\begin{tikzpicture}
+			\tikzset{
+				barstyle1/.style={pattern color=tumblueaccmedium, draw=chaptertumblue,  pattern=crosshatch dots},
+				barstyle2/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=north east lines},
+				barstyle3/.style={fill=tumblueaccmedium, draw=chaptertumblue},
+				barstyle4/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=vertical lines},
+			}
+			\def\barwidth{15pt}
+			\begin{axis}[
+					ybar stacked,
+					height=0.8\textwidth,
+					enlargelimits=0.15,
+					ylabel={Selected Configuration in \unit{\percent}},
+					xlabel={Trigger Strategy},
+					symbolic x coords={Simple,Avg,Split,Reg},
+					xtick=data,
+					bar width=\barwidth,
+					legend style={font=\small, nodes={yshift=0.25ex}},
+					legend cell align=center,
+					legend columns=2,
+					legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
+				]
+				% Top 1
+				\addplot+[ybar, barstyle3] plot coordinates {(Simple,95) (Avg,94)
+						(Split,0) (Reg,96)};
+
+				% Top 2
+				\addplot+[ybar, barstyle2] plot coordinates {(Simple,5) (Avg,4)
+						(Split,3) (Reg,4)};
+
+				% Top 3
+				\addplot+[ybar, barstyle4] plot coordinates {(Simple,0) (Avg,0)
+						(Split,16) (Reg,0)};
+
+				% Other
+				\addplot+[ybar, barstyle1] plot coordinates {(Simple,0) (Avg,2)
+						(Split,81) (Reg,0)};
+
+				\legend{Best,Second-Best,Third-Best,Other}
+			\end{axis}
+		\end{tikzpicture}
+	\end{subfigure}%
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{./Figures/plots/exploding-liquid_configs_static.pdf}
+		\vspace*{-1.075cm}
+	\end{subfigure}
+	\caption{Ranking of configurations selected by the best run in the exploding-liquid scenario for each trigger strategy (left) and selected configurations in the baseline run (right).}
+	\label{fig:expl_optimality}
+\end{figure}
 
 \subsection{Heating Sphere}
 \subsubsection{Selected Runs}
-%TODO: fix axes size
-\autoref{fig:hs_trigger_behavior} again presents two sample runs to illustrate optimal and unsatisfactory results. The left figure shows a reduction in the number of tuning phases initiated by the \texttt{TimeBasedAverageTrigger}. After the last tuning phase, the configuration does not change from the previous one --- that tuning phase was therefore unnecessary. Compared to the equilibrium scenario, the iteration runtimes form a broad band, which indicates a high variance. The absolute ranges of these variations lie in the range of \SIrange{1e6}{5e6}{\nano\second}; compared to a spread of \qty{1e5}{\nano\second} in the equilibrium scenario. Additionally, more outliers are seen, which might worsen the performance of the strategies susceptible to oscillations; one of them is the \texttt{TimeBasedAverageTrigger} depicted. Without any clear indication of an increase in runtime, new tuning phases are initiated, as a single outlier larger than the last $n$ samples by a factor of $\lambda$ can set off our trigger strategy. Interestingly, most outliers do not have a significant impact due to the averaging approach. As shown in the plot, the use of the averaging trigger results in fewer tuning phases than in the baseline run, which in turn explains the speedup measured.
+\autoref{fig:hs_trigger_behavior} again displays two sample runs to illustrate optimal and unsatisfactory results. The left figure shows a reduction in the number of tuning phases initiated by the \texttt{TimeBasedAverageTrigger}. After the last tuning phase, the configuration does not change from the previous one --- that tuning phase was therefore unnecessary. Compared to the equilibrium scenario, the iteration runtimes form a broad band, which indicates a high variance. The absolute ranges of these variations lie in the range of \SIrange{1e6}{5e6}{\nano\second}, in contrast to a spread of \qty{1e5}{\nano\second} in the equilibrium scenario. Additionally, more outliers are seen, which might worsen the performance of the strategies susceptible to oscillations; one of them is the \texttt{TimeBasedAverageTrigger} depicted. Without any clear indication of an increase in runtime, new tuning phases are initiated, since a single outlier larger than the last $n$ samples by a factor of $\lambda$ can trigger the strategy. Interestingly, most outliers do not have a significant impact due to the averaging approach. As shown in the plot, the use of the averaging trigger results in fewer tuning phases than in the baseline run, which in turn explains the speedup measured.
 
-Worse results can be seen in the \texttt{TimeBasedRegressionTrigger}, pictured on the right hand side. After multiple tuning phases, the same configuration is selected, which again indicates unnecessary triggering. The regression approach is suboptimal in the heating-sphere scenario, due to the high variance in iteration runtimes described before. Outliers can skew the slope derived by the least-squares method, which leads to a incorrect prediction of the runtime in the next interval, triggering our strategy. Hence, a slowdown compared to the baseline run is observed. This suggests, that the regression based trigger may not be used in scenarios that behave similarly. To address this issue, the linear least squares estimation in the regression trigger could be replaced with a more robust approach like the Theil-Sen estimator \cite{Wilcox2012}.
+Worse results can be seen in the \texttt{TimeBasedRegressionTrigger}, pictured on the right hand side. After multiple tuning phases, the same configuration is selected, which again indicates unnecessary triggering. The regression approach is suboptimal in the heating-sphere scenario, due to the high variance in iteration runtimes described before: Outliers can skew the slope derived by the least-squares method, which leads to a incorrect prediction of the runtime in the next interval, triggering our strategy. Hence, a slowdown compared to the baseline run is observed. This suggests, that the regression based trigger may not be used in scenarios that behave similarly. To address this issue, the linear least squares estimation in the regression approach could be replaced with a more robust method like the Theil-Sen estimator \cite{Wilcox2012}.
 
-
-% TODO: figure showing regression instability? 
 
 \begin{figure}[htpb]
 	\begin{subfigure}[c]{0.5\textwidth}
@@ -609,31 +902,30 @@ Worse results can be seen in the \texttt{TimeBasedRegressionTrigger}, pictured o
 		\centering
 		% heating-sphere_dynamic_TimeBasedRegression_1.25_1500
 		\includegraphics[width=\textwidth]{./Figures/plots/heating-sphere_configs_bad.pdf}
-		\subcaption{Too many unneccessary tuning phases.}
+		\subcaption{Too many unnecessary tuning phases.}
 	\end{subfigure}
 	%	% TODO: maybe static run as comparison?
-	\caption{Examples of trigger behavior in the heating-sphere scenario. [TODO]}
+	\caption{Examples of trigger behavior in the heating-sphere scenario.}
 	\label{fig:hs_trigger_behavior}
 \end{figure}
 
-% TODO: Appendix plots:
+% possible appendix plots:
 % heating-sphere_dynamic_TimeBasedAverage_1.75_500
 % heating-sphere_dynamic_TimeBasedSplit_1.25_250
 
 
 \subsubsection{Speedup and Default Parameters}
-The heating-sphere scenario experiences high variance in iteration runtimes, which directly influences the behavior of our trigger strategies, as shown in \autoref{fig:params_hs}. The triggers which should be unstable due to these variations are the \texttt{TimeBasedAverageTrigger}, \texttt{TimeBasedSimpleTrigger} and \texttt{TimeBasedRegressionTrigger}. However, results only show the poor performance of the latter two. The simple trigger under-performs the static approach by up to \qty{-41}{\percent} with a highly unfavourable \qty{99}{\percent} of all iterations being tuning iterations. Similarly, the regression approach leads to runtime increases across almost all tested combinations of $(\lambda, n)$.
+The high variance in iteration runtimes directly influences the behavior of our trigger strategies, as shown in \autoref{fig:params_hs}. The strategies which should be unstable due to these variations are the \texttt{TimeBasedAverageTrigger}, \texttt{TimeBasedSimpleTrigger} and \texttt{TimeBasedRegressionTrigger}. However, results only show poor performance of the latter two. The simple trigger under-performs the static approach by up to \qty{-41}{\percent} with a highly unfavorable \qty{99}{\percent} of all iterations being tuning iterations. Similarly, the regression approach leads to runtime increases across almost all tested combinations of $(\lambda, n)$.
 
-The \texttt{TimeBasedAverageTrigger}, however, performs exceptionally well, with speedups of up to \qty{40}{\percent}, proportional to the decreased number of tuning iterations. % TODO: ...
+The \texttt{TimeBasedAverageTrigger}, however, performs exceptionally well, with speedups of up to \qty{40}{\percent}, proportional to the decreased number of tuning iterations. Rather counterintuitively, this outcome could be accounted for precisely by the prevalence of outliers: If there occur enough outliers within the trigger's sample interval, they raise the average runtime, which in turn reduces the impact of any current outlier.
 
 In summary, it can be said that our approach is not suitable for the heating-sphere scenario. Considering that there is no clear indication of scenario change in runtime (cf. \autoref{sec:liveinfo_benchmarks}), this was expected.
 
 %It should be noted, that the baseline run shows a larger share of tuning iterations than the previous scenario, since it used \num{60000} iterations (vs. \num{150000} in the equilibrium setting) while keeping the tuning interval at \num{5000} in both cases.
 
 % TODO: split trigger
-% TODO: explain why split higher speedup with same number of tuning its (better config choices)
+% TODO: plot alignment
 
-% TODO: align plots vertically
 \begin{figure}[htpb]
 	\centering
 	\begin{subfigure}{0.45\textwidth}
@@ -774,20 +1066,15 @@ In summary, it can be said that our approach is not suitable for the heating-sph
 		%		\subcaption{Split Trigger}
 	\end{subfigure}
 	\begin{subfigure}{0.45\textwidth}
+		\hspace*{-3pt}
 		\begin{tikzpicture}
 			\begin{axis}[
 					triggerplot,
-					legend columns=2,
+					legend columns=3,
 					ylabel={Speedup \%},
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
-				% TimeBasedRegression 2000
-				%				\addplot[linestyleA] coordinates{
-				%						(1.25,11)
-				%						(1.5,-3)
-				%						(1.75,0)}; % TODO
 
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
@@ -817,7 +1104,7 @@ In summary, it can be said that our approach is not suitable for the heating-sph
 		\begin{tikzpicture}
 			\begin{axis}[
 					logtriggerplot,
-					legend columns=2,
+					legend columns=3,
 					ylabel={Tuning Iterations \%},
 					ymode=log,
 					ymin=1,
@@ -825,12 +1112,6 @@ In summary, it can be said that our approach is not suitable for the heating-sph
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,25.13) -- (axis cs: 2,23.2);
-
-				% TimeBasedRegression 2000
-				%				\addplot[linestyleA] coordinates{
-				%						(1.25,36.73)
-				%						(1.5,36.73)
-				%						(1.75,0)}; %TODO
 
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
@@ -847,7 +1128,7 @@ In summary, it can be said that our approach is not suitable for the heating-sph
 				% TimeBasedRegression 500		
 				\addplot[linestyleD] coordinates{
 						(1.25,64.07)
-						(1.5,1.93) %TODO ?
+						(1.5,1.93)
 						(1.75,59.93)};
 
 				\legend{Reg-1500,Reg-1000,Reg-500}
@@ -883,7 +1164,6 @@ The collected data suggests default parameters as presented in \autoref{tab:hs_d
 
 It can be seen that, particularly for the strategies triggering fewer tuning phases, i.e., the \texttt{TimeBasedAverageTrigger} and \texttt{TimeBasedSplitTrigger}, the configuration fit is suboptimal. For both, on average \qty{25}{\percent} of all non-tuning iterations were computed using a configuration that was not in the top 3 choices of the baseline run.
 
-
 \begin{figure}[htpb]
 	\begin{subfigure}{0.5\textwidth}
 		\centering
@@ -901,21 +1181,15 @@ It can be seen that, particularly for the strategies triggering fewer tuning pha
 					enlargelimits=0.15,
 					ylabel={Selected Configuration in \unit{\percent}},
 					xlabel={Trigger Strategy},
-					%				ytick = \empty,
 					symbolic x coords={Simple,Avg,Split,Reg},
 					xtick=data,
 					bar width=\barwidth,
-					%				legend cell align=left,
-					%				legend columns=1,
-					%				legend style={at={(1.03,0.5)}, anchor=west, fill=none, draw=none, align=left},
-					legend style={font=\small},
+					legend style={font=\small, nodes={yshift=0.25ex}},
 					legend cell align=center,
 					legend columns=2,
 					legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
 				]
-				% TODO: align legend labels
-				% TODO: regression?
-				Top 1
+				% Top 1
 				\addplot+[ybar, barstyle3] plot coordinates {(Simple,46) (Avg,27)
 						(Split,10) (Reg,35)};
 
@@ -943,112 +1217,18 @@ It can be seen that, particularly for the strategies triggering fewer tuning pha
 	\caption{Ranking of configurations selected by the best run in the heating-sphere scenario for each trigger strategy (left) and selected configurations in the baseline run (right).}
 	\label{fig:hs_optimality}
 \end{figure}
-% TODO: update values
-
-\newpage
-%\subsection{Overview}
-%%In the previous sections, the various trigger strategies were analyzed within each scenario. To better visualize the results of our benchmarks, \autoref{fig:overview_results_per_scenario} lays out the best speedup achieved, grouped by scenario.
-%%The equilibrium scenario provides overall good conditions for application of our methods, as can seen by the speedup in all trigger strategies.
-%%In the heating-sphere scenario, all strategies perform worse, except for the \texttt{TimeBasedSplitTrigger} which seems to be perfectly suited, with speedups of up to \qty{76}{\percent}.
-%
-%
-%\begin{figure}[htpb]
-%	\centering
-%	%	\begin{tikzpicture}
-%	%		\tikzset{
-%	%			barstyle1/.style={pattern color=tumblueaccmedium, draw=chaptertumblue,  pattern=crosshatch dots},
-%	%			barstyle2/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=north east lines},
-%	%			barstyle3/.style={fill=tumblueaccmedium, draw=chaptertumblue},
-%	%			barstyle4/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=vertical lines},
-%	%		}
-%	%		\def\barwidth{15pt}
-%	%		\begin{axis}[
-%	%				height=0.4\textwidth,
-%	%				width=0.8\textwidth,
-%	%				xlabel={Scenario},
-%	%				ylabel={Best Speedup in \%},
-%	%				enlarge x limits=0.25,
-%	%				symbolic x coords={Equilibrium,Exploding Liquid,Heating Sphere},
-%	%				xtick=data,
-%	%				bar width=\barwidth,
-%	%				ybar,
-%	%				legend cell align=center,
-%	%				legend columns=4,
-%	%				legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
-%	%			]
-%	%
-%	%			\addlegendimage{legend image code/.code={
-%	%						\draw[barstyle1,anchor=center, yshift=0.25ex] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-%	%					}}
-%	%			\addlegendentry{Simple}
-%	%			\addlegendimage{legend image code/.code={
-%	%						\draw[barstyle2, anchor=center, yshift=0.25ex] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-%	%					}}
-%	%			\addlegendentry{Average}
-%	%			\addlegendimage{legend image code/.code={
-%	%						\draw[barstyle3, anchor=center, yshift=0.25ex] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-%	%					}}
-%	%			\addlegendentry{Split}
-%	%			\addlegendimage{legend image code/.code={
-%	%						\draw[barstyle4, anchor=center, yshift=0.25ex] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
-%	%					}}
-%	%			\addlegendentry{Regression}
-%	%
-%	%			% simple
-%	%			\addplot[barstyle1] coordinates {
-%	%					(Equilibrium,12)
-%	%					(Exploding Liquid,0)
-%	%					(Heating Sphere,-11)
-%	%				};
-%	%
-%	%			% average
-%	%			\addplot[barstyle2] coordinates {
-%	%					(Equilibrium,47)
-%	%					(Exploding Liquid,0)
-%	%					(Heating Sphere,30)
-%	%				};
-%	%
-%	%			% split
-%	%			\addplot[barstyle3] coordinates {
-%	%					(Equilibrium,46)
-%	%					(Exploding Liquid,0)
-%	%					(Heating Sphere,76)
-%	%				};
-%	%
-%	%			% regression
-%	%			\addplot[barstyle4] coordinates {
-%	%					(Equilibrium,16)
-%	%					(Exploding Liquid,0)
-%	%					(Heating Sphere,11)
-%	%				};
-%	%
-%	%			\coordinate (y) at (axis cs:Equilibrium,0);
-%	%			\coordinate (x1) at (rel axis cs:0,0);
-%	%			\coordinate (x2) at (rel axis cs:1,0);
-%	%
-%	%			%			\draw[gray, thin] (y -| x1) -- (y -| x2);
-%	%		\end{axis}
-%	%	\end{tikzpicture}
-%	\caption{Average Speedup between unoptimized and optimized runs for the \texttt{TimeBasedAverage}, \texttt{TimeBasedSplit} and \texttt{TimeBasedRegression} strategies.}
-%	\label{fig:overview_results_per_scenario}
-%\end{figure}
-
 
 %\section{Interaction with Tuning Strategies}
 % TODO: How do results differ based on tuning strategy? Full-search vs. others
 
+\newpage
 \section{Hybrid Triggers}
 \label{sec:liveinfo_benchmarks}
 
-Time-based approaches may not be suitable for all scenarios, if iteration runtime alone is not good enough indicator for scenario change. This was seen e.g. in the heating-sphere scenario. Since AutoPas provides additional live simulation statistics through its \texttt{LiveInfo} interface, these could be used in combination with iteration runtimes to find better strategies in detecting scenario change.
-As a motivation of this approach, \autoref{fig:liveinfo_heating_sphere} shows an exemplary run in the heating-sphere scenario.
-Using static containers, the initial optimal configuration is \texttt{VL-List\_Iter-NoN3L-AoS}, later on it changes to \texttt{LC-C04-N3L-AoS-CSF1}. \cite{Newcome2025}
-The iteration runtime does not change, even tough a better configuration is available. Considering that the particles are packed closely in the inital phase and expand outwards, the decrease in particle density, as reported by the \texttt{maxDensity} statistics is consistent with expectations. It would therefore be a reasonable trigger input, as it shows clear indication of the shift towards a different simulation state.
+Time-based approaches may not be suitable for scenarios in which iteration runtime alone is not good enough indicator for scenario change. This was seen, e.g., in the heating-sphere scenario. Since AutoPas provides additional live simulation statistics through its \texttt{LiveInfo} interface, these could be used in combination with iteration runtimes to find better strategies in detecting scenario change.
+As a motivation of this approach, \autoref{fig:liveinfo_heating_sphere} shows an exemplary run for the heating-sphere scenario.
+Using static containers, the initial optimal configuration is \texttt{VL-List\_Iter-NoN3L-AoS}, and changes to \texttt{LC-C04-N3L-AoS-CSF1} later on \cite{Newcome2025}. Although a better configuration is available, the iteration runtimes do not change. However, the  \texttt{maxDensity} statistic indicates the shift towards a different simulation state; considering that the particles are packed closely in the initial phase and expand outwards, this decrease in particle density is consistent with expectations. The \texttt{maxDensity} statistic would therefore be a reasonable trigger input.
 
-%TODO: timebasedsplit 1.25, 250 is opposite is good example, n=500 even better
-
-% TODO: fix figure height
-% TODO: results not consistent with assumption
 \begin{figure}[htpb]
 	\centering
 	\begin{subfigure}{0.5\textwidth}
@@ -1057,13 +1237,13 @@ The iteration runtime does not change, even tough a better configuration is avai
 	\begin{subfigure}{0.5\textwidth}
 		\includegraphics[width=\textwidth]{./plots/hs_vl_list_iter-non3l-aos_max_density.pdf}
 	\end{subfigure}
-	\begin{subfigure}{0.5\textwidth}
-		\includegraphics[width=\textwidth]{./plots/hs_lc_c04_n3l-aos-csf1_configs.pdf}
-	\end{subfigure}%
-	\begin{subfigure}{0.5\textwidth}
-		\includegraphics[width=\textwidth]{./plots/hs_lc_c04_n3l-aos-csf1_max_density.pdf}
-	\end{subfigure}
-	\caption{Iteration runtime (left) and the maximum particle density (right). The top row shows a run with the single configuration \texttt{VL-List\_Iter-NoN3L-AoS}, the bottom row shows \texttt{LC-C04-N3L-AoS-CSF1}}
+	%	\begin{subfigure}{0.5\textwidth}
+	%		\includegraphics[width=\textwidth]{./plots/hs_lc_c04_n3l-aos-csf1_configs.pdf}
+	%	\end{subfigure}%
+	%	\begin{subfigure}{0.5\textwidth}
+	%		\includegraphics[width=\textwidth]{./plots/hs_lc_c04_n3l-aos-csf1_max_density.pdf}
+	%	\end{subfigure}
+	\caption{Iteration runtime (left) and the maximum particle density (right) for the heating-sphere scenario with single configuration \texttt{VL-List\_Iter-NoN3L-AoS}. The iteration runtime does not indicate scenario change, but the \texttt{maxDensity} statistic shows the transformation of the simulation state.}
 	\label{fig:liveinfo_heating_sphere}
 \end{figure}
 
