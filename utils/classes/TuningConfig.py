@@ -36,6 +36,7 @@ class FunctorType(Enum):
         if label.lower() in ("ljfunctoravx"):
             return FunctorType.LJ_FUNCTOR_AVX
         else:
+            print(f"Functor {label} not implemented")
             raise NotImplementedError
 
 
@@ -45,6 +46,7 @@ class ContainerType(Enum):
     VERLET_LISTS = 2
     VERLET_LISTS_CELLS = 3
     PARIWISE_VERLET_LISTS = 4
+    VAR_VERLET_LISTS_AS_BUILD = 5
 
     @staticmethod
     def from_str(label):
@@ -59,7 +61,10 @@ class ContainerType(Enum):
                 return ContainerType.VERLET_LISTS_CELLS
             case "pairwiseverletlists":
                 return ContainerType.PARIWISE_VERLET_LISTS
+            case "varverletlistsasbuild":
+                return ContainerType.VAR_VERLET_LISTS_AS_BUILD
             case _:
+                print(f"Container {label} not implemented")
                 raise NotImplementedError
 
     def __str__(self):
@@ -74,9 +79,10 @@ class ContainerType(Enum):
                 return "VLC"
             case ContainerType.PARIWISE_VERLET_LISTS:
                 return "VLP"
+            case ContainerType.VAR_VERLET_LISTS_AS_BUILD:
+                return "VVL"
             case _:
                 return ""
-
 
 class DataLayoutType(Enum):
     AOS = 0
@@ -117,6 +123,15 @@ class TuningConfig:
 
     @staticmethod
     def from_strs(functor, interaction, container, csf, traversal, layout, n3, tuning):
+        # shorten traversal strings
+        traversal = traversal.upper()
+        traversal = traversal.replace("COMBINED", "COMB")
+        traversal = traversal.replace("LIST_ITERATION", "LITER")
+        traversal = traversal.replace("AS_BUILT", "BUILT")
+        traversal = traversal.replace("BALANCED", "BAL")
+        traversal = traversal.replace("_SOA", "")
+        
+        
         return TuningConfig(
             FunctorType.from_str(functor),
             interaction,
@@ -132,11 +147,8 @@ class TuningConfig:
         return self.tuning
 
     def __str__(self):
-        trav = self.traversal.upper()
-        # TODO
-        if trav == "VL_LIST_ITERATION":
-            trav = "VL_L_ITER"
         # remove prefix to avoid duplication
+        trav = self.traversal
         if trav.startswith(str(self.container)):
             trav = trav[len(str(self.container)) + 1 :]
         return f"{self.container}-{trav.upper()}-{'NoN3L' if not self.newton3 else 'N3L'}-{self.data_layout}-CSF{int(self.cellsize_factor) if self.cellsize_factor.is_integer() else self.cellsize_factor}"

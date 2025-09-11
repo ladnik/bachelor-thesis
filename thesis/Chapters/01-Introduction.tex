@@ -53,7 +53,7 @@ Therefore, simplifications such as the Born-Oppenheimer approximation have to be
 	m_i\vb a_i(t) = -\nabla_{\vb p_i} V\left(\vb p(t)\right)\label{eq:born_oppenheimer}
 \end{equation}
 
-The simplest interatomic potentials one could apply here describe the interactions between only two particles, such as the Gravitational, Lennard-Jones or Coloumb potentials \cite{Griebel2007}.
+The simplest interatomic potentials one could apply here describe the interactions between only two particles, such as the Gravitational, Lennard-Jones or Coulomb potentials \cite{Griebel2007}.
 Considering the formula presented in \eqref{eq:born_oppenheimer}, the main MD simulation loop is rather simple. One iteration of said loop consists of calculating the forces between particles and integrating the equations of motion. These two steps are repeated until an equilibrium is reached, at which point any desired measurements can be taken. \cite{Frenkel2002}
 
 
@@ -168,8 +168,6 @@ For that, considering \eqref{eq:velocity}, we can rearrange and substitute into 
 Because of the aforementioned improved properties of this method, it is often preferred in MD simulations. \cite{Fulst2013, Leimkuhler2005, Hairer2003}
 
 
-
-% TODO: Simulation Loop? \cite{Hospital2015}
 
 
 

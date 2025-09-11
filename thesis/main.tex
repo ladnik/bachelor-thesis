@@ -43,16 +43,12 @@
 %\includeonly{ {Chapters/02-Background} }
 %\includeonly{ {Chapters/03-Implementation} }
 %\includeonly{ {Chapters/04-Evaluation} }
-\includeonly{ {Chapters/05-Results} } 
+%\includeonly{ {Chapters/05-Results} } 
 %\includeonly{ Chapters/05-Results, Chapters/04-Evaluation}
 %\includeonly{ Chapters/05-Results, Chapters/06-Conclusion}
 %\includeonly{ Chapters/06-Conclusion}
 
-% TODO: depending on Contents-section lenght, even spread may be misaligned -> manually remove blank page
 % TODO: check figure layout
-% TODO: title align together with subtitle or title only on cover?
-% TODO: optimal vs omptimum configuration
-% TODO: heating-sphere vs heating sphere, exploding-liquid vs exploding liquid
 
 \newif\ifdropfigures
 %\dropfigurestrue
@@ -60,6 +56,15 @@
 \ifdropfigures
 \renewcommand{\includegraphics}[2][]{}
 \fi
+
+% clear pages inserted by chapter breaks
+\makeatletter
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+	\hbox{}
+	\thispagestyle{empty}
+	\newpage
+	\if@twocolumn\hbox{}\newpage\fi\fi\fi}
+\makeatother
 
 % physics-package style bold vectors
 \newcommand{\vb}[1]{\ensuremath{\mathbf{#1}}}

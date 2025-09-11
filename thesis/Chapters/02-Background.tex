@@ -224,15 +224,8 @@ Containers provide an efficient way to identify neighbors of a particle --- to e
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{VL List Iteration}}]
 	\item[\textbf{C01 Base Step}] The c01 base step is not a traversal strategy on its own, but defines the cells in which interaction computations must be performed for any given particle. It is implemented for the Linked Cells and Verlet List Cells containers as \texttt{lc\_c01} and \texttt{vlc\_c01} respectively. As the simplest base step, it computes all interactions with the neighboring cells of the particle’s base cell.
 	\item[\textbf{C18 Base Step}] Similarly, c18 computes interactions only on its forward neighbors, potentially halving the number of calculations that have to be performed. This base step is enabled by Newton's third law (cf. \autoref{sec:newton}), where only one of the interacting particles needs to compute the interaction force. However, some form of synchronization must be employed, as to avoid race conditions on force updates. This limits the extent to which parallelization is possible.
-	\item[\textbf{VL List Iteration}] The VL List Iteration is the only traversal strategy available for Verlet Lists. All lists are processed in parallel, within a given list the particles are traversed in sequential order. %TODO: is this correct? 
+	\item[\textbf{VL List Iteration}] The VL List Iteration is the only traversal strategy available for Verlet Lists. All lists are processed in parallel, within a given list the particles are traversed in sequential order.
 \end{description}
-
-%TODO illustrate traversals?
-%\begin{figure}
-%	\centering
-%	\caption{An illustration of traversals in AutoPas.}
-%	\label{fig:traversals}
-%\end{figure}
 
 \subsection{Additional Parameters}
 Moreover, there are a number of additional configuration parameters that do not fall into the aforementioned groups. They are given below.
@@ -260,7 +253,7 @@ Moreover, there are a number of additional configuration parameters that do not 
 		arrow/.style={-latex},
 		extra/.style={dashed},
 	}
-	\begin{subfigure}{0.35\textwidth}
+	\begin{subfigure}{0.3\textwidth}
 		\centering
 		\begin{tikzpicture}
 			\draw[step=\sz] (0,0) grid (4*\sz,4*\sz);
@@ -314,7 +307,7 @@ Moreover, there are a number of additional configuration parameters that do not 
 		\end{tikzpicture}
 		\subcaption{Cell Size Factor \num{1.0}}
 	\end{subfigure}%
-	\begin{subfigure}{0.35\textwidth}
+	\begin{subfigure}{0.3\textwidth}
 		\centering
 		\begin{tikzpicture}
 			\def\csf{0.5}

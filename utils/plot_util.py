@@ -60,13 +60,16 @@ def estimate_tuning_triggers(param_name, iteration_log, factor):
 def collect_runtimes(parent_path, output_name):
     """Collects the total runtimes for all jobs in parent_path"""
 
+    print("Collecting runtimes")
     iterations = {
         "equilibrium": 150000,
         "exploding-liquid": 150000,
         "heating-sphere": 60000,
     }
     data = {}
-
+    baseline = {}
+    
+    # collect baseline runs
     for job in os.listdir(parent_path):
         if not os.path.isdir(os.path.join(parent_path, job)):
             continue
@@ -74,27 +77,55 @@ def collect_runtimes(parent_path, output_name):
         if not os.path.isfile(log):
             continue
 
-        if not "dynamic" in job and not "static" in job:
+        if not "static" in job.lower():
             continue
-
+        
         scenario = next((s for s in iterations.keys() if s in job), "")
-        isBaseline = "static" in job
 
         with open(log, "r") as logfile:
             lines = logfile.readlines()
             line = "".join(lines[len(lines) - 26 :])
             runtime = re.search(r"Total accumulated\s*:\s([0-9]+)", line)
-            runtime = -1 if runtime is None else runtime.group(1)
+            runtime = -1 if runtime is None else int(runtime.group(1))
             tuning_its = re.search(r"Tuning iterations\s*:\s*(\d+)", line)
-            tuning_its = -1 if tuning_its is None else tuning_its.group(1)
-            data[job] = {"runtime": runtime, "tuning_its": tuning_its}
+            tuning_its = -1 if tuning_its is None else int(tuning_its.group(1))
+            tuning_its_perc = round(tuning_its/iterations[scenario]*100, 2)
+            data[job] = {"runtime": runtime, "tuning_its": tuning_its, "runtime_speedup_perc": 0, "tuning_its_perc" : tuning_its_perc, "runtime_delta_abs": 0, "runtime_delta_abs_it" : 0}
+            if runtime == -1 or tuning_its == -1:
+                print(f"Incomplete job: {job}")
+
+    # collect dynamic runs
+    for job in os.listdir(parent_path):
+        if not os.path.isdir(os.path.join(parent_path, job)):
+            continue
+        log = os.path.join(os.path.join(parent_path, job), "job_log.txt")
+        if not os.path.isfile(log):
+            continue
+
+        if not "dynamic" in job:
+            continue
+
+        scenario = next((s for s in iterations.keys() if s in job), "")
+
+        with open(log, "r") as logfile:
+            lines = logfile.readlines()
+            line = "".join(lines[len(lines) - 26 :])
+            runtime = re.search(r"Total accumulated\s*:\s([0-9]+)", line)
+            runtime = -1 if runtime is None else int(runtime.group(1))
+            runtime_baseline = data[f"{scenario}_dynamic_StaticSimple_1.0_10"]["runtime"]
+            runtime_perc = round((runtime_baseline/runtime -1)*100, 0)
+            runtime_delta_abs = round(runtime-runtime_baseline,0)
+            runtime_delta_abs_it = round(runtime_delta_abs/iterations[scenario], 0)
+            tuning_its = re.search(r"Tuning iterations\s*:\s*(\d+)", line)
+            tuning_its = -1 if tuning_its is None else int(tuning_its.group(1))
+            tuning_its_perc = round(tuning_its/iterations[scenario]*100, 2)
+            data[job] = {"runtime": runtime, "tuning_its": tuning_its, "runtime_speedup_perc": runtime_perc, "tuning_its_perc" : tuning_its_perc, "runtime_delta_abs": runtime_delta_abs, "runtime_delta_abs_it": runtime_delta_abs_it}
             if runtime == -1 or tuning_its == -1:
                 print(f"Incomplete job: {job}")
 
     def sort_fn(k):
         parts = k.split("_")
-        print(parts)
-        if "static" in parts:
+        if "StaticSimple" in parts or "static" in parts:
             return (parts[0], "", 0, float("inf"))
         return (parts[0], parts[2], -int(parts[4]), float(parts[3]))
 
@@ -103,10 +134,10 @@ def collect_runtimes(parent_path, output_name):
     with open(output_name, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(
-            ["job", "scenario", "isBaseline", "total_runtime", "tuning_iterations"]
+            ["job", "total_runtime", "tuning_iterations", "runtime_speedup_perc", "tuning_its_perc", "runtime_delta_abs", "runtime_delta_abs_it"]
         )
         for job, d in data.items():
-            writer.writerow([job, scenario, isBaseline, d["runtime"], d["tuning_its"]])
+            writer.writerow([job, d["runtime"], d["tuning_its"], d["runtime_speedup_perc"], d["tuning_its_perc"], d["runtime_delta_abs"], d["runtime_delta_abs_it"]])
 
 
 def main():
@@ -137,16 +168,14 @@ def main():
         # if skip:
         #     continue
 
-        ranks = (
-            ["Rank0", "Rank1", "Rank2", "Rank3"]
-            if "exploding-liquid" in job_dir
-            else ["Rank0"]
-        )
+        # ranks = range(6) if "exploding-liquid" in job_dir else [0]
+        ranks = [0]
+        
 
         for rank in ranks:
-            iteration_log = os.path.join(abs_path, f"iterationLog_{rank}.csv")
-            liveinfo_log = os.path.join(abs_path, f"liveinfoLog_{rank}.csv")
-            tuning_log = os.path.join(abs_path, f"tuningLog_{rank}.txt")
+            iteration_log = os.path.join(abs_path, f"iterationLog_Rank{rank}.csv")
+            liveinfo_log = os.path.join(abs_path, f"liveinfoLog_Rank{rank}.csv")
+            tuning_log = os.path.join(abs_path, f"tuningLog_Rank{rank}.txt")
 
             # with PlotData(job_dir, liveinfo_log, iteration_log, tuning_log, 5000, 20000) as plot_instance:
             with PlotData(
@@ -163,7 +192,7 @@ def main():
                 #     abs_path + "runtime_mark_tuning", mark_configs=False
                 # )
 
-                plot_instance.plot_iteration_runtime(abs_path + "configs")
+                plot_instance.plot_iteration_runtime(abs_path + "configs_Rank"+str(rank))
                 plot_instance.plot_rebuild_times(abs_path + "configs_rebuild")
                 # plot_instance.plot_iteration_runtime(
                 #     abs_path + "configs_nomark", mark_tuning_phases=False
@@ -183,11 +212,12 @@ def main():
 
                 # plot_instance.write_tuning_results(abs_path + "tuning_results")
 
-                # if not "static" in job_dir:
+                # if not "static" in job_dir.lower():
                 #     plot_instance.compare_tuning_results(
                 #         out_dir_path
                 #         + job_dir.split("_")[0]
-                #         + "_static/tuning_results.csv",
+                #         + "_dynamic_StaticSimple_1.0_10/tuning_results.csv",
+                #         # + "_dynamic_StaticSimple_1.0_10_onlyforstaticconfigs/tuning_results.csv",
                 #         abs_path + "tuning_histogramm",
                 #     )
 

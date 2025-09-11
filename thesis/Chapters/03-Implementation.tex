@@ -23,10 +23,11 @@ The iteration runtimes themselves are again differentiated into multiple paramet
 In this work, we will consider the sum of all these times with the exception of the rebuilding measurements. This choice will be justified by collected data in \autoref{sec:justification_rebuild}.
 
 \subsection{Detecting Scenario Change}
+\label{sec:change_detection}
 After deciding on which simulation statistic to base the triggering strategies on, one needs to define a notion of \enquote{scenario change.} We consider two categories in which to classify this change:
 
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Type of variation }}]
-	\item[\textbf{Parameter Space}] Change can occur either in a single or combination of multiple parameters (hybrid). The hybrid approach has higher complexity and computational cost, but could be better in scenarios which do not indicate change in the single observed parameter. E.g., a configuration might become suboptimal without any increase in iteration runtime --- but a different configuration might be even better suited after, e.g., a change in density of the particle distribution.
+	\item[\textbf{Parameter Space}] Change can occur either in a single or combination of multiple parameters (hybrid). The hybrid approach has higher complexity and computational cost, but could be better in scenarios which do not indicate change in the single observed parameter. E.g., a configuration might become suboptimal without any increase in iteration runtime --- but a different configuration might be better suited after, e.g., a change in density of the particle distribution.
 	\item[\textbf{Type of Variation}] Depending on the parameters used, change can be indicated by two forms of variation. The first is an increase in the parameter value, the second a change in magnitude: I.e., if the parameter value deviates to much from its starting point in either direction.
 \end{description}
 
@@ -47,7 +48,7 @@ The frequency at which new tuning phases are initiated, is indirectly determined
 \label{subsec:simple_trigger}
 The most simplistic implementation of a time-based trigger considers only the runtimes of the current and immediately preceding iteration. In other words, if $t_i \ge \lambda\cdot t_{i-1}$, a new tuning phase is triggered. This trigger is implemented as the \texttt{TimeBasedSimpleTrigger}.
 
-In scenarios with a low average number of neighbors, the rebuilding of neighbor lists takes longer than the interaction computations. Considering that the rebuilding only happens in iterations that are a multiple of \texttt{rebuildFrequency}, this would lead to the initiation of a new tuning phase in each rebuild iteration, as the rebuild iteration greatly outweighs the non-rebuild iteration. This is one of the reasons why we do not consider rebuild times in the input of our trigger strategies.
+In scenarios with a low average number of neighbors, the rebuilding of neighbor lists takes longer than the interaction computations. Considering that the rebuilding only happens in iterations that are a multiple of \texttt{rebuild-frequency}, this would lead to the initiation of a new tuning phase in each rebuild iteration, as the rebuild iteration greatly outweighs the non-rebuild iteration. This is one of the reasons why we do not consider rebuild times in the input of our trigger strategies.
 
 
 \subsection{Single-Iteration Averaging Trigger}
@@ -257,7 +258,7 @@ In particular, we have:
 					ylabel={Iteration Runtime},
 					ylabel near ticks,
 					xtick={0,5,11},
-					xticklabels={$t_{i-n}$,$t_{i-j}$,$i$},
+					xticklabels={$i-n$,$i-j$,$i$},
 					ytick=\empty,
 					bar width=\barwidth,
 					clip=false,
@@ -329,7 +330,7 @@ In particular, we have:
 					ylabel={Iteration Runtime},
 					ylabel near ticks,
 					xtick={0,5,11},
-					xticklabels={$t_{i-n}$,$t_{i-j}$,$i$},
+					xticklabels={$i-n$,$i-j$,$i$},
 					ytick=\empty,
 					bar width=\barwidth,
 					clip=false,
