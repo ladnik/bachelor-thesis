@@ -3,7 +3,7 @@
 
 {
 	\parindent0pt
-	To decide on when a new tuning phase should be initiated, we analyze simulation data gathered at runtime. The decision is then made by an algorithm we will refer to as a \enquote{trigger strategy}. Depending on the scenario and available statistics provided by the simulation, different methods of finding trigger points may be optimal. In this chapter we therefore present the various strategies we investigated. \autoref{sec:considerations} lays out some key points to consider, independent of any specific tuning strategy. In \autoref{sec:time_base_triggers} we subsequently introduce the strategies we will evaluate in this thesis and their respective mathematical background.
+	To decide on when a new tuning phase should be initiated, we analyze simulation data gathered at runtime. The decision is then made by an algorithm we will refer to as a \enquote{trigger strategy}. Depending on the scenario and statistics provided by the simulation, different methods of finding trigger points may be optimal. In this chapter we therefore present the strategies we investigated. \autoref{sec:considerations} lays out some key points to consider, independent of any specific tuning strategy. In \autoref{sec:time_base_triggers} we subsequently introduce the strategies we will evaluate in this thesis and their respective mathematical background.
 }
 
 \section{Considerations}
@@ -27,8 +27,8 @@ In this work, we will consider the sum of all these times with the exception of 
 After deciding on which simulation statistic to base the triggering strategies on, one needs to define a notion of \enquote{scenario change.} We consider two categories in which to classify this change:
 
 \begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Type of variation }}]
-	\item[\textbf{Parameter Space}] Change can occur either in a single or combination of multiple parameters (hybrid). The hybrid approach has higher complexity and computational cost, but could be better in scenarios which do not indicate change in the single observed parameter. E.g., a configuration might become suboptimal without any increase in iteration runtime --- but a different configuration might be better suited after, e.g., a change in density of the particle distribution.
-	\item[\textbf{Type of Variation}] Depending on the parameters used, change can be indicated by two forms of variation. The first is an increase in the parameter value, the second a change in magnitude: I.e., if the parameter value deviates to much from its starting point in either direction.
+	\item[\textbf{Parameter Space}] Change can occur either in a single or in a combination of multiple parameters (hybrid). The hybrid approach has higher complexity and computational cost, but could be better in scenarios which do not indicate change in the single observed parameter. E.g., a configuration might become suboptimal without any increase in iteration runtime --- but a different configuration might be better suited after, e.g., a change in density of the particle distribution.
+	\item[\textbf{Type of Variation}] Depending on the parameters used, change can be indicated by two forms of variation. The first is an increase in the parameter value, the second a change in magnitude: i.e., if the parameter value deviates to much from its starting point in either direction.
 \end{description}
 
 In this work, we will investigate strategies which are based on a single parameter (iteration runtime) and trigger at parameter increase.
