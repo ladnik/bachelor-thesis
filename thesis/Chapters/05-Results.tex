@@ -119,7 +119,7 @@ To exemplify the importance of optimizing the trigger routines, \autoref{fig:per
 					xlabel={Trigger Strategy},
 					ylabel={Total Runtime in \unit{\second}},
 					enlarge x limits=0.25,
-					symbolic x coords={Avg,Split,Regression},
+					symbolic x coords={Avg,Split,Reg},
 					xtick=data,
 					bar width=\barwidth,
 					legend entries={Unoptimized, Optimized}
@@ -138,13 +138,13 @@ To exemplify the importance of optimizing the trigger routines, \autoref{fig:per
 				\addplot[ybar, bar shift=-0.5*\barwidth, barstyle1] coordinates {
 						(Avg,1694.063817546)
 						(Split,1141.728867654)
-						(Regression,1112.338563086)
+						(Reg,1112.338563086)
 					};
 				% optimized average
 				\addplot[ybar, bar shift=0.5*\barwidth, barstyle2] coordinates {
 						(Avg,962.648240758)
 						(Split,999.681150940)
-						(Regression,889.891999680)
+						(Reg,889.891999680)
 					};
 			\end{axis}
 		\end{tikzpicture}
@@ -166,8 +166,8 @@ To exemplify the importance of optimizing the trigger routines, \autoref{fig:per
 
 \pgfplotsset{
 	triggerplot/.style={
-			height=0.7\textwidth,
-			width=\textwidth,
+			height=0.315\textwidth,
+			width=0.45\textwidth,
 			xlabel={Trigger Factor $\lambda$},
 			xtick={1.25, 1.5, 1.75},
 			legend style={font=\small},
@@ -236,239 +236,231 @@ As can be seen in \autoref{fig:params_equil}, a trigger factor of $\lambda=1.5$ 
 Therefore, not initiating any new tuning phases will lead to a decrease in total simulation runtime, which is why larger values for $\lambda$ perform better, as they reduce trigger sensitivity. A factor chosen too large however, diminishes this effect again, as the changes in the initial phase are not accounted for. That the speedup is indeed  a result of the decreased number of tuning iterations can be verified in the right-hand side plots; for the baseline run with static tuning intervals, \qty{22.6}{\percent} of iterations were spent in tuning phases.
 Conversely, for strategies initiating too many new tuning intervals, i.e., with more tuning iterations than the baseline run, the simulation runtime increases.
 
-Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. For a too large number of samples such as $n>1000$, the speedup may decrease, however, as the computational overhead is directly proportional to the number of samples. This is particularly noteworthy for scenarios with fewer particles, where the computation of interactions takes shorter time. Therefore, the relative overhead of our strategies is larger, which would explain the lower speedup seen in the regression triggers: Compared to the \texttt{TimeBasedAverageTrigger}, at roughly the same number of tuning iterations, the speedup achieved is significantly lower.
+Additionally, triggers with a larger sample size will typically trigger less frequently, as more of the variability in iteration runtime is smoothed out. However, for a too large number of samples such as $n>1000$, the speedup may decrease, as the computational overhead is directly proportional to the number of samples. This is particularly noteworthy for scenarios with fewer particles, where the computation of interactions takes shorter time. Therefore, the relative overhead of our strategies is larger, which would explain the lower speedup seen in the regression triggers: Compared to the \texttt{TimeBasedAverageTrigger}, at roughly the same number of tuning iterations, the speedup achieved is significantly lower.
 
-Interestingly, the \texttt{TimeBasedSplitTrigger} with $n=250$ triggered significantly more tuning iterations for $\lambda=1.75$ than for $\lambda=1.5$.  The rather small sample size increases the sensitivity towards noise in the input data --- which is why outside influences by the underlying hardware could explain the difference between the two runs. Particularly if one considers that our equilibrium scenario consists of few particles with which interactions must be computed, resulting in low iteration runtimes.
+Interestingly, the \texttt{TimeBasedSplitTrigger} with $n=250$ triggered significantly more tuning iterations for $\lambda=1.75$ than for $\lambda=1.5$.  The rather small sample size increases the sensitivity towards noise in the input data --- which is why outside influences by the underlying hardware could explain the difference between the two runs. This holds particularly if one considers that our equilibrium scenario consists of few particles with which interactions must be computed, resulting in low iteration runtimes.
 
 
 The collected data suggests default parameters as presented in \autoref{tab:equil_defaults}.
 % TODO: explain why timebasedsimple with 1.25 has fewer tuning phases
 
 \begin{figure}[htpb]
-	\centering
-	\begin{subfigure}{0.45\textwidth}
+%	\centering
 		\begin{tikzpicture}
 			\begin{axis}[
-					triggerplot,
-					legend columns=2,
-					ylabel={Speedup \%},
+				triggerplot,
+				name=baseplot,
+				legend columns=2,
+				ylabel={Speedup \%},
+				trim axis left,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedSimple
 				\addplot[linestyleD] coordinates{
-						(1.25,-5)
-						(1.5,-33)
-						(1.75,-32)};
+					(1.25,-5)
+					(1.5,-33)
+					(1.75,-32)};
 				% TimeBasedAverage 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,21)
-						(1.5,44)
-						(1.75,47)};
+					(1.25,21)
+					(1.5,44)
+					(1.75,47)};
 				% TimeBasedAverage 500
 				\addplot[linestyleB] coordinates{
-						(1.25,10)
-						(1.5,34)
-						(1.75,47)};
+					(1.25,10)
+					(1.5,34)
+					(1.75,47)};
 				% TimeBasedAverage 250
 				\addplot[linestyleC] coordinates{
-						(1.25,17)
-						(1.5,26)
-						(1.75,34)};
+					(1.25,17)
+					(1.5,26)
+					(1.75,34)};
 				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Simple and Average Triggers}
-	\end{subfigure}
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					legend columns=2,
-					ylabel={Tuning Iterations \%},
-					ymode=log,
-					ymin=1,
-					ymax=100,
+				logtriggerplot,
+				at={(baseplot.south east)},
+				xshift=0.15\textwidth,
+				legend columns=2,
+				ylabel={Tuning Iterations \%},
+				ymode=log,
+				ymin=1,
+				ymax=100,
+				trim axis left,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,22.6) -- (axis cs: 2,22.6);
-
+				
 				% TimeBasedSimple
 				\addplot[linestyleD] coordinates{
-						(1.25,29.37)
-						(1.5,84.88)
-						(1.75,83.86)};
+					(1.25,29.37)
+					(1.5,84.88)
+					(1.75,83.86)};
 				% TimeBasedAverage 500
 				\addplot[linestyleB] coordinates{
-						(1.25,2.26)
-						(1.5,2.26)
-						(1.75,1.51)};
+					(1.25,2.26)
+					(1.5,2.26)
+					(1.75,1.51)};
 				% TimeBasedAverage 250
 				\addplot[linestyleC] coordinates{
-						(1.25,2.26)
-						(1.5,1.51)
-						(1.75,1.51)};
+					(1.25,2.26)
+					(1.5,1.51)
+					(1.75,1.51)};
 				% TimeBasedAverage 1000 (drawn over Avg-250)
 				\addplot[linestyleA] coordinates{
-						(1.25,2.26)
-						(1.5,1.51)
-						(1.75,1.51)};
+					(1.25,2.26)
+					(1.5,1.51)
+					(1.75,1.51)};
 				\legend{Simple,Avg-500,Avg-250,Avg-1000}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Simple and Average Triggers}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-				\hspace*{\widthof{--}}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					triggerplot,
-					ylabel={Speedup \%},
+				triggerplot,
+				at={(baseplot.south west)},
+				yshift=-0.35\textwidth,
+				name=baseplot2,
+				ylabel={Speedup \%},
+				trim axis left,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedSplit 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,42)
-						(1.5,46)
-						(1.75,35)};
+					(1.25,42)
+					(1.5,46)
+					(1.75,35)};
 				% TimeBasedSplit 500
 				\addplot[linestyleB] coordinates{
-						(1.25,43)
-						(1.5,38)
-						(1.75,40)};
+					(1.25,43)
+					(1.5,38)
+					(1.75,40)};
 				% TimeBasedSplit 250
 				\addplot[linestyleC] coordinates{
-						(1.25,-6)
-						(1.5,28)
-						(1.75,-7)};
+					(1.25,-6)
+					(1.5,28)
+					(1.75,-7)};
 				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Split Trigger}
-	\end{subfigure}
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					ylabel={Tuning Iterations \%},
-					ymode=log,
-					ymin=1,
-					ymax=100,
+				logtriggerplot,
+				at={(baseplot2.south east)},
+				xshift=0.15\textwidth,
+				ylabel={Tuning Iterations \%},
+				ymode=log,
+				ymin=1,
+				ymax=100,
+				trim axis left,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,22.6) -- (axis cs: 2,22.6);
-
+				
 				% TimeBasedSplit 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,3.77)
-						(1.5,3.01)
-						(1.75,3.77)};
+					(1.25,3.77)
+					(1.5,3.01)
+					(1.75,3.77)};
 				% TimeBasedSplit 500
 				\addplot[linestyleB] coordinates{
-						(1.25,4.52)
-						(1.5,4.52)
-						(1.75,3.77)};
+					(1.25,4.52)
+					(1.5,4.52)
+					(1.75,3.77)};
 				% TimeBasedSplit 250
 				\addplot[linestyleC] coordinates{
-						(1.25,81.7)
-						(1.5,6.03)
-						(1.75,81.9)};
+					(1.25,81.7)
+					(1.5,6.03)
+					(1.75,81.9)};
 				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Split Trigger}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-				\hspace*{\widthof{-}}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					triggerplot,
-					legend columns=2,
-					ylabel={Speedup \%},
+				triggerplot,
+				at={(baseplot2.south west)},
+				yshift=-0.38\textwidth,
+				name=baseplot3,
+				legend columns=2,
+				ylabel={Speedup \%},
+				trim axis left,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedRegression 2000
 				\addplot[linestyleA] coordinates{
-						(1.25,-3)
-						(1.5,13)
-						(1.75,14)};
-
+					(1.25,-3)
+					(1.5,13)
+					(1.75,14)};
+				
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
-						(1.25,-4)
-						(1.5,14)
-						(1.75,15)};
-
+					(1.25,-4)
+					(1.5,14)
+					(1.75,15)};
+				
 				% TimeBasedRegression 1000
 				\addplot[linestyleC] coordinates{
-						(1.25,7)
-						(1.5,15)
-						(1.75,14)};
-
+					(1.25,7)
+					(1.5,15)
+					(1.75,14)};
+				
 				% TimeBasedRegression 500		
 				\addplot[linestyleD] coordinates{
-						(1.25,5)
-						(1.5,16)
-						(1.75,15)};
-
+					(1.25,5)
+					(1.5,16)
+					(1.75,15)};
+				
 				\legend{Reg-2000,Reg-1500,Reg-1000,Reg-500}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Regression Trigger}
-	\end{subfigure}%
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					legend columns=2,
-					ylabel={Tuning Iterations \%},
-					ymode=log,
-					ymin=1,
-					ymax=100,
+				logtriggerplot,
+				at={(baseplot3.south east)},
+				xshift=0.15\textwidth,
+				legend columns=2,
+				ylabel={Tuning Iterations \%},
+				ymode=log,
+				ymin=1,
+				ymax=100,
+				trim axis left,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,22.6) -- (axis cs: 2,22.6);
-
+				
 				% TimeBasedRegression 2000
 				\addplot[linestyleA] coordinates{
-						(1.25,18.72)
-						(1.5,4.32)
-						(1.75,1.44)};
-
+					(1.25,18.72)
+					(1.5,4.32)
+					(1.75,1.44)};
+				
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
-						(1.25,19.37)
-						(1.5,1.44)
-						(1.75,1.44)};
-
+					(1.25,19.37)
+					(1.5,1.44)
+					(1.75,1.44)};
+				
 				% TimeBasedRegression 1000
 				\addplot[linestyleC] coordinates{
-						(1.25,7.88)
-						(1.5,1.44)
-						(1.75,1.44)};
-
+					(1.25,7.88)
+					(1.5,1.44)
+					(1.75,1.44)};
+				
 				% TimeBasedRegression 500		
 				\addplot[linestyleD] coordinates{
-						(1.25,10.08)
-						(1.5,1.44)
-						(1.75,1.44)};
-
+					(1.25,10.08)
+					(1.5,1.44)
+					(1.75,1.44)};
+				
 				\legend{Reg-2000,Reg-1500,Reg-1000,Reg-500}
 			\end{axis}
 		\end{tikzpicture}
-		%		\subcaption{Regression Trigger}
-	\end{subfigure}%
 	\caption{Trigger behavior in the equilibrium scenario, the numbers in the legends refer to the number of samples $n$ considered. The line in the background represents the baseline run. Note the logarithmic scale in the plots on the right hand side.}
 	\label{fig:params_equil}
 \end{figure}
+
 \begin{table}[htpb]
 	\centering
 	\begin{tabular}{lcc}
@@ -550,7 +542,7 @@ Our second evaluation metric, as stated in \autoref{sec:metrics}, concerns the q
 
 \subsection{Exploding Liquid}
 \subsubsection{Selected Runs}
-The exploding-liquid scenario was executed on 6 MPI processes, with the simulation domain subdivided along the $y$-axis. As a result, different ranks encounter the particle \enquote{wave} at different points in time, as it spreads outward from the center (cf. \autoref{subsec:scenario_expl}). This effect can be seen in \autoref{fig:expl_trigger_behavior}, where the plot showing rank 2 (in the center of the domain, plot on the right hand side) experiences high iteration runtimes at the beginning of the simulation. Rank 0 (edge of the domain, plot on the left hand side), however, shows this influx of particles not until iteration \num{50000}.
+The exploding-liquid scenario was executed on 6 MPI processes, with the simulation domain subdivided along the $y$-axis. As a result, different ranks encounter the \enquote{particle wave} at different points in time, as it spreads outward from the center (cf. \autoref{subsec:scenario_expl}). This effect can be seen in \autoref{fig:expl_trigger_behavior}, where the plot showing rank 2 (in the center of the domain, plot on the right hand side) experiences high iteration runtimes at the beginning of the simulation. Rank 0 (edge of the domain, plot on the left hand side), however, shows this influx of particles not until iteration \num{50000}.
 
 The figure on the left shows an optimal response to the peak in iteration runtime by the \texttt{TimeBasedSplitTrigger}. The initial configuration remains optimal until the particles enter this part of the domain, after which two tuning phases are triggered. The first trigger at iteration \num{52814} is not needed, as due to the rapid increase in iteration runtime, a second one at iteration \num{55088} is tripped. This additional tuning phase could be prevented by using a bigger factor $\lambda$, the effect on total simulation runtime would however be limited. The second half of the simulation again has one optimal configuration, which is well reflected in the trigger's behavior.
 
@@ -591,222 +583,209 @@ In general, the results look very similar to those of the previous scenario, wit
 The \texttt{TimeBasedSplitTrigger} displays opposite behavior; for larger values of $\lambda$, the speedup is greater, as triggering too few tuning phases leads to a large number of iterations being computed using a suboptimal configuration. Similarly, triggers with a larger sample size tend to smooth out the changes in iteration runtime and thus have a delayed reaction to the rapid transformation of the domain.
 The \texttt{TimeBasedRegressionTrigger} again leads to lower speedups than averaging or split triggers at optimal configuration. However, the difference is minor and can thus be attributed to the higher overhead of this strategy.
 
-
-% TODO: 1.15?
 \begin{figure}[htpb]
-	\centering
-	\begin{subfigure}{0.45\textwidth}
 		\begin{tikzpicture}
 			\begin{axis}[
-					triggerplot,
-					legend columns=2,
-					ylabel={Speedup \%},
+				triggerplot,
+				name=baseplot,
+				trim axis left,
+				legend columns=2,
+				ylabel={Speedup \%},
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedSimple
 				\addplot[linestyleD] coordinates{
-						(1.25,-13)
-						(1.5,9)
-						(1.75,14)};
+					(1.25,-13)
+					(1.5,9)
+					(1.75,14)};
 				% TimeBasedAverage 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,20)
-						(1.5,14)
-						(1.75,15)};
+					(1.25,20)
+					(1.5,14)
+					(1.75,15)};
 				% TimeBasedAverage 500
 				\addplot[linestyleB] coordinates{
-						(1.25,3)
-						(1.5,16)
-						(1.75,16)};
+					(1.25,3)
+					(1.5,16)
+					(1.75,16)};
 				% TimeBasedAverage 250
 				\addplot[linestyleC] coordinates{
-						(1.25,15)
-						(1.5,10)
-						(1.75,17)};
+					(1.25,15)
+					(1.5,10)
+					(1.75,17)};
 				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Simple and Average Triggers}
-	\end{subfigure}
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					legend columns=2,
-					ylabel={Tuning Iterations \%},
-					%				ymode=log,
-					%				ymin=1,
-					%				ymax=100,
+				logtriggerplot,
+				at={(baseplot.south east)},
+				xshift=0.15\textwidth,
+				trim axis left,
+				legend columns=2,
+				ylabel={Tuning Iterations \%},
+				%				ymode=log,
+				%				ymin=1,
+				%				ymax=100,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
-
+				
 				% TimeBasedSimple
 				\addplot[linestyleD] coordinates{
-						(1.25,57)
-						(1.5,10.13)
-						(1.75,5.07)};
+					(1.25,57)
+					(1.5,10.13)
+					(1.75,5.07)};
 				% TimeBasedAverage 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,3.17)
-						(1.5,.19)
-						(1.75,2.53)};
+					(1.25,3.17)
+					(1.5,.19)
+					(1.75,2.53)};
 				% TimeBasedAverage 500
 				\addplot[linestyleB] coordinates{
-						(1.25,2.91)
-						(1.5,2.53)
-						(1.75,3.8)};
+					(1.25,2.91)
+					(1.5,2.53)
+					(1.75,3.8)};
 				% TimeBasedAverage 250
 				\addplot[linestyleC] coordinates{
-						(1.25,3.8)
-						(1.5,3.66)
-						(1.75,1.9)};
+					(1.25,3.8)
+					(1.5,3.66)
+					(1.75,1.9)};
 				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Simple and Average Triggers}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-		\hspace*{\widthof{--}}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					triggerplot,
-					ylabel={Speedup \%},
+				triggerplot,
+				at={(baseplot.south west)},
+				yshift=-0.35\textwidth,
+				name=baseplot2,
+				trim axis left,
+				ylabel={Speedup \%},
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedSplit 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,14)
-						(1.5,10)
-						(1.75,5)};
+					(1.25,14)
+					(1.5,10)
+					(1.75,5)};
 				% TimeBasedSplit 500
 				\addplot[linestyleB] coordinates{
-						(1.25,11)
-						(1.5,12)
-						(1.75,8)};
+					(1.25,11)
+					(1.5,12)
+					(1.75,8)};
 				% TimeBasedSplit 250
 				\addplot[linestyleC] coordinates{
-						(1.25,16)
-						(1.5,10)
-						(1.75,9)};
+					(1.25,16)
+					(1.5,10)
+					(1.75,9)};
 				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Split Trigger}
-	\end{subfigure}
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					ylabel={Tuning Iterations \%},
-					%				ymode=log,
-					%				ymin=1,
-					ymax=25,
+				logtriggerplot,
+				at={(baseplot2.south east)},
+				xshift=0.15\textwidth,
+				trim axis left,
+				ylabel={Tuning Iterations \%},
+				%				ymode=log,
+				%				ymin=1,
+				ymax=25,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
-
+				
 				% TimeBasedSplit 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,1.27)
-						(1.5,0.63)
-						(1.75,0.63)};
+					(1.25,1.27)
+					(1.5,0.63)
+					(1.75,0.63)};
 				% TimeBasedSplit 500
 				\addplot[linestyleB] coordinates{
-						(1.25,1.27)
-						(1.5,0.63)
-						(1.75,0.63)};
+					(1.25,1.27)
+					(1.5,0.63)
+					(1.75,0.63)};
 				% TimeBasedSplit 250
 				\addplot[linestyleC] coordinates{
-						(1.25,2.53)
-						(1.5,0.63)
-						(1.75,1.4)};
+					(1.25,2.53)
+					(1.5,0.63)
+					(1.75,1.4)};
 				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Split Trigger}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-				\hspace*{\widthof{-}}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					triggerplot,
-					legend columns=3,
-					ylabel={Speedup \%},
+				triggerplot,
+				at={(baseplot2.south west)},
+				yshift=-0.35\textwidth,
+				name=baseplot3,
+				trim axis left,
+				legend columns=3,
+				ylabel={Speedup \%},
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
-						(1.25,-1)
-						(1.5,10)
-						(1.75,16)};
-
+					(1.25,-1)
+					(1.5,10)
+					(1.75,16)};
+				
 				% TimeBasedRegression 1000
 				\addplot[linestyleC] coordinates{
-						(1.25,-1)
-						(1.5,10)
-						(1.75,17)};
-
+					(1.25,-1)
+					(1.5,10)
+					(1.75,17)};
+				
 				% TimeBasedRegression 500		
 				\addplot[linestyleD] coordinates{
-						(1.25,-7)
-						(1.5,10)
-						(1.75,16)};
+					(1.25,-7)
+					(1.5,10)
+					(1.75,16)};
+				
+				\legend{Reg-1500,Reg-1000,Reg-500}
+			\end{axis}
 
+			\begin{axis}[
+				logtriggerplot,
+				at={(baseplot3.south east)},
+				xshift=0.15\textwidth,
+				trim axis left,
+				legend columns=3,
+				ylabel={Tuning Iterations \%},
+				%				ymode=log,
+				%				ymin=1,
+				%				ymax=100,
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
+				
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+					(1.25,30.92)
+					(1.5,8.87)
+					(1.75,5.07)};
+				
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+					(1.25,37.64)
+					(1.5,11.4)
+					(1.75,2.53)};
+				
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+					(1.25,43.7)
+					(1.5,10.13)
+					(1.75,6.97)};
+				
 				\legend{Reg-1500,Reg-1000,Reg-500}
 			\end{axis}
 		\end{tikzpicture}
-		%		\subcaption{Regression Trigger}
-	\end{subfigure}%
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
-			\begin{axis}[
-					logtriggerplot,
-					legend columns=3,
-					ylabel={Tuning Iterations \%},
-					%				ymode=log,
-					%				ymin=1,
-					%				ymax=100,
-				]
-				% Baseline
-				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
-
-				% TimeBasedRegression 1500
-				\addplot[linestyleB] coordinates{
-						(1.25,30.92)
-						(1.5,8.87)
-						(1.75,5.07)};
-
-				% TimeBasedRegression 1000
-				\addplot[linestyleC] coordinates{
-						(1.25,37.64)
-						(1.5,11.4)
-						(1.75,2.53)};
-
-				% TimeBasedRegression 500		
-				\addplot[linestyleD] coordinates{
-						(1.25,43.7)
-						(1.5,10.13)
-						(1.75,6.97)};
-
-				\legend{Reg-1500,Reg-1000,Reg-500}
-			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Regression Trigger}
-	\end{subfigure}%
 	\caption{Trigger behavior in the exploding-liquid scenario, the numbers in the legends refer to the number of samples $n$ considered. The line in the background represents the baseline run.}
 	\label{fig:params_expl}
 \end{figure}
-
 
 The collected data suggests default parameters as presented in \autoref{tab:expl_defaults}.
 \begin{table}[htpb]
@@ -888,7 +867,7 @@ It should also be mentioned, that these statistics are based on rank 0 across al
 \subsubsection{Selected Runs}
 \autoref{fig:hs_trigger_behavior} again displays two sample runs to illustrate optimal and unsatisfactory results. The left figure shows a reduction in the number of tuning phases initiated by the \texttt{TimeBasedAverageTrigger}. After the last tuning phase, the configuration does not change from the previous one --- that tuning phase was therefore unnecessary. Compared to the equilibrium scenario, the iteration runtimes form a broad band, which indicates a high variance. The absolute ranges of these variations lie in the range of \SIrange{1e6}{5e6}{\nano\second}, in contrast to a spread of \qty{1e5}{\nano\second} in the equilibrium scenario. Additionally, more outliers are seen, which might worsen the performance of the strategies susceptible to oscillations; one of them is the \texttt{TimeBasedAverageTrigger} depicted. Without any clear indication of an increase in runtime, new tuning phases are initiated, since a single outlier larger than the last $n$ samples by a factor of $\lambda$ can trigger the strategy. Interestingly, most outliers do not have a significant impact due to the averaging approach. As shown in the plot, the use of the averaging trigger results in fewer tuning phases than in the baseline run, which in turn explains the speedup measured.
 
-Worse results can be seen in the \texttt{TimeBasedRegressionTrigger}, pictured on the right hand side. After multiple tuning phases, the same configuration is selected, which again indicates unnecessary triggering. The regression approach is suboptimal in the heating-sphere scenario, due to the high variance in iteration runtimes described before: Outliers can skew the slope derived by the least-squares method, which leads to a incorrect prediction of the runtime in the next interval, triggering our strategy. Hence, a slowdown compared to the baseline run is observed. This suggests, that the regression based trigger may not be used in scenarios that behave similarly. To address this issue, the linear least squares estimation in the regression approach could be replaced with a more robust method like the Theil-Sen estimator \cite{Wilcox2012}.
+Worse results can be seen in the \texttt{TimeBasedRegressionTrigger}, pictured on the right hand side. After multiple tuning phases, the same configuration is selected, which again indicates unnecessary triggering. The regression approach is suboptimal in the heating-sphere scenario, due to the high variance in iteration runtimes described before: Outliers can skew the slope derived by the least-squares method, which leads to a incorrect prediction of the runtime in the next interval, triggering our strategy. Hence, a slowdown compared to the baseline run is observed. This suggests that the regression based trigger may not be used in scenarios that behave similarly. To address this issue, the linear least squares estimation in the regression approach could be replaced with a more robust method like the Theil-Sen estimator \cite{Wilcox2012}.
 
 
 \begin{figure}[htpb]
@@ -924,221 +903,211 @@ In summary, it can be said that our approach is not suitable for the heating-sph
 %It should be noted, that the baseline run shows a larger share of tuning iterations than the previous scenario, since it used \num{60000} iterations (vs. \num{150000} in the equilibrium setting) while keeping the tuning interval at \num{5000} in both cases.
 
 % TODO: split trigger
-% TODO: plot alignment
-
 \begin{figure}[htpb]
-	\centering
-	\begin{subfigure}{0.45\textwidth}
 		\begin{tikzpicture}
 			\begin{axis}[
-					triggerplot,
-					legend columns=2,
-					ylabel={Speedup \%},
+				triggerplot,
+				name=baseplot,
+				trim axis left,
+				legend columns=2,
+				ylabel={Speedup \%},
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedSimple
 				\addplot[linestyleD] coordinates{
-						(1.25,-41)
-						(1.5,-31)
-						(1.75,-30)};
+					(1.25,-41)
+					(1.5,-31)
+					(1.75,-30)};
 				% TimeBasedAverage 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,29)
-						(1.5,32)
-						(1.75,23)};
+					(1.25,29)
+					(1.5,32)
+					(1.75,23)};
 				% TimeBasedAverage 500
 				\addplot[linestyleB] coordinates{
-						(1.25,37)
-						(1.5,37)
-						(1.75,26)};
+					(1.25,37)
+					(1.5,37)
+					(1.75,26)};
 				% TimeBasedAverage 250
 				\addplot[linestyleC] coordinates{
-						(1.25,31)
-						(1.5,35)
-						(1.75,40)};
+					(1.25,31)
+					(1.5,35)
+					(1.75,40)};
 				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Simple and Average Triggers}
-	\end{subfigure}
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					legend columns=2,
-					ylabel={Tuning Iterations \%},
-					ymode=log,
-					ymin=1,
-					ymax=100,
+				logtriggerplot,
+				at={(baseplot.south east)},
+				xshift=0.15\textwidth,
+				trim axis left,
+				legend columns=2,
+				ylabel={Tuning Iterations \%},
+				ymode=log,
+				ymin=1,
+				ymax=100,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,25.13) -- (axis cs: 2,23.2);
-
+				
 				% TimeBasedSimple
 				\addplot[linestyleD] coordinates{
-						(1.25,99.78)
-						(1.5,99.5)
-						(1.75,98.58)};
+					(1.25,99.78)
+					(1.5,99.5)
+					(1.75,98.58)};
 				% TimeBasedAverage 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,14.56)
-						(1.5,11.6)
-						(1.75,13.53)};
+					(1.25,14.56)
+					(1.5,11.6)
+					(1.75,13.53)};
 				% TimeBasedAverage 500
 				\addplot[linestyleB] coordinates{
-						(1.25,9.67)
-						(1.5,7.73)
-						(1.75,13.53)};
+					(1.25,9.67)
+					(1.5,7.73)
+					(1.75,13.53)};
 				% TimeBasedAverage 250
 				\addplot[linestyleC] coordinates{
-						(1.25,11.6)
-						(1.5,9.67)
-						(1.75,5.8)};
+					(1.25,11.6)
+					(1.5,9.67)
+					(1.75,5.8)};
 				\legend{Simple,Avg-1000,Avg-500,Avg-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Simple and Average Triggers}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					triggerplot,
-					ylabel={Speedup \%},
-					ymin=-10,
+				triggerplot,
+				at={(baseplot.south west)},
+				yshift=-0.35\textwidth,
+				name=baseplot2,
+				trim axis left,
+				ylabel={Speedup \%},
+				ymin=-10,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedSplit 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,30)
-						(1.5,8)
-						(1.75,8)};
+					(1.25,30)
+					(1.5,8)
+					(1.75,8)};
 				% TimeBasedSplit 500
 				\addplot[linestyleB] coordinates{
-						(1.25,8)
-						(1.5,8)
-						(1.75,8)};
+					(1.25,8)
+					(1.5,8)
+					(1.75,8)};
 				% TimeBasedSplit 250
 				\addplot[linestyleC] coordinates{
-						(1.25,8)
-						(1.5,21)
-						(1.75,6)};
+					(1.25,8)
+					(1.5,21)
+					(1.75,6)};
 				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Split Trigger}
-	\end{subfigure}
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					logtriggerplot,
-					ylabel={Tuning Iterations \%},
-					ymode=log,
-					ymin=1,
-					ymax=100,
+				logtriggerplot,
+				at={(baseplot2.south east)},
+				xshift=0.15\textwidth,
+				trim axis left,
+				ylabel={Tuning Iterations \%},
+				ymode=log,
+				ymin=1,
+				ymax=100,
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,25.13) -- (axis cs: 2,23.2);
-
+				
 				% TimeBasedSplit 1000
 				\addplot[linestyleA] coordinates{
-						(1.25,3.87)
-						(1.5,1.93)
-						(1.75,1.93)};
+					(1.25,3.87)
+					(1.5,1.93)
+					(1.75,1.93)};
 				% TimeBasedSplit 500
 				\addplot[linestyleB] coordinates{
-						(1.25,11.6)
-						(1.5,1.93)
-						(1.75,1.93)};
+					(1.25,11.6)
+					(1.5,1.93)
+					(1.75,1.93)};
 				% TimeBasedSplit 250
 				\addplot[linestyleC] coordinates{
-						(1.25,9.67)
-						(1.5,3.87)
-						(1.75,3.87)};
+					(1.25,9.67)
+					(1.5,3.87)
+					(1.75,3.87)};
 				\legend{Split-1000,Split-500,Split-250}
 			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Split Trigger}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-		\hspace*{-3pt}
-		\begin{tikzpicture}
+
 			\begin{axis}[
-					triggerplot,
-					legend columns=3,
-					ylabel={Speedup \%},
+				triggerplot,
+				at={(baseplot2.south west)},
+				yshift=-0.35\textwidth,
+				name=baseplot3,
+				trim axis left,
+				legend columns=3,
+				ylabel={Speedup \%},
 				]
 				% Baseline
 				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
-
+				
 				% TimeBasedRegression 1500
 				\addplot[linestyleB] coordinates{
-						(1.25,-21)
-						(1.5,-21)
-						(1.75,-20)};
-
+					(1.25,-21)
+					(1.5,-21)
+					(1.75,-20)};
+				
 				% TimeBasedRegression 1000
 				\addplot[linestyleC] coordinates{
-						(1.25,-26)
-						(1.5,-26)
-						(1.75,-25)};
-
+					(1.25,-26)
+					(1.5,-26)
+					(1.75,-25)};
+				
 				% TimeBasedRegression 500		
 				\addplot[linestyleD] coordinates{
-						(1.25,-33)
-						(1.5,9)
-						(1.75,-31)};
+					(1.25,-33)
+					(1.5,9)
+					(1.75,-31)};
+				
+				\legend{Reg-1500,Reg-1000,Reg-500}
+			\end{axis}
 
+			\begin{axis}[
+				logtriggerplot,
+				at={(baseplot3.south east)},
+				xshift=0.15\textwidth,
+				trim axis left,
+				legend columns=3,
+				ylabel={Tuning Iterations \%},
+				ymode=log,
+				ymin=1,
+				ymax=100,
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,25.13) -- (axis cs: 2,23.2);
+				
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+					(1.25,40.6)
+					(1.5,40.73)
+					(1.75,39.78)};
+				
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+					(1.25,50.27)
+					(1.5,50.27)
+					(1.75,48.19)};
+				
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+					(1.25,64.07)
+					(1.5,1.93)
+					(1.75,59.93)};
+				
 				\legend{Reg-1500,Reg-1000,Reg-500}
 			\end{axis}
 		\end{tikzpicture}
-		%		\subcaption{Regression Trigger}
-	\end{subfigure}%
-	\hspace{0.05\textwidth}
-	\begin{subfigure}{0.45\textwidth}
-		\begin{tikzpicture}
-			\begin{axis}[
-					logtriggerplot,
-					legend columns=3,
-					ylabel={Tuning Iterations \%},
-					ymode=log,
-					ymin=1,
-					ymax=100,
-				]
-				% Baseline
-				\draw[linestyleE] (axis cs:0,25.13) -- (axis cs: 2,23.2);
-
-				% TimeBasedRegression 1500
-				\addplot[linestyleB] coordinates{
-						(1.25,40.6)
-						(1.5,40.73)
-						(1.75,39.78)};
-
-				% TimeBasedRegression 1000
-				\addplot[linestyleC] coordinates{
-						(1.25,50.27)
-						(1.5,50.27)
-						(1.75,48.19)};
-
-				% TimeBasedRegression 500		
-				\addplot[linestyleD] coordinates{
-						(1.25,64.07)
-						(1.5,1.93)
-						(1.75,59.93)};
-
-				\legend{Reg-1500,Reg-1000,Reg-500}
-			\end{axis}
-		\end{tikzpicture}
-		%		\subcaption{Regression Trigger}
-	\end{subfigure}%
 	\caption{Trigger behavior in the heating-sphere scenario, the numbers in the legends refer to the number of samples $n$ considered. The line in the background represents the baseline run. Note the logarithmic scale in the plots on the right hand side.}
 	\label{fig:params_hs}
 \end{figure}
+
 
 The collected data suggests default parameters as presented in \autoref{tab:hs_defaults}.
 \begin{table}[htpb]

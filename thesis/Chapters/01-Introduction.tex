@@ -82,13 +82,13 @@ The second law is particularly significant, as it allows to compute the trajecto
 Simulating all pairwise interactions between atoms has complexity $\mathcal{O}\left(n^2\right)$. To reduce this complexity, most MD simulations restrict themselves to short-range interactions. As the forces of these interactions are negligible if the interacting particles are far apart, a cutoff-radius $r_c$ can be introduced, beyond which the forces can be assumed negligible. This significantly reduces the computational complexity, as only the interactions between close neighbors have to be computed. Under optimal conditions, the number of interaction computations can be reduced to $\mathcal{O}\left(n\right)$. \cite{Gratl2021}
 
 The Lennard-Jones (LJ) potential is one such short-range interaction potential that acts on pairs of particles. It is based on empirical data and provides a sufficiently good approximation, such that macroscopic effects can be derived from simulating interactions at a molecular level.
-It is most frequently used in the form of the 12-6 potential as defined in \eqref{eq:lj_12_6}.
+It is most frequently used in the form of the 12-6 potential as defined in \eqref{eq:lj_12_6}. \cite{Lenhard2024}
 
 \begin{equation}
 	V_{\text{LJ}}(r)=4\varepsilon\left[\left(\frac{\sigma}{r}\right)^{12}-\left(\frac{\sigma}{r}\right)^{6}\right]\label{eq:lj_12_6}
 \end{equation}
 
-In this equation, $r$ is the distance between the two particles, $\varepsilon$ the interaction strength and $\sigma$ the distance at which the potential signs change (zero-crossing). Parameters $\varepsilon, \sigma$ are dependent on the simulation context, e.g. the material which ought to be simulated. The potential function is illustrated in \autoref{fig:lj_graph}. \cite{Wang2020, Lenhard2024}
+In this equation, $r$ is the distance between the two particles, $\varepsilon$ the interaction strength and $\sigma$ the distance at which the potential signs change (zero-crossing). The parameters $\varepsilon$ and $\sigma$ are dependent on the simulation context, e.g., the material which ought to be simulated. The potential function is illustrated in \autoref{fig:lj_graph}. \cite{Wang2020, Lenhard2024}
 
 
 \begin{figure}[htpb]
@@ -124,7 +124,7 @@ In this equation, $r$ is the distance between the two particles, $\varepsilon$ t
 			\draw [decorate,decoration={brace, amplitude=1ex, raise=0.5ex}] (axis cs:{2^(1/6)+0.0125},2.25) -- (axis cs:3.25,2.25) node[midway, yshift=2.5ex, text depth=0.5em]{Attraction};
 		\end{axis}
 	\end{tikzpicture}
-	\caption{An illustration of the 12-6 LJ potential well, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$, zero-crossing at $\sigma$ and cutoff radius $r_c$. The figure is based on Lenhard et al. \cite{Lenhard2024}}
+	\caption{An illustration of the 12-6 LJ potential well, with the minimum of $-\varepsilon$ at $r_\text{min}=\sigma\sqrt[6]{2}$, zero-crossing at $\sigma$ and cutoff radius $r_c$. The figure is based on Lenhard et al. \cite{Lenhard2024}.}
 	\label{fig:lj_graph}
 \end{figure}
 
