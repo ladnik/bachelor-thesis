@@ -1,0 +1,47 @@
+container			 :  [LinkedCells, VarVerletListsAsBuild, VerletLists, VerletListsCells, PairwiseVerletLists]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius               :  0.2
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Mean-Value
+tuning-strategies                :  {{tuning_strategies}}
+tuning-interval                  :  {{tuning_interval}}
+tuning-samples                   :  {{tuning_samples}}
+cell-size                        :  {{cell_size}}
+iterations                       :  {{iterations}}
+functor                          :  Lennard-Jones-AVX2
+cutoff                           :  2
+box-min                          :  [0, 0, 0]
+box-max                          :  [15, 60, 15]
+deltaT                           :  0.00182367
+energy-sensor                    :  rapl
+boundary-type                    :  [periodic, periodic, periodic]
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+Objects:                         
+  CubeClosestPacked:
+    0:
+      particle-type-id           :  0
+      box-length                 :  [14, 6, 14]
+      # Move particles half spacing away from domain border to prevent automatic border extension
+      bottomLeftCorner           :  [0.5, 27, 0.5]
+      particle-spacing           :  1.
+      velocity                   :  [0, 0, 0]
+no-end-config                    :  true
+no-progress-bar                  :  false
+use-tuning-logger                :  true
+no-progress-bar                  :  false
+log-level                        :  info
+{% if use_dynamic_tuning %}
+tuning-trigger:
+  trigger-type                   : {{trigger_type}}
+  trigger-factor                 : {{trigger_factor}}
+  trigger-n-samples              : {{trigger_n_samples}}
+{% endif %}
+{% if use_vtk %}
+vtk-filename                     :  {{vtk_filename}}
+vtk-output-folder                :  {{vtk_output_folder}}
+vtk-write-frequency              :  {{vtk_write_frequency}}
+{% endif %}

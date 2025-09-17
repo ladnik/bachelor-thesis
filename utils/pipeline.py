@@ -5,7 +5,7 @@ from jinja2 import Template
 
 
 from classes.Config import BUILD_DIR, MD_FLEX_BINARY, IS_HPC
-from classes.SimulationRun import static_jobs, dynamic_jobs
+from classes.SimulationRun import static_jobs, dynamic_jobs, single_config_jobs, optimum_jobs
 from classes.TuningConfig import JobCollectionType
 
 
@@ -55,10 +55,11 @@ def generate_slurm(mail, collection_type, collection, use_mpi=False):
 
     context = {
         "slurm_job_name": "AP_RUN"+collection_type.name[:2],
-        "partition": "cm4_tiny" if not use_mpi else "cm4_std",
-        "qos": "cm4_tiny" if not use_mpi else "cm4_std",
-        "num_nodes": 1 if not use_mpi else 2,
-        "num_tasks": 1 if not use_mpi else 3,
+        "partition": "cm4_tiny", #if not use_mpi else "cm4_std",
+        "qos": "cm4_tiny", # if not use_mpi else "cm4_std",
+        "num_nodes": 1,
+        "num_tasks": 1 if not use_mpi else 6,
+        "num_cpus": 38 if not use_mpi else 24,
         "mail": mail,
         "use_mpi": use_mpi,
         "binary": MD_FLEX_BINARY,
@@ -78,9 +79,9 @@ def main():
         exit(1)
 
     generate_slurm(sys.argv[1], JobCollectionType.STATIC, static_jobs)
-    generate_slurm(sys.argv[1], JobCollectionType.DYNAMIC, dynamic_jobs)
-    # generate_slurm(sys.argv[1], JobCollectionType.OPTIMUM, optimum_jobs)
-    # generate_slurm(sys.argv[1], JobCollectionType.SPECIAL, single_config_jobs)
+    generate_slurm(sys.argv[1], JobCollectionType.DYNAMIC, dynamic_jobs, True)
+    generate_slurm(sys.argv[1], JobCollectionType.OPTIMUM, optimum_jobs)
+    generate_slurm(sys.argv[1], JobCollectionType.SPECIAL, single_config_jobs)
 
 
 if __name__ == "__main__":

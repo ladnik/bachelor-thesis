@@ -22,6 +22,7 @@ class ConfigEnvironment:
     vtk_filename: str = "vtk_file"
     vtk_output_folder: str = "vtk_output"
     vtk_write_frequency: int = 1000
+    dummy: str = "" # for special jobs
 
     def generate_config_file(self, template_dir, template_name):
         with open(template_dir + "/" + template_name) as f:
@@ -41,6 +42,7 @@ class ConfigEnvironment:
             "vtk_filename": self.vtk_filename,
             "vtk_output_folder": self.vtk_output_folder,
             "vtk_write_frequency": self.vtk_write_frequency,
+            "dummy": self.dummy,
         }
 
         rendered = template.render(**context)
@@ -71,81 +73,67 @@ class SimulationRun:
             self.template_dir, self.template_name
         )
         copy_cfg = f"cp {config_path} config.yaml\n"
-        rm_cfg = f"rm {config_path}\n"
-        mpi = "mpirun -np $SLURM_NTASKS " if use_mpi else ""
+        #rm_cfg = f"rm {config_path}\n"
+        rm_cfg=""
+        mpi = "mpiexec -np $SLURM_NTASKS " if use_mpi else "mpiexec -np 1 "
         binary = f"$MD_FLEX_BINARY {' '.join(self.run_options)} --yaml-filename config.yaml > {self.log_name}"
         return copy_cfg + rm_cfg + mpi + binary
 
 
 scenarios = [
-    "equilibrium",
-    # "spinodial-decomposition",
-    # "exploding-liquid",
+    #"equilibrium",
+    "exploding-liquid",
     #"heating-sphere",
 ]
 
 iterations = {
     "equilibrium": 150000,
-    "spinodial-decomposition": 150000,
     "exploding-liquid": 150000,
     "heating-sphere": 60000,
 }
 
+cell_sizes = {
+    "equilibrium": [1.0],
+    "exploding-liquid": [1.0],
+    "heating-sphere": [0.5, 1.0],
+}
+
 tuning_interval = {
     "equilibrium": 5000,
-    "spinodial-decomposition": 150000,
-    "exploding-liquid": 6000,
+    "exploding-liquid": 5000,
     "heating-sphere": 5000,
 }
 
 trigger_factors = {
-    "equilibrium": [1.25, 1.5, 1.75],
-    "spinodial-decomposition": [1.25, 1.5, 1.75],
-    "exploding-liquid": [1.5, 1.75, 2.0],
-    "heating-sphere": [1.25, 1.5, 2.0],
+    "StaticSimple": [1.0],
+    "TimeBasedSimple": [1.25, 1.5, 1.75],
+    #"TimeBasedSimple": [1.5],
+    "TimeBasedAverage": [1.25, 1.5, 1.75],
+    #"TimeBasedAverage": [1.5],
+    "TimeBasedSplit": [1.25, 1.5, 1.75],
+    #"TimeBasedSplit": [1.5],
+    "TimeBasedRegression": [1.25, 1.5, 1.75],
+    #"TimeBasedRegression": [1.5, 1.5],
 }
 
 trigger_types = [
-    "TimeBasedSimple",
-    "TimeBasedAverage",
-    "TimeBasedSplit",
+    "StaticSimple",
+    #"TimeBasedSimple",
+    #"TimeBasedAverage",
+    #"TimeBasedSplit",
     "TimeBasedRegression",
 ]
 
 trigger_n_samples = {
+    "StaticSimple" : [10],
     "TimeBasedSimple": [10],
     "TimeBasedAverage": [250, 500, 1000],
+    #"TimeBasedAverage": [500],
     "TimeBasedSplit": [250, 500, 1000],
-    "TimeBasedRegression": [1000, 1500, 2000],
+    #"TimeBasedSplit": [500],
+    "TimeBasedRegression": [500, 1000, 1500],
+    #"TimeBasedRegression": [500],
 }
-
-# trigger_types = {
-#     "equilibrium": [
-#         "TimeBasedSimple",
-#         "TimeBasedAverage",
-#         "TimeBasedSplit",
-#         "TimeBasedRegression",
-#     ],
-#     "spinodial-decomposition": [
-#         "TimeBasedSimple",
-#         "TimeBasedAverage",
-#         "TimeBasedSplit",
-#         "TimeBasedRegression",
-#     ],
-#     "exploding-liquid": [
-#         "TimeBasedSimple",
-#         "TimeBasedAverage",
-#         "TimeBasedSplit",
-#         "TimeBasedRegression",
-#     ],
-#     "heating-sphere": [
-#         "TimeBasedSimple",
-#         "TimeBasedAverage",
-#         "TimeBasedSplit",
-#         "TimeBasedRegression",
-#     ],
-# }
-
 
 
 single_configs = [
@@ -153,12 +141,21 @@ single_configs = [
     "vl_list_iter-non3l-aos",
 ]
 
-# optimum_jobs = {
-#     f"{sim_name}_static_optimum": SimulationRun(
-#         f"{sim_name}_static_optimum", CONFIG_DIR + f"{sim_name}/optimum.yaml"
-#     )
-#     for sim_name in sim_names
-# }
+optimum_jobs = [
+    SimulationRun(
+        f"{scenario}_optimum",
+        CONFIG_DIR + scenario,
+        "template.jinja",
+        ConfigEnvironment(
+            iterations=iterations[scenario],
+            tuning_interval=tuning_interval[scenario],
+            cell_size=cell_sizes[scenario],
+            use_dynamic_tuning=False,
+        ),
+    )
+    for scenario in scenarios
+]
+
 
 static_jobs = [
     SimulationRun(
@@ -168,6 +165,7 @@ static_jobs = [
         ConfigEnvironment(
             iterations=iterations[scenario],
             tuning_interval=tuning_interval[scenario],
+            cell_size=cell_sizes[scenario],
             use_dynamic_tuning=False,
         ),
     )
@@ -185,17 +183,22 @@ dynamic_jobs = [
             trigger_type=trigger_type,
             trigger_factor=trigger_factor,
             trigger_n_samples=trigger_n,
+            cell_size=cell_sizes[scenario],
         ),
     )
     for scenario in scenarios
     for trigger_type in trigger_types
-    for trigger_factor in trigger_factors[scenario]
+    for trigger_factor in trigger_factors[trigger_type]
     for trigger_n in trigger_n_samples[trigger_type]
 ]
 
-# single_config_jobs = {
-#     f"hs_{config}": SimulationRun(
-#         f"hs_{config}", CONFIG_DIR + f"heating-sphere/{config}.yaml"
-#     )
-#     for config in single_configs
-# }
+single_config_jobs = [
+     SimulationRun(
+         f"hs_{config}",
+         CONFIG_DIR + "heating-sphere",
+         f"{config}.yaml",
+         ConfigEnvironment(dummy=config)
+     )
+     for config in single_configs
+     ]
+

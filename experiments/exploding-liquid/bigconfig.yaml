@@ -3,14 +3,11 @@ data-layout                      :  [AoS, SoA]
 newton3                          :  [enabled, disabled]
 verlet-rebuild-frequency         :  10
 verlet-cluster-size              :  4
-verlet-skin-radius		 :  0.4
 selector-strategy                :  Fastest-Mean-Value
-tuning-strategies                :  {{tuning_strategies}}
-tuning-interval                  :  {{tuning_interval}}
-tuning-samples                   :  {{tuning_samples}}
-cell-size                        :  {{cell_size}}
-iterations                       :  {{iterations}}
+tuning-strategies                :  []
 extrapolation-method             : line-prediction
+tuning-interval                  :  1000
+tuning-samples                   :  10
 relative-optimum-range           :  2
 max-tuning-phases-without-test   :  13
 relative-blacklist-range         :  10
@@ -20,6 +17,7 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [120, 480, 120]
 cell-size                        :  [1]
 deltaT                           :  0.00182367
+iterations                       :  150000
 boundary-type                    : [periodic, periodic, periodic]
 Sites:
   0:
@@ -49,19 +47,11 @@ Objects:
       particle-type-id               :  0
 no-end-config                    :  true
 no-progress-bar                  :  false
+# vtk-filename                     :  explodingLiquid
+# vtk-write-frequency              :  2000
+#fastParticlesThrow               :  true
 fastParticlesThrow               :  false
 load-balancer                    :  none
 subdivide-dimension              :  [false, true, false]
 load-balancing-interval          :  1000
 use-tuning-logger                :  true
-{% if use_dynamic_tuning %}
-tuning-trigger:
-  trigger-type                   : {{trigger_type}}
-  trigger-factor                 : {{trigger_factor}}
-  trigger-n-samples              : {{trigger_n_samples}}
-{% endif %}
-{% if use_vtk %}
-vtk-filename                     :  {{vtk_filename}}
-vtk-output-folder                :  {{vtk_output_folder}}
-vtk-write-frequency              :  {{vtk_write_frequency}}
-{% endif %}
