@@ -1,1 +1,8 @@
-# bachelor-thesis
+# Bachelor's Thesis: Adaptive Initiation of AutoPas Tuning Phases for Efficient Particle Simulations
+
+This repository contains all work concerning my bachelor's thesis at the Chair of Scientific Computing at TUM.
+The thesis itself is available at `thesis/main.pdf`.
+
+### Abstract
+> Particle simulations have established themselves as an indispensable tool in scientific research, and are used across a wide range of applications ranging from biophysics to materials science. The efficiency of such simulations is strongly influenced by the choice of computational strategies and their corresponding parameters. However, determining the optimal algorithmic configuration often requires expert knowledge and is highly dependent on the specific scenario studied. AutoPas is a particle simulation library that addresses this issue by dynamically adjusting the algorithms employed in the simulation at runtime, based on live simulation data. This enables researchers to interact with AutoPas through a simple black-box interface, without requiring extensive knowledge in setting up optimal simulation parameters. To achieve this dynamic reconfiguration, AutoPas reevaluates the optimal algorithmic settings in tuning phases, initiated at fixed intervals. This thesis proposes
+four novel methods for determining ideal points for the dynamic initiation of tuning phases, based on data collected during the simulation itself. Experimental results demonstrate that our approach reduces simulation runtime by up to 47 % compared to fixed tuning intervals with exhaustive search, whilst still selecting suitable configurations. Moreover, our implementation is lightweight, introducing on average only 0.9 % overhead per iteration. The newly introduced methods are shown to be particularly well suited for MPI-parallel applications.
