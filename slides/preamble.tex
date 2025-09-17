@@ -1,0 +1,51 @@
+%\PassOptionsToClass{handout}{beamer}
+\documentclass[english, aspectratio=169, sectionpage=true, onlytextwidth]{tumbeamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{babel}
+\usepackage[bookmarks=true]{hyperref}
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{url}
+\usepackage[useregional]{datetime2}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{csquotes}[autostyle]
+
+\subtitle[Bachelor's Thesis]{Bachelor's Thesis Colloquium}
+
+\provideName{\theDepartmentName}
+{School of Computation, Information and Technology}
+{School of Computation, Information and Technology}
+
+\provideName{\theChairName}
+{Chair of Scientific Computing}
+{Chair of Scientific Computing}
+
+\institute{School of Computation, Information and Technology\\\theUniversityName}
+
+%\footline{\insertauthor\enspace|\enspace\inserttitle\enspace|\enspace\insertdate}
+\footline{\insertauthor\enspace|\enspace\insertsubtitle\enspace|\enspace\insertdate}
+
+\graphicspath{ {./resources/} {./tumlatex/resources/} }
+
+
+% macro to configure the style of the presentation
+\TUMbeamersetup{
+	content page = TUM default,  % style of normal content pages
+%	content page = TUM more space,
+}
+
+\setbeamerfont{title}{size=\Large}
+
+\AtBeginSection[]
+{
+	\begin{frame}
+		\frametitle{Overview}
+		\tableofcontents[sections=\value{section}]
+	\end{frame}
+}
+
+\setbeamercolor{footnote}{fg=black}
+\setbeamercolor{footnote mark}{fg=black}
+\captionsetup{labelformat=empty}
