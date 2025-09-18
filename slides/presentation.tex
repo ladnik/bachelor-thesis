@@ -13,16 +13,118 @@
 \usepackage{float}
 \usepackage{colortbl}
 \usepackage{xcolor}
+\usepackage{caption}
 
 \usepackage{ulem}
 \usepackage{enumerate}
 \usepackage{pifont}
+\usepackage{siunitx}
 %\usepackage[scaled=0.85]{beramono} %better typewriter font
+
+\definecolor{TUMBlue}{HTML}{0065BD}
+\colorlet{chaptertumblue}{TUMBlue!60!black}
+
+% Accent Colors
+\definecolor{pred}{HTML}{F31124}
+\definecolor{porange}{HTML}{FFA400}
+\definecolor{pviolet}{HTML}{8E44AD}
+
+
+\colorlet{tumblueaccdark}{chaptertumblue!80}
+\colorlet{tumblueaccmedium}{chaptertumblue!50}
+\colorlet{tumblueacclight}{chaptertumblue!30}
+\colorlet{tumblueaccverylight}{chaptertumblue!10}
+\colorlet{bluedarkoutline}{chaptertumblue}
+\colorlet{bluedark}{chaptertumblue!80}
+\colorlet{bluemedium}{chaptertumblue!50}
+\colorlet{bluelight}{chaptertumblue!30}
+\colorlet{blueverylight}{chaptertumblue!10}
+\colorlet{reddark}{red!80}
+\colorlet{orangedark}{porange!80}
+\colorlet{violetdark}{pviolet!80}
+
+\captionsetup{
+	labelfont={bf,small},
+	textfont={small}
+} 
+\captionsetup[sub]{labelfont=normal}
+
 
 \pgfplotsset{compat=1.16}
 
 % tikz
 \usetikzlibrary{arrows,backgrounds,positioning,shapes,patterns,patterns.meta,matrix,arrows.meta,shapes.geometric,decorations.pathmorphing, matrix, fit, calc, overlay-beamer-styles, intersections}
+
+%  unified tikz styling
+\tikzset{
+	barfilldark/.style={fill=bluedark, draw=bluedarkoutline},
+	barfillmedium/.style={fill=bluemedium, draw=bluedarkoutline},
+	barfillight/.style={fill=bluelight, draw=bluedarkoutline},
+	barfillverylight/.style={fill=blueverylight, draw=bluedarkoutline},
+	barfilldashed/.style={fill=none, draw=bluedarkoutline, customdash},
+	accentRed/.style={draw=reddark},
+	accentOrange/.style={draw=orangedark},
+	accentViolet/.style={draw=violetdark},
+	customdash/.style={dash pattern=on 2pt off 1pt},
+	custombrace/.style={decorate,decoration={brace, amplitude=1ex, raise=0.5ex}},
+}
+
+\pgfplotsset{
+	colormap={fast}{
+		rgb255(0cm)=(14,14,119);
+		rgb255(0.17159223942480895cm)=(61,117,206);
+		rgb255(0.2984914818394138cm)=(90,189,243);
+		rgb255(0.4321287371255907cm)=(175,237,234);
+		rgb255(0.5cm)=(229,240,196);
+		rgb255(0.5882260353170073cm)=(244,212,129);
+		rgb255(0.7061412605695164cm)=(236,158,80);
+		rgb255(0.8476395308725272cm)=(204,89,40);
+		rgb255(1cm)=(150,19,30);
+	}
+}
+
+\newcommand{\fastcolorbar}{%
+	\centering
+	\begin{tikzpicture}
+		\pgfplotscolorbardrawstandalone[
+		colorbar,
+		colormap name=fast,
+		point meta min=0,
+		point meta max=50,
+		colorbar style={
+			height=3cm,
+			ytick={0,10,...,50},
+			tick align=outside,
+			tick pos=right,
+		},
+		]
+	\end{tikzpicture}
+	
+	\begin{tikzpicture}
+		\node[anchor=north, align=center] at (0,0) {\si{F^{*}}};
+	\end{tikzpicture}
+}
+
+\newcommand{\fastcolorbarhor}{%
+	\centering
+	\begin{tikzpicture}
+		\node[anchor=east, align=center] at (-0.25cm,-0.25cm) {\si{F^{*}}};
+		\pgfplotscolorbardrawstandalone[
+		colorbar horizontal,
+		colormap name=fast,
+		point meta min=0,
+		point meta max=50,
+		colorbar style={
+			width=3cm,
+			xtick={0,10,...,50},
+			tick align=outside,
+			tick pos=top,
+			xticklabel pos=top,
+		},
+		]
+	\end{tikzpicture}
+}
+
 
 % listings
 \lstset{
@@ -37,6 +139,8 @@
 	captionpos=b, 
 }
 
+\graphicspath{ {../thesis/Figures} {../thesis/Figures/scenarios}}
+
 
 %-------------------------------------------------------------------------------
 
@@ -49,18 +153,455 @@
 \maketitle
 
 \begin{frame}[c]{Motivation}{}
+	\begin{columns}
+		\begin{column}{0.6\textwidth}
+			\begin{itemize}
+				\item Different scenarios have different optimal configurations
+				\item Optimal configuration can change over time
+				\item Currently: Tuning phases initiated at fixed intervals
+				\item Improvement: Tuning phases initiated based on changes in simulation state
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.4\textwidth}
+			% TODO: image
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}[c]{Implementation}{}
+\begin{frame}[c, fragile]{Implementation}{}
+	\only<1>{
+		\begin{itemize}
+			\item Based on runtime measurements of individual iterations
+			\item Single parameter, only increases considered
+			\item Four trigger strategies investigated:
+			      \begin{enumerate}
+				      \item \texttt{TimeBasedSimpleTrigger}
+				      \item \texttt{TimeBasedAverageTrigger}
+				      \item \texttt{TimeBasedSplitTrigger}
+				      \item \texttt{TimeBasedRegressionTrigger}
+			      \end{enumerate}
+		\end{itemize}
+	}
+	\only<2,3>{
+		\begin{figure}[htpb]
+			\centering
+			\def\barwidth{12pt}
+			\pgfmathsetmacro{\lambdaval}{1.5}
+			\begin{subfigure}{0.5\textwidth}
+				\resizebox{0.9\textwidth}{!}{
+					\begin{tikzpicture}
+						\begin{axis}[
+								height=0.75\textwidth, width=\textwidth,
+								xmin = -0.75,
+								xmax = 8.75,
+								ymin = 0,
+								ymax = 2,
+								xlabel={Iteration},
+								ylabel={Iteration Runtime},
+								ylabel near ticks,
+								xtick={4,5},
+								xticklabels={$i-1$,$i$},
+								ytick=\empty,
+								bar width=\barwidth,
+								clip=false,
+								legend pos=north east,
+								xticklabel style={font={\scriptsize}},
+								anchor=south
+							]
+
+							\addlegendimage{legend image code/.code={
+										\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+									}}
+							\addlegendentry{\scriptsize$t_k$}
+							\addlegendimage{legend image code/.code={
+										\draw[barfilldashed, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+									}}
+							\addlegendentry{\scriptsize$\lambda t_{k-1}$}
+
+							\addplot[ybar, barfillverylight] coordinates{
+									(0,0.9)
+									(1,1.17)
+									(2,0.95)
+									(3,1.1)
+									(6,1.13)
+									(7,1.33)
+									(8,0.55)
+								};
+							\addplot[ybar, barfilldashed] coordinates{
+									(1,0.9*\lambdaval)
+									(2,1.17*\lambdaval)
+									(3,0.95*\lambdaval)
+									(4,1.1*\lambdaval)
+								};
+							\addplot[ybar, barfillmedium] coordinates {(4,0.9)};
+							\addplot[ybar, barfilldark] coordinates {(5,1.7)};
+
+							\draw[blueverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 0.9*\lambdaval) -- ([xshift=0.5*\barwidth]5, 0.9*\lambdaval);
+
+							\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{New Tuning Phase};
+
+
+						\end{axis}
+						\node[yshift=-7ex] at (0, 0) {\texttt{TimeBasedSimpleTrigger}};
+					\end{tikzpicture}
+				}
+			\end{subfigure}%
+			\begin{subfigure}{0.5\textwidth}
+				\resizebox{0.9\textwidth}{!}{
+					\begin{tikzpicture}[visible on=<3>]
+						\begin{axis}[
+								height=0.75\textwidth, width=\textwidth,
+								xmin = -0.75,
+								xmax = 8.75,
+								ymin = 0,
+								ymax = 2,
+								xlabel={Iteration},
+								ylabel={Iteration Runtime},
+								ylabel near ticks,
+								xtick={0,4,5},
+								xticklabels={$i-n$,$i-1$,$i$,,},
+								ytick=\empty,
+								bar width=\barwidth,
+								clip=false,
+								legend pos=north west,
+								xticklabel style={font={\scriptsize}},
+								anchor=south
+							]
+
+							\addlegendimage{legend image code/.code={
+										\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+									}}
+							\addlegendentry{\scriptsize$t_k$}
+
+							\addlegendimage{legend image code/.code={
+										\draw[fill=none, accentRed, thick, anchor=center] (0cm, 0cm) -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\phantom{\lambda}\text{avg}\left[t_{i-n}, t_{i-1}\right]$}
+
+							\addlegendimage{legend image code/.code={
+										\draw[barfilldashed, thick, anchor=center] (0cm, 0cm) -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\lambda \text{avg}\left[t_{i-n}, t_{i-1}\right]$}
+
+							\addplot[ybar, barfillverylight] coordinates{
+									(0,0.9)
+									(1,1.17)
+									(2,0.95)
+									(3,1.1)
+									(4,0.9)
+									(6,1.13)
+									(7,1.33)
+									(8,0.55)
+								};
+							\addplot[ybar, barfilldark] coordinates {(5,1.7)};
+
+							\draw[thick, accentRed] ([xshift=-0.5*\barwidth]axis cs: 0, 1.004) -- ([xshift=0.5*\barwidth]axis cs: 4, 1.004);
+
+							% avg is 1,004
+							\draw[draw=blueverylight, customdash, dash phase=0.9] ([xshift=-0.5*\barwidth]5, 1.004*\lambdaval) -- ([xshift=0.5*\barwidth]5, 1.004*\lambdaval);
+
+							\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:6,2) -- (axis cs:8.75,2) node[midway, yshift=2.5ex]{New Tuning Phase};
+
+
+						\end{axis}
+						\node[yshift=-7ex] at (0, 0) {\texttt{TimeBasedAverageTrigger}};
+					\end{tikzpicture}
+				}
+			\end{subfigure}
+		\end{figure}
+	}
+	\only<4,5>{
+		\begin{figure}[htpb]
+			\centering
+			\pgfmathsetmacro{\lambdaval}{1.25}
+			\begin{subfigure}{0.5\textwidth}
+				\resizebox{0.9\textwidth}{!}{
+					\begin{tikzpicture}
+						\def\barwidth{6pt}
+						\begin{axis}[
+								height=0.75\textwidth, width=\textwidth,
+								xmin = -0.75,
+								xmax = 15.75,
+								ymin = 0,
+								ymax = 2,
+								xlabel={Iteration},
+								ylabel={Iteration Runtime},
+								ylabel near ticks,
+								xtick={0,5,11},
+								xticklabels={$i-n$,$i-j$,$i$},
+								ytick=\empty,
+								bar width=\barwidth,
+								clip=false,
+								legend pos=north west,
+								xticklabel style={font={\scriptsize}},
+								anchor=south,
+							]
+
+							\addlegendimage{legend image code/.code={
+										\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+									}}
+							\addlegendentry{\scriptsize$t_k$}
+							\addlegendimage{legend image code/.code={
+										\draw[accentRed, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\phantom{\lambda}\text{avg}(A)$}
+							\addlegendimage{legend image code/.code={
+										\draw[accentViolet, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\phantom{\lambda}\text{avg}(B)$}
+							\addlegendimage{legend image code/.code={
+										\draw[draw=chaptertumblue, thick, customdash] (0cm, 0cm)  -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\lambda\text{avg}(A)$}
+
+							\pgfmathsetmacro{\k}{0.7}
+							\pgfmathsetmacro{\xzero}{5}
+							\pgfmathsetmacro{\yoff}{0.5}
+							\pgfmathsetmacro{\yscale}{1.25}
+
+							\addplot[ybar, barfillverylight, samples at={0,...,10,12,13,14,15}] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
+							\addplot[ybar, barfilldark, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
+
+							\pgfmathsetmacro{\tmpsum}{0}
+							\foreach \x in {0,...,5}{%
+									\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
+									\global\let\tmpsum=\pgfmathresult%
+								}
+							\pgfmathsetmacro{\avgA}{\tmpsum/6}
+
+							\pgfmathsetmacro{\tmpsum}{0}
+							\foreach \x in {6,...,11}{%
+									\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
+									\global\let\tmpsum=\pgfmathresult%
+								}
+							\pgfmathsetmacro{\avgB}{\tmpsum/6}
+
+							\draw[thick, accentRed] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 5, \avgA);
+
+							\draw[thick, accentViolet] ([xshift=-0.5*\barwidth]axis cs: 6, \avgB) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgB);
+
+							\draw[thick, customdash, bluedarkoutline] ([xshift=-0.5*\barwidth]axis cs: 6, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA*\lambdaval);
+
+							\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:12,2) -- (axis cs:15.75,2) node[midway, yshift=2.5ex]{New Tuning Phase};
+
+
+						\end{axis}
+						\node[yshift=-7ex] at (0, 0) {\texttt{TimeBasedSplitTrigger}};
+					\end{tikzpicture}
+				}
+			\end{subfigure}%
+			\begin{subfigure}{0.5\textwidth}
+				\resizebox{0.9\textwidth}{!}{
+					\begin{tikzpicture}[visible on=<5>]
+						\def\barwidth{3pt}
+						\begin{axis}[
+								height=0.75\textwidth, width=\textwidth,
+								xmin = -0.75,
+								xmax = 23.75,
+								ymin = 0,
+								ymax = 2,
+								xlabel={Iteration},
+								ylabel={Iteration Runtime},
+								ylabel near ticks,
+								xtick={0,5,11},
+								xticklabels={$i-n$,$i-j$,$i$},
+								ytick=\empty,
+								bar width=\barwidth,
+								clip=false,
+								legend pos=north west,
+								xticklabel style={font={\scriptsize}},
+								anchor=south,
+							]
+
+							\addlegendimage{legend image code/.code={
+										\draw[barfillverylight, anchor=center] (0cm, -0.15cm)  rectangle (0.3cm,0.15cm);
+									}}
+							\addlegendentry{\scriptsize$t_k$}
+
+							\addlegendimage{legend image code/.code={
+										\draw[accentRed, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\phantom{\lambda}t_\text{avg}$}
+							\addlegendimage{legend image code/.code={
+										\draw[accentViolet, thick] (0cm, 0cm)  -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\phantom{\lambda}t_\text{avg}^\text{proj}$}
+
+							\addlegendimage{legend image code/.code={
+										\draw[draw=bluedarkoutline, thick, customdash, anchor=center] (0cm, 0cm)  -- (0.3cm,0cm);
+									}}
+							\addlegendentry{\scriptsize$\lambda t_{\text{avg}}$}
+
+
+							\pgfmathsetmacro{\k}{0.4}
+							\pgfmathsetmacro{\xzero}{5}
+							\pgfmathsetmacro{\yoff}{0.25}
+							\pgfmathsetmacro{\yscale}{0.9}
+
+							\draw[fill=none, draw=black, dotted, line join=round] ([xshift=-0.5*\barwidth]axis cs:12,1.08) -- ([xshift=0.5*\barwidth]axis cs: 23,1.98) -- ([xshift=0.5*\barwidth]axis cs: 23,1.08) -- cycle;
+
+
+							\addplot[ybar, barfillverylight, samples at={0,...,10}] {\yoff+\yscale/(1+exp(-\k*(x-\xzero)))};
+							\addplot[ybar,  barfilldark, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
+							\addplot[ybar, barfillverylight] coordinates {
+									(12,0.39) (13,0.51) (14,0.31) (15,0.34) (16,0.40)
+									(17,0.28) (18,0.64) (19,0.28) (20,0.29) (21,0.63)
+									(22,0.67) (23,0.69)};
+
+							\addplot[ybar, barfilldark, samples at={11}] {\yoff +\yscale/(1+exp(-\k*(x-\xzero)))};
+
+							\pgfmathsetmacro{\tmpsum}{0}
+							\foreach \x in {0,...,11}{%
+									\pgfmathparse{\tmpsum + \yoff + \yscale/(1 + exp(-\k*(\x-\xzero)))}%
+									\global\let\tmpsum=\pgfmathresult%
+								}
+							\pgfmathsetmacro{\avgA}{\tmpsum/12}
+
+							\draw[thick, accentRed] ([xshift=-0.5*\barwidth]axis cs: 0, \avgA) -- ([xshift=0.5*\barwidth]axis cs: 11, \avgA);
+
+							\draw[thick, accentViolet] ([xshift=-0.5*\barwidth]axis cs: 12, 1.53) -- ([xshift=0.5*\barwidth]axis cs: 23, 1.53);
+
+							\draw[thick, customdash, bluedarkoutline] ([xshift=-0.5*\barwidth]axis cs: 11, \avgA*\lambdaval) -- ([xshift=0.5*\barwidth]axis cs: 23, \avgA*\lambdaval);
+
+
+							\draw [custombrace] ([xshift=-0.5*\barwidth]axis cs:12,2) -- ([xshift=0.5*\barwidth]axis cs:23,2) node[midway, yshift=2.5ex]{New Tuning Phase};
+
+							\draw [custombrace] ([yshift=-\pgflinewidth]axis cs:24,1.08) -- (axis cs:24,0) node[midway, align=left, anchor=west, xshift=1ex]{$t_i$};
+
+							\draw [custombrace]  (axis cs:24,1.98) -- ([yshift=\pgflinewidth]axis cs:24,1.08) node[midway, align=left, anchor=west, xshift=1ex]{$\hat{\beta}_1't_i$};
+
+						\end{axis}
+						\node[yshift=-7ex] at (0, 0) {\texttt{TimeBasedRegressionTrigger}};
+					\end{tikzpicture}
+				}
+			\end{subfigure}
+		\end{figure}
+
+	}
 \end{frame}
 
+% TODO: caption alignment across slides
 \begin{frame}[c]{Evaluation}{}
+	\only<1>{
+	\begin{itemize}
+		\item Three different evaluation scenarios:
+		\begin{enumerate}
+			\item Equilibrium
+			\item Exploding Liquid
+			\item Heating Sphere
+		\end{enumerate}
+		\item Evaluation metrics:
+		\begin{enumerate}
+			\item Speedup (total runtime reduction)
+			\item Optimality (compared to static tuning intervals)
+			\item Number of tuning iterations
+		\end{enumerate}
+	\end{itemize}
+}
+\only<2>{
+	\begin{figure}[htpb]
+		\centering
+		\begin{subfigure}[c]{.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium/render/t0.png}
+			\subcaption{Iteration \num{0}} % 0, 0
+		\end{subfigure}%
+		\begin{subfigure}[c]{.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium/render/t10000.png}
+			\subcaption{Iteration \num{10000}} % 10000, 10
+		\end{subfigure}%
+		\begin{subfigure}[c]{.3\textwidth}
+			\includegraphics[width=\textwidth]{equilibrium/render/t50000.png}
+			\subcaption{Iteration \num{50000}} % 50000, 50
+		\end{subfigure}%
+		\hfill\begin{subfigure}[c]{.08\textwidth}
+			\fastcolorbar
+		\end{subfigure}
+		\vspace{-0.3cm}
+		\caption{Evolution of the simulation state in the equilibrium scenario.}
+		\label{fig:evolution_equil}
+	\end{figure}
+}
+\only<3>{
+	\begin{figure}[htpb]
+		\centering
+		\begin{subfigure}[c]{.2\textwidth}
+			\newsavebox{\colorbarbox}
+			\savebox{\colorbarbox}{
+				\fastcolorbarhor
+			}
+			\usebox{\colorbarbox}%
+			\vspace*{-\ht\colorbarbox} %
+			\includegraphics[width=\textwidth]{exploding-liquid/render/t0.png}
+			\vspace{-2cm}
+			\subcaption{Iteration \num{0}} % 0 
+		\end{subfigure}%
+		\begin{subfigure}[c]{.2\textwidth}
+			\includegraphics[width=\textwidth]{exploding-liquid/render/t3000.png}
+			\vspace{-2cm}
+			\subcaption{Iteration \num{3000}} % 3000, 5.5
+		\end{subfigure}%
+		\begin{subfigure}[c]{.2\textwidth}
+			\centering
+			\vspace{-1cm}
+			\includegraphics[width=\textwidth]{exploding-liquid/render/t11000.png}
+			\vspace{-1cm}
+			\subcaption{Iteration \num{11000}} % 11000, 20
+		\end{subfigure}%
+		\begin{subfigure}[c]{.2\textwidth}
+			\centering
+			\vspace{-1cm}
+			\includegraphics[width=\textwidth]{exploding-liquid/render/t31000.png}
+			\vspace{-1cm}
+			\subcaption{Iteration \num{31000}} % 31000, ?? 
+		\end{subfigure}
+			\vspace{-0.3cm}
+		\caption{Evolution of the simulation state in the exploding-liquid scenario.}
+	\end{figure}
+}
+\only<4>{
+	\begin{figure}[htpb]
+		\vspace{-1cm}
+		\centering
+		\fastcolorbarhor
+		\vspace*{\baselineskip}
+		\begin{subfigure}{.25\textwidth}
+			\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t0.png}
+			\subcaption{Iteration \num{0}} % 0
+		\end{subfigure}%
+		\begin{subfigure}{.25\textwidth}
+			\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t4000.png}
+			\subcaption{Iteration \num{4000}} % 4000, 0.4
+		\end{subfigure}%
+		\begin{subfigure}{.25\textwidth}
+			\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t23000.png}
+			\subcaption{Iteration \num{23000}} % 23000, 2.3
+		\end{subfigure}%
+		\begin{subfigure}{.25\textwidth}
+			\vspace*{0.1\textwidth}
+			\centering
+			\includegraphics[width=0.8\textwidth]{heating-sphere/render/t60000.png}
+			\vspace*{0.1\textwidth}
+			\subcaption{Iteration \num{60000}} % 60000, 6
+		\end{subfigure}%
+				\vspace{-0.3cm}
+		\caption{Evolution of the simulation state in the heating-sphere scenario.}
+	\end{figure}
+}
 \end{frame}
 
+% TODO
 \begin{frame}[c]{Results}{}
 \end{frame}
 
 \begin{frame}[c]{Conclusion}{}
+	\begin{itemize}
+		\item Four novel dynamic trigger strategies
+		\item Best speedup: \qty{47}{\percent} (equilibrium)
+		\item Better than static intervals with \texttt{full-search} in suitable scenarios
+		\item Good configuration fit
+		\item Cheaper tuning phases $\rightarrow$ dynamic tuning less relevant
+		\item Still useful for MPI-parallel applications
+	\end{itemize}
 \end{frame}
 
 
