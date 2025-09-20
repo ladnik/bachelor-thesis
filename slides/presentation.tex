@@ -125,6 +125,33 @@
 	\end{tikzpicture}
 }
 
+\tikzset{
+	linestyleA/.style={chaptertumblue, densely dotted, thick},
+	linestyleB/.style={tumblueaccdark, densely dashed, thick},
+	linestyleC/.style={tumblueaccmedium, solid, thick},
+	linestyleD/.style={tumblueacclight, densely dashdotted, thick},
+	linestyleE/.style={black, thin},
+}
+
+\pgfplotsset{
+	triggerplot/.style={
+		height=0.315\textwidth,
+		width=0.45\textwidth,
+		xlabel={Trigger Factor $\lambda$},
+		xtick={1.25, 1.5, 1.75},
+		legend style={font=\small},
+		legend cell align=center,
+		legend columns=3,
+		legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
+		legend image post style={xscale=0.5},
+		ylabel near ticks},
+	logtriggerplot/.style={
+		triggerplot,
+		log basis y = 10,
+		log ticks with fixed point}
+}
+
+
 
 % listings
 \lstset{
@@ -156,6 +183,7 @@
 	\begin{columns}
 		\begin{column}{0.6\textwidth}
 			\begin{itemize}
+				\item AutoPas: automatic determination of simulation parameters
 				\item Different scenarios have different optimal configurations
 				\item Optimal configuration can change over time
 				\item Currently: Tuning phases initiated at fixed intervals
@@ -188,6 +216,7 @@
 			\def\barwidth{12pt}
 			\pgfmathsetmacro{\lambdaval}{1.5}
 			\begin{subfigure}{0.5\textwidth}
+				\centering
 				\resizebox{0.9\textwidth}{!}{
 					\begin{tikzpicture}
 						\begin{axis}[
@@ -247,6 +276,7 @@
 				}
 			\end{subfigure}%
 			\begin{subfigure}{0.5\textwidth}
+				\centering
 				\resizebox{0.9\textwidth}{!}{
 					\begin{tikzpicture}[visible on=<3>]
 						\begin{axis}[
@@ -315,6 +345,7 @@
 			\centering
 			\pgfmathsetmacro{\lambdaval}{1.25}
 			\begin{subfigure}{0.5\textwidth}
+				\centering
 				\resizebox{0.9\textwidth}{!}{
 					\begin{tikzpicture}
 						\def\barwidth{6pt}
@@ -391,6 +422,7 @@
 				}
 			\end{subfigure}%
 			\begin{subfigure}{0.5\textwidth}
+				\centering
 				\resizebox{0.9\textwidth}{!}{
 					\begin{tikzpicture}[visible on=<5>]
 						\def\barwidth{3pt}
@@ -483,114 +515,271 @@
 % TODO: caption alignment across slides
 \begin{frame}[c]{Evaluation}{}
 	\only<1>{
-	\begin{itemize}
-		\item Three different evaluation scenarios:
-		\begin{enumerate}
-			\item Equilibrium
-			\item Exploding Liquid
-			\item Heating Sphere
-		\end{enumerate}
-		\item Evaluation metrics:
-		\begin{enumerate}
-			\item Speedup (total runtime reduction)
-			\item Optimality (compared to static tuning intervals)
-			\item Number of tuning iterations
-		\end{enumerate}
-	\end{itemize}
-}
-\only<2>{
-	\begin{figure}[htpb]
-		\centering
-		\begin{subfigure}[c]{.3\textwidth}
-			\includegraphics[width=\textwidth]{equilibrium/render/t0.png}
-			\subcaption{Iteration \num{0}} % 0, 0
-		\end{subfigure}%
-		\begin{subfigure}[c]{.3\textwidth}
-			\includegraphics[width=\textwidth]{equilibrium/render/t10000.png}
-			\subcaption{Iteration \num{10000}} % 10000, 10
-		\end{subfigure}%
-		\begin{subfigure}[c]{.3\textwidth}
-			\includegraphics[width=\textwidth]{equilibrium/render/t50000.png}
-			\subcaption{Iteration \num{50000}} % 50000, 50
-		\end{subfigure}%
-		\hfill\begin{subfigure}[c]{.08\textwidth}
-			\fastcolorbar
-		\end{subfigure}
-		\vspace{-0.3cm}
-		\caption{Evolution of the simulation state in the equilibrium scenario.}
-		\label{fig:evolution_equil}
-	\end{figure}
-}
-\only<3>{
-	\begin{figure}[htpb]
-		\centering
-		\begin{subfigure}[c]{.2\textwidth}
-			\newsavebox{\colorbarbox}
-			\savebox{\colorbarbox}{
+		\begin{itemize}
+			\item Three different evaluation scenarios:
+			      \begin{enumerate}
+				      \item Equilibrium
+				      \item Exploding Liquid
+				      \item Heating Sphere
+			      \end{enumerate}
+			\item Evaluation metrics:
+			      \begin{enumerate}
+				      \item Speedup (total runtime reduction)
+				      \item Optimality (compared to static tuning intervals)
+				      \item Number of tuning iterations
+			      \end{enumerate}
+		\end{itemize}
+	}
+	\only<2>{
+		\begin{figure}[htpb]
+			\centering
+			\begin{subfigure}[c]{.25\textwidth}
+				\includegraphics[width=\textwidth]{equilibrium/render/t0.png}
+				\subcaption{Iteration \num{0}} % 0, 0
+			\end{subfigure}%
+			\begin{subfigure}[c]{.25\textwidth}
+				\includegraphics[width=\textwidth]{equilibrium/render/t10000.png}
+				\subcaption{Iteration \num{10000}} % 10000, 10
+			\end{subfigure}%
+			\begin{subfigure}[c]{.25\textwidth}
+				\includegraphics[width=\textwidth]{equilibrium/render/t50000.png}
+				\subcaption{Iteration \num{50000}} % 50000, 50
+			\end{subfigure}%
+			\begin{subfigure}[c]{.08\textwidth}
+				\fastcolorbar
+			\end{subfigure}
+			\vspace{-0.3cm}
+			\caption{Evolution of the simulation state in the equilibrium scenario.}
+			\label{fig:evolution_equil}
+		\end{figure}
+	}
+	\only<3>{
+		\begin{figure}[htpb]
+			\centering
+			\begin{subfigure}[c]{.2\textwidth}
+				\newsavebox{\colorbarbox}
+				\savebox{\colorbarbox}{
+					\fastcolorbarhor
+				}
+				\usebox{\colorbarbox}%
+				\vspace*{-\ht\colorbarbox} %
+				\includegraphics[width=\textwidth]{exploding-liquid/render/t0.png}
+%				\vspace*{-\textwidth}
+%				\vspace*{-0.25\textwidth}
+				\vspace{-2cm}
+				\subcaption{Iteration \num{0}} % 0 
+			\end{subfigure}%
+			\begin{subfigure}[c]{.2\textwidth}
+				\includegraphics[width=\textwidth]{exploding-liquid/render/t3000.png}
+				\vspace{-2cm}
+				\subcaption{Iteration \num{3000}} % 3000, 5.5
+			\end{subfigure}%
+			\begin{subfigure}[c]{.2\textwidth}
+				\centering
+				\vspace{-1cm}
+				\includegraphics[width=\textwidth]{exploding-liquid/render/t11000.png}
+				\vspace{-1cm}
+				\subcaption{Iteration \num{11000}} % 11000, 20
+			\end{subfigure}%
+			\begin{subfigure}[c]{.2\textwidth}
+				\centering
+				\vspace{-1cm}
+				\includegraphics[width=\textwidth]{exploding-liquid/render/t31000.png}
+				\vspace{-1cm}
+				\subcaption{Iteration \num{31000}} % 31000, ?? 
+			\end{subfigure}
+			\vspace{-0.3cm}
+			\caption{Evolution of the simulation state in the exploding-liquid scenario.}
+		\end{figure}
+	}
+	\only<4>{
+		\begin{figure}[htpb]
+			\centering
+			\newsavebox{\colorbarboxb}
+			\savebox{\colorbarboxb}{
 				\fastcolorbarhor
 			}
-			\usebox{\colorbarbox}%
-			\vspace*{-\ht\colorbarbox} %
-			\includegraphics[width=\textwidth]{exploding-liquid/render/t0.png}
-			\vspace{-2cm}
-			\subcaption{Iteration \num{0}} % 0 
-		\end{subfigure}%
-		\begin{subfigure}[c]{.2\textwidth}
-			\includegraphics[width=\textwidth]{exploding-liquid/render/t3000.png}
-			\vspace{-2cm}
-			\subcaption{Iteration \num{3000}} % 3000, 5.5
-		\end{subfigure}%
-		\begin{subfigure}[c]{.2\textwidth}
-			\centering
-			\vspace{-1cm}
-			\includegraphics[width=\textwidth]{exploding-liquid/render/t11000.png}
-			\vspace{-1cm}
-			\subcaption{Iteration \num{11000}} % 11000, 20
-		\end{subfigure}%
-		\begin{subfigure}[c]{.2\textwidth}
-			\centering
-			\vspace{-1cm}
-			\includegraphics[width=\textwidth]{exploding-liquid/render/t31000.png}
-			\vspace{-1cm}
-			\subcaption{Iteration \num{31000}} % 31000, ?? 
-		\end{subfigure}
+			\vspace*{-1cm}
+			\usebox{\colorbarboxb}%
+			\vspace*{-\ht\colorbarboxb} %
+			\vspace*{1cm}
+			
+			\begin{subfigure}{.25\textwidth}
+				\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t0.png}
+				\subcaption{Iteration \num{0}} % 0
+			\end{subfigure}%
+			\begin{subfigure}{.25\textwidth}
+				\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t4000.png}
+				\subcaption{Iteration \num{4000}} % 4000, 0.4
+			\end{subfigure}%
+			\begin{subfigure}{.25\textwidth}
+				\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t23000.png}
+				\subcaption{Iteration \num{23000}} % 23000, 2.3
+			\end{subfigure}%
+			\begin{subfigure}{.25\textwidth}
+				\vspace*{0.1\textwidth}
+				\centering
+				\includegraphics[width=0.8\textwidth]{heating-sphere/render/t60000.png}
+				\vspace*{0.1\textwidth}
+				\subcaption{Iteration \num{60000}} % 60000, 6
+			\end{subfigure}%
 			\vspace{-0.3cm}
-		\caption{Evolution of the simulation state in the exploding-liquid scenario.}
-	\end{figure}
-}
-\only<4>{
-	\begin{figure}[htpb]
-		\vspace{-1cm}
-		\centering
-		\fastcolorbarhor
-		\vspace*{\baselineskip}
-		\begin{subfigure}{.25\textwidth}
-			\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t0.png}
-			\subcaption{Iteration \num{0}} % 0
-		\end{subfigure}%
-		\begin{subfigure}{.25\textwidth}
-			\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t4000.png}
-			\subcaption{Iteration \num{4000}} % 4000, 0.4
-		\end{subfigure}%
-		\begin{subfigure}{.25\textwidth}
-			\includegraphics[draft=false,width=\textwidth]{heating-sphere/render/t23000.png}
-			\subcaption{Iteration \num{23000}} % 23000, 2.3
-		\end{subfigure}%
-		\begin{subfigure}{.25\textwidth}
-			\vspace*{0.1\textwidth}
-			\centering
-			\includegraphics[width=0.8\textwidth]{heating-sphere/render/t60000.png}
-			\vspace*{0.1\textwidth}
-			\subcaption{Iteration \num{60000}} % 60000, 6
-		\end{subfigure}%
-				\vspace{-0.3cm}
-		\caption{Evolution of the simulation state in the heating-sphere scenario.}
-	\end{figure}
-}
+			\caption{Evolution of the simulation state in the heating-sphere scenario.}
+		\end{figure}
+	}
 \end{frame}
 
 % TODO
 \begin{frame}[c]{Results}{}
+	\only<1>{
+		\begin{figure}[htpb]
+		\centering
+		\begin{tikzpicture}
+			\begin{axis}[
+					triggerplot,
+					name=baseplot3,
+					trim axis left,
+					legend columns=3,
+					ylabel={Speedup \%},
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,0) -- (axis cs: 2,0);
+
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+						(1.25,-1)
+						(1.5,10)
+						(1.75,16)};
+
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+						(1.25,-1)
+						(1.5,10)
+						(1.75,17)};
+
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+						(1.25,-7)
+						(1.5,10)
+						(1.75,16)};
+
+				\legend{Reg-1500,Reg-1000,Reg-500}
+			\end{axis}
+
+			\begin{axis}[
+					logtriggerplot,
+					at={(baseplot3.south east)},
+					xshift=0.15\textwidth,
+					trim axis left,
+					legend columns=3,
+					ylabel={Tuning Iterations \%},
+					%				ymode=log,
+					%				ymin=1,
+					%				ymax=100,
+				]
+				% Baseline
+				\draw[linestyleE] (axis cs:0,19.00) -- (axis cs: 2,19.00);
+
+				% TimeBasedRegression 1500
+				\addplot[linestyleB] coordinates{
+						(1.25,30.92)
+						(1.5,8.87)
+						(1.75,5.07)};
+
+				% TimeBasedRegression 1000
+				\addplot[linestyleC] coordinates{
+						(1.25,37.64)
+						(1.5,11.4)
+						(1.75,2.53)};
+
+				% TimeBasedRegression 500		
+				\addplot[linestyleD] coordinates{
+						(1.25,43.7)
+						(1.5,10.13)
+						(1.75,6.97)};
+
+				\legend{Reg-1500,Reg-1000,Reg-500}
+			\end{axis}
+		\end{tikzpicture}
+		\caption{Regression trigger in the exploding-liquid scenario.}
+	\end{figure}}
+	\only<2>{
+		\vspace{-0.75cm}
+		\begin{figure}[htpb]
+			\begin{subfigure}{0.45\textwidth}
+				\centering
+				\begin{tikzpicture}
+					\tikzset{
+						barstyle1/.style={pattern color=tumblueaccmedium, draw=chaptertumblue,  pattern=crosshatch dots},
+						barstyle2/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=north east lines},
+						barstyle3/.style={fill=tumblueaccmedium, draw=chaptertumblue},
+						barstyle4/.style={pattern color=tumblueaccmedium, draw=chaptertumblue, pattern=vertical lines},
+					}
+					\def\barwidth{15pt}
+					\begin{axis}[
+							ybar stacked,
+							height=0.8\textwidth,
+							enlargelimits=0.15,
+							ylabel={Selected Configuration in \unit{\percent}},
+							xlabel={Trigger Strategy},
+							symbolic x coords={Simple,Avg,Split,Reg},
+							xtick=data,
+							bar width=\barwidth,
+							legend style={font=\small, nodes={yshift=0.25ex}},
+							legend cell align=center,
+							legend columns=2,
+							legend style={at={(0.5,1.03)}, anchor=south, fill=none, draw=none, align=center},
+						]
+						% Top 1
+						\addplot+[ybar, barstyle3] plot coordinates {(Simple,95) (Avg,94)
+								(Split,0) (Reg,96)};
+
+						% Top 2
+						\addplot+[ybar, barstyle2] plot coordinates {(Simple,5) (Avg,4)
+								(Split,3) (Reg,4)};
+
+						% Top 3
+						\addplot+[ybar, barstyle4] plot coordinates {(Simple,0) (Avg,0)
+								(Split,16) (Reg,0)};
+
+						% Other
+						\addplot+[ybar, barstyle1] plot coordinates {(Simple,0) (Avg,2)
+								(Split,81) (Reg,0)};
+
+						\legend{Best,Second-Best,Third-Best,Other}
+					\end{axis}
+				\end{tikzpicture}
+			\end{subfigure}%
+			\begin{subfigure}{0.45\textwidth}
+				\vskip 0pt
+				\centering
+				\includegraphics[width=\textwidth]{plots/exploding-liquid_configs_static.pdf}
+				\vspace*{-1.075cm}
+			\end{subfigure}
+			\vspace{0.1cm}
+			\caption{Configuration choice in the exploding-liquid scenario.}
+			\label{fig:expl_optimality}
+		\end{figure}
+	}
+	\only<3>{
+		\vspace{-0.25cm}
+		\begin{figure}[htpb]
+			\begin{subfigure}[]{0.45\textwidth}
+				\vskip 0pt
+				\centering
+				% equilibrium_dynamic_TimeBasedAverage_1.25_1000
+				\includegraphics[width=\textwidth]{plots/exploding-liquid_configs_good.pdf}
+			\end{subfigure}%
+			\begin{subfigure}[]{0.45\textwidth}
+				\vskip 0pt
+				\centering
+				% equilibrium_dynamic_TimeBasedSimple_1.25_10
+				\includegraphics[width=\textwidth]{plots/exploding-liquid_configs_bad.pdf}
+			\end{subfigure}
+			\vspace{-0.5cm}
+			\caption{Examples of trigger behavior in the exploding-liquid scenario.}
+			\label{fig:expl_trigger_behavior}
+		\end{figure}}
 \end{frame}
 
 \begin{frame}[c]{Conclusion}{}
@@ -598,6 +787,7 @@
 		\item Four novel dynamic trigger strategies
 		\item Best speedup: \qty{47}{\percent} (equilibrium)
 		\item Better than static intervals with \texttt{full-search} in suitable scenarios
+		\item Suboptimal if no indicated change in iteration runtime (e.g. heating-sphere)
 		\item Good configuration fit
 		\item Cheaper tuning phases $\rightarrow$ dynamic tuning less relevant
 		\item Still useful for MPI-parallel applications
